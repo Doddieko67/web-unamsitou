@@ -83,12 +83,12 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
         },
       });
       if (error) {
-        console.error("Error durante la autenticación:", error.message);
+        console.error("Error durante la autenticación:", error);
         throw new Error("Ha ocurrido un error durante la autenticación");
       }
       return data;
     } catch (error) {
-      console.error("Error during sign up:", error.message);
+      console.error("Error during sign up:", error);
       throw new Error("An error occurred during sign up");
     }
   }
@@ -108,7 +108,7 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
       }
       return data;
     } catch (error) {
-      console.error("Error during sign in:", error.message);
+      console.error("Error during sign in:", error);
       throw new Error("An error occurred during sign in");
     }
   }

@@ -37,7 +37,7 @@ export function QuestionConf({
             id="total-questions-slider"
             type="range"
             min="5"
-            max="50"
+            max="128"
             step="1" // Es buena idea añadir step
             value={questionCount}
             // Llama a la función del padre cuando el valor cambia
@@ -46,7 +46,7 @@ export function QuestionConf({
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>5</span>
-            <span>50</span>
+            <span>128</span>
           </div>
         </div>
         <span
