@@ -1,12 +1,7 @@
 #root {
     max-width: 1600px;
     margin: 0 auto;
-    padding: 2rem;
     text-align: center;
-    border-color: #646cff;
-    border-width: 5px;
-    border-style: solid;
-    border-radius: 10px;
 }
 
 .gradient-bg {
