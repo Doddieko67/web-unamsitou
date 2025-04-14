@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { HeaderExam } from "./HeaderExam"; // Asume que existe este componente
 import { QuestionSelector } from "./QuestionSelector";
 import { SeccionExamen } from "./SeccionExamen";
@@ -14,6 +14,7 @@ interface Pregunta {
   opciones: Opcion[];
   correcta: number;
 }
+
 const preguntas: Pregunta[] = [
   // ... tu array de preguntas completo
   {
@@ -52,6 +53,7 @@ const preguntas: Pregunta[] = [
     correcta: 3,
   },
 ];
+
 const TIEMPO_TOTAL_SEGUNDOS = 3 * 60 * 60; // 3 horas
 
 // --- Componente Padre ---

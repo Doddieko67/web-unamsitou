@@ -4,6 +4,8 @@ import { DifficultExam } from "./DifficultExam";
 import { Materias } from "./Materias";
 import { Personalization } from "./Personalization";
 import { QuestionConf } from "./QuestionConf";
+import Swal from "sweetalert2";
+import { Link } from "react-router";
 
 // Tipos
 interface Subject {
@@ -13,12 +15,6 @@ interface Subject {
   colorClasses: { bg: string; text: string; iconBg: string };
 }
 type Difficulty = "easy" | "medium" | "hard" | "mixed";
-interface ExamConfiguration {
-  subjects: string[];
-  questionCount: number;
-  difficulty: Difficulty | null;
-  fineTuning: string;
-}
 
 // Lista inicial de materias (podría venir de otro lugar)
 const initialAvailableSubjects: Subject[] = [
@@ -103,7 +99,7 @@ export function ExamConf() {
     /* ... */ setFineTuning(text);
   }, []);
   const handleGenerateExam = async () => {
-    /* ... (sin cambios en la lógica interna de envío) ... */
+    // Validación inicial (igual que antes)
     if (!selectedSubjects.length || !selectedDifficulty) {
       alert(
         "Por favor, selecciona al menos una materia y un nivel de dificultad.",
@@ -112,37 +108,87 @@ export function ExamConf() {
     }
     setIsGenerating(true);
 
-    const examConfig: ExamConfiguration = {
-      subjects: selectedSubjects,
-      questionCount: questionCount,
-      difficulty: selectedDifficulty,
-      fineTuning: fineTuning.trim(),
-    };
+    // --- CONSTRUIR EL PROMPT EN EL FRONTEND ---
+    let promptText = `Genera un examen de ${questionCount} preguntas.\n`;
+    promptText += `Materias a cubrir: ${selectedSubjects.join(", ")}.\n`;
+    promptText += `Nivel de dificultad general: ${selectedDifficulty}.\n`;
+    if (fineTuning && fineTuning.trim() !== "") {
+      promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
+    }
+    // Define el formato de salida esperado (¡Sigue siendo importante!)
+    promptText += `\nFormato de salida deseado: Un array JSON de objetos. Cada objeto debe tener las claves "id" (number), "pregunta" (string), "opciones" (array de 4 objetos con clave "texto"), y "correcta" (number, índice 0-3).\n`;
+    promptText += `\nGenera SOLO el array JSON válido, sin texto adicional.`;
 
-    console.log("Configuración a enviar:", examConfig);
+    console.log("Prompt construido en Frontend:", promptText); // Para depuración
 
     try {
-      const response = await fetch("/api/generate-exam-test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(examConfig),
-      });
+      // Llama al backend, enviando el prompt como texto
+      // (Puedes usar la misma ruta o una diferente si prefieres)
+      const response = await fetch(
+        "http://localhost:3001/api/generate-content",
+        {
+          // O '/api/generate-exam-simple'
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json", // Todavía enviamos JSON, pero con una estructura simple
+            // 'Authorization': `Bearer ${tu_token}`
+          },
+          // Envía un objeto JSON con una clave 'prompt' que contiene el texto construido
+          body: JSON.stringify({ prompt: promptText }),
+        },
+      );
+
       if (!response.ok) {
-        let errorMsg = `Error del servidor: ${response.status}`;
+        /* ... Manejo de error ... */
+        let errorMsg = `Error: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMsg = errorData.error || errorData.message || errorMsg;
-        } catch (jsonError) {
-          console.log(jsonError);
+          const ed = await response.json();
+          errorMsg = ed.error || ed.message || errorMsg;
+        } catch (e) {
+          console.log(e);
         }
         throw new Error(errorMsg);
       }
-      const result = await response.json();
-      console.log("Respuesta del backend:", result);
-      alert("¡Examen generado exitosamente!");
+
+      const result = await response.json(); // El backend ahora solo devuelve { generatedText: "..." }
+      console.log(
+        "Texto JSON crudo recibido del backend:",
+        result.generatedText,
+      );
+
+      // --- PARSEAR EL JSON EN EL FRONTEND ---
+      let preguntasGeneradas;
+      try {
+        const jsonMatch = result.generatedText.match(
+          /```json\s*([\s\S]*?)\s*```|(\[[\s\S]*\])/,
+        );
+        if (jsonMatch && (jsonMatch[1] || jsonMatch[2])) {
+          const jsonString = jsonMatch[1] || jsonMatch[2];
+          preguntasGeneradas = JSON.parse(jsonString);
+        } else {
+          console.warn(
+            "No se encontró bloque JSON claro, intentando parsear directo.",
+          );
+          preguntasGeneradas = JSON.parse(result.generatedText);
+        }
+        console.log("Preguntas parseadas en Frontend:", preguntasGeneradas);
+        // Haz algo con las preguntas (guardar en estado, navegar, etc.)
+        Swal.fire({
+          text: "¡Examen generado! Revisa la consola.",
+          title: "Exito",
+          icon: "success",
+        });
+      } catch (parseError) {
+        console.error("Error al parsear JSON recibido:", parseError);
+        console.error("Texto recibido:", result.generatedText);
+        alert(
+          "Error al procesar la respuesta de la IA. Formato JSON inválido.",
+        );
+      }
     } catch (error) {
-      console.error("Error al generar el examen:", error);
-      alert(`Error al generar el examen: ${error}`);
+      /* ... Manejo de error ... */
+      console.error("Error en la llamada de generación:", error);
+      alert(`Error: ${error}`);
     } finally {
       setIsGenerating(false);
     }
@@ -182,11 +228,12 @@ export function ExamConf() {
         fineTuning={fineTuning}
         onFineTuningChange={handleFineTuningChange}
       />
-
-      <ExamButton
-        onGenerateClick={handleGenerateExam}
-        disabled={isGenerateDisabled}
-      />
+      <Link to="/examen">
+        <ExamButton
+          onGenerateClick={handleGenerateExam}
+          disabled={isGenerateDisabled}
+        />
+      </Link>
 
       {isGenerating /* ... (indicador de carga sin cambios) ... */ && (
         <div className="mt-4 text-center text-sm text-indigo-600">

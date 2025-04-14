@@ -1,7 +1,6 @@
 import { Route, Routes } from "react-router";
 import Home from "../pages/home";
 import { Main } from "../pages/Inicio";
-import { Settings } from "../pages/Settings";
 import { Examenes } from "../pages/Examenes";
 import { NotFound } from "../pages/NotFound";
 import { Login } from "../pages/Login";

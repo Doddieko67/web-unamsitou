@@ -25,10 +25,10 @@ const ai = new GoogleGenAI({ apiKey: apiKey });
 app.post("/api/generate-content", async (req, res) => {
   try {
     const { prompt } = req.body; // Recibe el input del frontend
-
     if (!prompt) {
       return res.status(400).json({ error: "Falta el prompt en el body" });
     }
+    console.log(prompt)
 
     // Llama a la API de Google desde el backend
     const response = await ai.models.generateContent({
