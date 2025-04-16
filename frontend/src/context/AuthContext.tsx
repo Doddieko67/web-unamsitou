@@ -121,6 +121,7 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
           redirectTo: window.location.origin, // Redirige de vuelta a tu app tras el login
         },
       });
+
       if (error) {
         console.error("Error durante la autenticación:", error.message);
         throw new Error("Ha ocurrido un error durante la autenticación");

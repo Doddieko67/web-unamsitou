@@ -1,11 +1,16 @@
+import { UserAuth } from "../context/AuthContext";
+
 export async function handleGenerate(input: string) {
+  const { session } = UserAuth();
   try {
+    const token = session?.access_token;
     // Llama a TU backend, no directamente a Google
-    const response = await fetch("http://localhost:3001/api/generate-content", {
+    const response = await fetch("http://localhost:3000/api/generate-content", {
       // Asegúrate que la URL/puerto sea correcto
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer: ${token}`,
       },
       body: JSON.stringify({ prompt: input }), // Envía el input como 'prompt'
     });

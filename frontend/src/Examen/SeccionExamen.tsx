@@ -1,13 +1,7 @@
-import React from "react";
-
-// Interfaces (asumiendo que están definidas en otro lugar o aquí mismo)
-interface Opcion {
-  texto: string;
-}
 interface Pregunta {
   id: number;
   pregunta: string;
-  opciones: Opcion[];
+  opciones: string[];
   correcta: number;
 }
 
@@ -51,7 +45,6 @@ export function SeccionExamen({
     let stateClasses = "border-gray-200";
 
     const isSelected = selectedAnswer === opcionIndex;
-    const isCorrect = pregunta.correcta === opcionIndex;
 
     if (isSubmitted) {
       const userAnswerForThisQuestion = userAnswers[questionIndex];
@@ -106,7 +99,7 @@ export function SeccionExamen({
                 <div className="w-6 h-6 rounded-full border border-current mr-3 flex items-center justify-center text-sm font-medium flex-shrink-0">
                   <span>{letras[opcionIndex]}</span>
                 </div>
-                <span className="flex-grow">{opcion.texto}</span>
+                <span className="flex-grow">{opcion}</span>
                 {/* Iconos de Feedback */}
                 {isSubmitted && (
                   <>

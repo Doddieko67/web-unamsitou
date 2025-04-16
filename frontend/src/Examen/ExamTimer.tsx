@@ -1,5 +1,3 @@
-import React from "react";
-
 interface ExamTimerProps {
   timeLeft: number;
   formatTime: (time: number) => string;

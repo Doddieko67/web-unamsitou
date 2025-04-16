@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // Añadir useState aquí
+import { useState } from "react"; // Añadir useState aquí
 
 // Asume que la interfaz Subject está definida
 interface Subject {
