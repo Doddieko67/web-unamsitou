@@ -1,20 +1,21 @@
 import React, { useState, useCallback, DragEvent } from "react";
 import { ExamButton } from "./ExamButton";
 // Importa el componente de dificultad
-import { DifficultExam } from "./Main/DifficultExam"; // Asegúrate que la ruta sea correcta
+// import { DifficultExam } from "./Main/DifficultExam"; // Asegúrate que la ruta sea correcta
+import { Personalization } from "./Main/Personalization";
 
 // Tipo para la dificultad (puede ser null si quieres un estado inicial sin selección)
-type GeneralDifficulty = "mixed" | "easy" | "medium" | "hard";
+// type GeneralDifficulty = "mixed" | "easy" | "medium" | "hard";
 
 export function ExamQuestions() {
   // --- Estados del Componente ---
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [pastedText, setPastedText] = useState<string>("");
   // const [questionType, setQuestionType] = useState<QuestionGenerationType>('auto'); // <--- ELIMINADO
-  const [difficulty, setDifficulty] = useState<GeneralDifficulty>("mixed"); // Mantenemos 'auto' como default o null si prefieres
+  // const [difficulty, setDifficulty] = useState<GeneralDifficulty>("mixed"); // Mantenemos 'auto' como default o null si prefieres
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
-
+  const [fineTuning, setFineTuning] = useState<string>("");
   // --- Handlers ---
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     /* ... (sin cambios) ... */
@@ -35,20 +36,22 @@ export function ExamQuestions() {
   };
 
   // Handler para la dificultad (del nuevo componente)
-  const handleDifficultySelect = useCallback(
-    (selectedDiff: GeneralDifficulty) => {
-      setDifficulty(selectedDiff);
-    },
-    [],
-  );
+  // const handleDifficultySelect = useCallback(
+  //   (selectedDiff: GeneralDifficulty) => {
+  //     setDifficulty(selectedDiff);
+  //   },
+  //   [],
+  // );
 
   // --- Handlers para Drag and Drop (sin cambios) ---
   const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
-    /* ... */ event.preventDefault();
+    /* ... */
+    event.preventDefault();
     setIsDraggingOver(true);
   }, []);
   const handleDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
-    /* ... */ event.preventDefault();
+    /* ... */
+    event.preventDefault();
     setIsDraggingOver(false);
   }, []);
   const handleDrop = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -62,6 +65,11 @@ export function ExamQuestions() {
     }
   }, []);
 
+  const handleFineTuningChange = useCallback((text: string) => {
+    /* ... */
+    setFineTuning(text);
+  }, []);
+
   // --- Handler para el botón de Generar (Actualizado) ---
   const handleGenerate = async () => {
     if (!selectedFiles && !pastedText.trim()) {
@@ -70,11 +78,11 @@ export function ExamQuestions() {
       );
       return;
     }
-    if (!difficulty) {
-      // Añadir validación si permites null como estado inicial
-      alert("Por favor, selecciona un nivel de dificultad.");
-      return;
-    }
+    // if (!difficulty) {
+    //   // Añadir validación si permites null como estado inicial
+    //   alert("Por favor, selecciona un nivel de dificultad.");
+    //   return;
+    // }
 
     setIsLoading(true);
     console.log("Generando examen desde contenido...");
@@ -89,14 +97,14 @@ export function ExamQuestions() {
         formData.append("files", selectedFiles[i]);
       }
       // Ya NO añadimos questionType
-      formData.append("difficulty", difficulty); // Añadimos la dificultad seleccionada
+      // formData.append("difficulty", difficulty); // Añadimos la dificultad seleccionada
       requestBody = formData;
     } else {
       console.log("Preparando JSON para texto...");
       const textData = {
         text: pastedText,
         // Ya NO incluimos questionType
-        difficulty: difficulty, // Incluimos la dificultad seleccionada
+        // difficulty: difficulty, // Incluimos la dificultad seleccionada
       };
       requestBody = JSON.stringify(textData);
       headers["Content-Type"] = "application/json";
@@ -132,7 +140,7 @@ export function ExamQuestions() {
 
   // El botón se deshabilita si falta contenido O si falta dificultad (si permites null inicial)
   const isGenerateDisabled =
-    (!selectedFiles && !pastedText.trim()) || !difficulty || isLoading;
+    (!selectedFiles && !pastedText.trim()) || isLoading; //|| !difficulty || isLoading;
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden p-6 sm:p-8 mb-8 border border-gray-200">
@@ -154,7 +162,11 @@ export function ExamQuestions() {
         {/* ... Contenido del área de drop sin cambios ... */}
         <div className="flex justify-center mb-4">
           <i
-            className={`fas fa-file-upload text-4xl ${isDraggingOver ? "text-indigo-600 animate-bounce" : "text-indigo-400"}`}
+            className={`fas fa-file-upload text-4xl ${
+              isDraggingOver
+                ? "text-indigo-600 animate-bounce"
+                : "text-indigo-400"
+            }`}
           ></i>
         </div>
         <h3 className="text-lg font-medium text-gray-700 mb-2">
@@ -220,18 +232,10 @@ export function ExamQuestions() {
         ></textarea>
       </div>
 
-      {/* --- Sección de Configuración (Ahora solo Dificultad) --- */}
-      <div className="mb-6 border-t pt-6">
-        <h3 className="text-lg font-medium text-gray-700 mb-4">
-          Configuración de procesamiento
-        </h3>
-        {/* Usamos el componente importado */}
-        <DifficultExam
-          selectedDifficulty={difficulty}
-          onDifficultySelect={handleDifficultySelect}
-        />
-        {/* El select de tipo de pregunta ha sido eliminado */}
-      </div>
+      <Personalization
+        fineTuning={fineTuning}
+        onFineTuningChange={handleFineTuningChange}
+      />
 
       {/* --- Botón de Generar (Sin cambios) --- */}
       <ExamButton

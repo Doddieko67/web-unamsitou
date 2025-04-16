@@ -5,7 +5,8 @@ import { Materias } from "./Materias";
 import { Personalization } from "./Personalization";
 import { QuestionConf } from "./QuestionConf";
 import Swal from "sweetalert2";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
+import { UserAuth } from "../../context/AuthContext";
 
 // Tipos
 interface Subject {
@@ -51,6 +52,8 @@ const initialAvailableSubjects: Subject[] = [
 ];
 
 export function ExamConf() {
+  const { session } = UserAuth();
+  const navigate = useNavigate();
   // --- Estados ---
   // Estado para TODAS las materias disponibles (iniciales + personalizadas)
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>(
@@ -115,9 +118,6 @@ export function ExamConf() {
     if (fineTuning && fineTuning.trim() !== "") {
       promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
     }
-    // Define el formato de salida esperado (¡Sigue siendo importante!)
-    promptText += `\nFormato de salida deseado: Un array JSON de objetos. Cada objeto debe tener las claves "id" (number), "pregunta" (string), "opciones" (array de 4 objetos con clave "texto"), y "correcta" (number, índice 0-3).\n`;
-    promptText += `\nGenera SOLO el array JSON válido, sin texto adicional.`;
 
     console.log("Prompt construido en Frontend:", promptText); // Para depuración
 
@@ -125,66 +125,42 @@ export function ExamConf() {
       // Llama al backend, enviando el prompt como texto
       // (Puedes usar la misma ruta o una diferente si prefieres)
       const response = await fetch(
-        "http://localhost:3001/api/generate-content",
+        "http://localhost:3000/api/generate-content",
         {
           // O '/api/generate-exam-simple'
           method: "POST",
           headers: {
             "Content-Type": "application/json", // Todavía enviamos JSON, pero con una estructura simple
-            // 'Authorization': `Bearer ${tu_token}`
+            authorization: `Bearer ${session && session.access_token}`,
           },
           // Envía un objeto JSON con una clave 'prompt' que contiene el texto construido
-          body: JSON.stringify({ prompt: promptText }),
+          body: JSON.stringify({
+            prompt: promptText,
+            dificultad: selectedDifficulty,
+          }),
         },
       );
 
       if (!response.ok) {
-        /* ... Manejo de error ... */
-        let errorMsg = `Error: ${response.status}`;
-        try {
-          const ed = await response.json();
-          errorMsg = ed.error || ed.message || errorMsg;
-        } catch (e) {
-          console.log(e);
-        }
-        throw new Error(errorMsg);
-      }
-
-      const result = await response.json(); // El backend ahora solo devuelve { generatedText: "..." }
-      console.log(
-        "Texto JSON crudo recibido del backend:",
-        result.generatedText,
-      );
-
-      // --- PARSEAR EL JSON EN EL FRONTEND ---
-      let preguntasGeneradas;
-      try {
-        const jsonMatch = result.generatedText.match(
-          /```json\s*([\s\S]*?)\s*```|(\[[\s\S]*\])/,
-        );
-        if (jsonMatch && (jsonMatch[1] || jsonMatch[2])) {
-          const jsonString = jsonMatch[1] || jsonMatch[2];
-          preguntasGeneradas = JSON.parse(jsonString);
-        } else {
-          console.warn(
-            "No se encontró bloque JSON claro, intentando parsear directo.",
-          );
-          preguntasGeneradas = JSON.parse(result.generatedText);
-        }
-        console.log("Preguntas parseadas en Frontend:", preguntasGeneradas);
-        // Haz algo con las preguntas (guardar en estado, navegar, etc.)
-        Swal.fire({
-          text: "¡Examen generado! Revisa la consola.",
-          title: "Exito",
-          icon: "success",
-        });
-      } catch (parseError) {
-        console.error("Error al parsear JSON recibido:", parseError);
-        console.error("Texto recibido:", result.generatedText);
-        alert(
-          "Error al procesar la respuesta de la IA. Formato JSON inválido.",
+        /* ... manejo de error ... */ throw new Error(
+          "Error al generar/guardar",
         );
       }
+      console.log(response);
+
+      const result = await response.json(); // Espera { examId: '...' }
+      console.log(result);
+
+      if (!result.examId) {
+        throw new Error(
+          "La respuesta del servidor no contenía un ID de examen válido.",
+        );
+      }
+
+      console.log("Examen generado y guardado con ID:", result.examId);
+
+      // --- NAVEGACIÓN CON ID ---
+      navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del examen
     } catch (error) {
       /* ... Manejo de error ... */
       console.error("Error en la llamada de generación:", error);
@@ -228,12 +204,10 @@ export function ExamConf() {
         fineTuning={fineTuning}
         onFineTuningChange={handleFineTuningChange}
       />
-      <Link to="/examen">
-        <ExamButton
-          onGenerateClick={handleGenerateExam}
-          disabled={isGenerateDisabled}
-        />
-      </Link>
+      <ExamButton
+        onGenerateClick={handleGenerateExam}
+        disabled={isGenerateDisabled}
+      />
 
       {isGenerating /* ... (indicador de carga sin cambios) ... */ && (
         <div className="mt-4 text-center text-sm text-indigo-600">

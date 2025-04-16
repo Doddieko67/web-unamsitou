@@ -15,7 +15,7 @@ export function Personalization({
         htmlFor="fine-tuning-input"
         className="block text-lg font-medium text-gray-700 mb-4" // Ajustado tamaño y margen
       >
-        4. Personalización (Opcional)
+        Personalización (Opcional)
       </label>
       <div className="relative">
         <textarea

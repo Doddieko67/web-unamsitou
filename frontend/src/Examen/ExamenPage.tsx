@@ -1,63 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
-import { HeaderExam } from "./HeaderExam"; // Asume que existe este componente
 import { QuestionSelector } from "./QuestionSelector";
 import { SeccionExamen } from "./SeccionExamen";
 import { ResultsDisplay } from "./ResultsDisplay"; // Creamos un componente para resultados
 import { ExamTimer } from "./ExamTimer";
+import { useParams } from "react-router";
+import { UserAuth } from "../context/AuthContext";
+import { supabase } from "../supabase.config";
+import { useNavigate } from "react-router";
 // --- Interfaces y Datos (igual que antes) ---
-interface Opcion {
-  texto: string;
-}
+
 interface Pregunta {
   id: number;
   pregunta: string;
-  opciones: Opcion[];
+  opciones: string[];
   correcta: number;
 }
-
-const preguntas: Pregunta[] = [
-  // ... tu array de preguntas completo
-  {
-    id: 1,
-    pregunta:
-      "¿Cuál es el resultado de la siguiente operación: (2 + 3) × 4 - 6 ÷ 2?",
-    opciones: [
-      { texto: "13" },
-      { texto: "17" },
-      { texto: "20" },
-      { texto: "24" },
-    ],
-    correcta: 1,
-  },
-  {
-    id: 2,
-    pregunta: "¿Qué famoso físico formuló la teoría de la relatividad?",
-    opciones: [
-      { texto: "Isaac Newton" },
-      { texto: "Albert Einstein" },
-      { texto: "Stephen Hawking" },
-      { texto: "Galileo Galilei" },
-    ],
-    correcta: 1,
-  },
-  // ... resto de preguntas
-  {
-    id: 10,
-    pregunta: "¿Qué país es famoso por el Coliseo Romano?",
-    opciones: [
-      { texto: "Grecia" },
-      { texto: "Egipto" },
-      { texto: "España" },
-      { texto: "Italia" },
-    ],
-    correcta: 3,
-  },
-];
 
 const TIEMPO_TOTAL_SEGUNDOS = 3 * 60 * 60; // 3 horas
 
 // --- Componente Padre ---
 export function ExamenPage() {
+  const navigate = useNavigate();
+  const { user } = UserAuth();
+  const { examId } = useParams<{ examId: string }>(); // Obtener el :examId
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: number }>({});
   const [timeLeft, setTimeLeft] = useState(TIEMPO_TOTAL_SEGUNDOS);
@@ -66,6 +31,114 @@ export function ExamenPage() {
     null,
   );
 
+  interface ExamenData {
+    id: string; // UUID
+    user_id: string; // UUID
+    titulo: string;
+    dificultad: string;
+    estado: "pendiente" | "en_progreso" | "terminado" | "suspendido"; // Usa los tipos de estado correctos
+    numero_preguntas: number;
+    datos: Pregunta[]; // Asume que la columna 'datos' JSONB contiene un array de Pregunta
+    fecha_inicio: string | null;
+  }
+
+  const [, setLoadError] = useState<string | null>(null);
+  const [examenData, setExamenData] = useState<ExamenData | null>(null); // Guarda todos los datos del examen
+  const [preguntas, setPreguntas] = useState<Pregunta[]>([
+    { id: 1, pregunta: "Hola", opciones: ["2"], correcta: 2 },
+  ]); // Específico para las preguntas
+  const [, setIsLoadingData] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchExamenData = async () => {
+      console.log(`Intentando cargar datos para examen ID: ${examId}`);
+      setIsLoadingData(true);
+      setLoadError(null);
+      setExamenData(null);
+
+      if (!examId) {
+        setLoadError("ID de examen no encontrado en la URL.");
+        setIsLoadingData(false);
+        return;
+      }
+      if (!user) {
+        setLoadError("Usuario no autenticado. No se puede cargar el examen.");
+        setIsLoadingData(false);
+        // Podrías redirigir a login si no está autenticado
+        // navigate('/login');
+        return;
+      }
+
+      try {
+        // Consulta a Supabase DIRECTA (requiere RLS configurado)
+        console.log(
+          `Consultando Supabase para examen ${examId} y usuario ${user.id}`,
+        );
+        const { data, error } = await supabase
+          .from("examenes")
+          .select("*") // Selecciona todas las columnas
+          .eq("id", examId)
+          .eq("user_id", user.id) // <-- RLS VIRTUAL: Asegura que solo el dueño lo vea
+          .single(); // Esperamos encontrar exactamente uno
+
+        if (error) {
+          console.error("Error de Supabase al obtener examen:", error);
+          // Podría ser error 404 si no existe, o 401/403 si RLS falla
+          if (error.code === "PGRST116") {
+            // Código común para 'no rows found' con .single()
+            throw new Error(
+              "Examen no encontrado o no tienes permiso para acceder.",
+            );
+          }
+          throw new Error(`Error al cargar datos: ${error.message}`);
+        }
+
+        if (!data) {
+          throw new Error("Examen no encontrado.");
+        }
+
+        // Validación básica de los datos recibidos
+        if (
+          !data.datos ||
+          !Array.isArray(data.datos) ||
+          data.datos.length === 0
+        ) {
+          throw new Error(
+            "Los datos del examen recuperados no contienen preguntas válidas.",
+          );
+        }
+
+        console.log("Datos del examen cargados:", data);
+        setExamenData(data as ExamenData); // Guarda todos los datos
+        setPreguntas(data.datos as Pregunta[]); // Guarda específicamente las preguntas
+
+        // Opcional: Ajustar el tiempo si lo guardaste
+        // if (data.tiempo_total_segundos) setTimeLeft(data.tiempo_total_segundos);
+
+        // Opcional: Marcar el examen como 'en_progreso' si estaba 'pendiente'
+        if (data.estado === "pendiente") {
+          console.log("Marcando examen como 'en_progreso'...");
+          await supabase
+            .from("examenes")
+            .update({
+              estado: "en_progreso",
+              fecha_inicio: new Date().toISOString(),
+            }) // Actualiza estado y fecha inicio real
+            .eq("id", examId)
+            .eq("user_id", user.id); // Seguridad
+        }
+      } catch (error) {
+        console.error("Error al cargar/procesar examen:", error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchExamenData();
+
+    // Limpieza: No necesitamos limpiar nada específico aquí a menos que
+    // iniciemos suscripciones de Supabase Realtime.
+  }, [examId, user, navigate]);
   // --- Lógica del Timer (stopTimer, startTimer, formatTime) ---
   const stopTimer = useCallback(() => {
     if (timerIntervalId) {
@@ -188,7 +261,29 @@ export function ExamenPage() {
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Columna Izquierda (Info y Navegador) */}
               <div className="lg:w-1/3 space-y-8 flex-shrink-0">
-                <HeaderExam />
+                {examenData && (
+                  <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+                    <div className="p-6">
+                      <div className="flex flex-col justify-between items-start md:items-center">
+                        <div>
+                          <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                            {examenData.titulo}
+                          </h1>
+                          <p className="text-gray-600">
+                            {examenData.fecha_inicio}
+                          </p>
+                        </div>
+                        <div className="mt-4 md:mt-0 bg-indigo-50 text-indigo-800 px-4 py-2 rounded-lg">
+                          <i className="fas fa-info-circle mr-2"></i>
+                          <span>
+                            {examenData.numero_preguntas} preguntas • 3 horas •
+                            Dificultad: {examenData.dificultad}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Tarjeta de Controles: Timer y Envío */}
                 <div className="bg-white rounded-xl shadow-md p-5 space-y-1">
                   <ExamTimer

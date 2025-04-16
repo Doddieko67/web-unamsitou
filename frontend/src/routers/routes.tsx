@@ -17,7 +17,7 @@ export function MyRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="*" element={<NotFound></NotFound>} />
       <Route path="/inicio" element={<Main></Main>} />
-      <Route path="/examen" element={<ExamenPage />} />
+      <Route path="/examen/:examId" element={<ExamenPage />} />
       <Route path="/examenes" element={<Examenes />} />
       <Route path="/mi-perfil" element={<Perfil />}></Route>
       <Route path="/login" element={<Login />}></Route>
