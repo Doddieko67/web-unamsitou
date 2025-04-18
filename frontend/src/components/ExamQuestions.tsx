@@ -3,45 +3,47 @@ import { ExamButton } from "./ExamButton";
 // Importa el componente de dificultad
 // import { DifficultExam } from "./Main/DifficultExam"; // Asegúrate que la ruta sea correcta
 import { Personalization } from "./Main/Personalization";
+import { UserAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router";
+import Swal from "sweetalert2";
 
 // Tipo para la dificultad (puede ser null si quieres un estado inicial sin selección)
 // type GeneralDifficulty = "mixed" | "easy" | "medium" | "hard";
 
 export function ExamQuestions() {
   // --- Estados del Componente ---
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const navigate = useNavigate();
   const [pastedText, setPastedText] = useState<string>("");
-  // const [questionType, setQuestionType] = useState<QuestionGenerationType>('auto'); // <--- ELIMINADO
-  // const [difficulty, setDifficulty] = useState<GeneralDifficulty>("mixed"); // Mantenemos 'auto' como default o null si prefieres
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const [fineTuning, setFineTuning] = useState<string>("");
+  const [files, setFiles] = useState<File[]>([]);
+  const { session } = UserAuth();
+
   // --- Handlers ---
+  const handleDeleteFile = (indexToDelete: number) => {
+    const updatedFiles = files.filter((_, index) => index !== indexToDelete);
+    setFiles(updatedFiles);
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    /* ... (sin cambios) ... */
     if (event.target.files && event.target.files.length > 0) {
-      setSelectedFiles(event.target.files);
-      setPastedText("");
-      console.log("Archivos seleccionados:", event.target.files);
-    } else {
-      setSelectedFiles(null);
+      const newFiles: FileList = event.target.files;
+      setFiles((prevFiles) => {
+        // Convert new files to array
+        const newFilesArray: File[] = Array.from(newFiles);
+        if (prevFiles) {
+          return [...prevFiles, ...newFilesArray];
+        } else {
+          return newFilesArray;
+        }
+      });
     }
   };
   const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     /* ... (sin cambios) ... */
     setPastedText(event.target.value);
-    if (event.target.value) {
-      setSelectedFiles(null);
-    }
   };
-
-  // Handler para la dificultad (del nuevo componente)
-  // const handleDifficultySelect = useCallback(
-  //   (selectedDiff: GeneralDifficulty) => {
-  //     setDifficulty(selectedDiff);
-  //   },
-  //   [],
-  // );
 
   // --- Handlers para Drag and Drop (sin cambios) ---
   const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -59,8 +61,16 @@ export function ExamQuestions() {
     event.preventDefault();
     setIsDraggingOver(false);
     if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      setSelectedFiles(event.dataTransfer.files);
-      setPastedText("");
+      const newFiles: FileList = event.dataTransfer.files;
+      setFiles((prevFiles) => {
+        // Convert new files to array
+        const newFilesArray: File[] = Array.from(newFiles);
+        if (prevFiles) {
+          return [...prevFiles, ...newFilesArray];
+        } else {
+          return newFilesArray;
+        }
+      });
       console.log("Archivos soltados:", event.dataTransfer.files);
     }
   }, []);
@@ -72,51 +82,79 @@ export function ExamQuestions() {
 
   // --- Handler para el botón de Generar (Actualizado) ---
   const handleGenerate = async () => {
-    if (!selectedFiles && !pastedText.trim()) {
-      alert(
-        "Por favor, selecciona archivos o pega texto para generar el examen.",
-      );
+    if (files.length == 0 && !pastedText.trim()) {
+      Swal.fire({
+        title: "Faltan archivos/texto",
+        icon: "error",
+        text: "Por favor, selecciona archivos o pega texto para generar el examen.",
+      });
       return;
     }
-    // if (!difficulty) {
-    //   // Añadir validación si permites null como estado inicial
-    //   alert("Por favor, selecciona un nivel de dificultad.");
-    //   return;
-    // }
 
     setIsLoading(true);
-    console.log("Generando examen desde contenido...");
 
-    let requestBody: FormData | string;
-    const headers: HeadersInit = {};
+    let requestBody: FormData | null = null;
 
-    if (selectedFiles && selectedFiles.length > 0) {
+    let promptText = ``;
+    if (pastedText && pastedText.trim() !== "") {
+      promptText += `Contenido: ${pastedText}.\n`;
+    }
+    if (fineTuning && fineTuning.trim() !== "") {
+      promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
+    }
+
+    if (files.length > 0) {
       console.log("Preparando FormData para archivos...");
       const formData = new FormData();
-      for (let i = 0; i < selectedFiles.length; i++) {
-        formData.append("files", selectedFiles[i]);
+      for (let i = 0; i < files.length; i++) {
+        formData.append("fuentes", files[i]);
       }
-      // Ya NO añadimos questionType
-      // formData.append("difficulty", difficulty); // Añadimos la dificultad seleccionada
-      requestBody = formData;
-    } else {
-      console.log("Preparando JSON para texto...");
-      const textData = {
-        text: pastedText,
-        // Ya NO incluimos questionType
-        // difficulty: difficulty, // Incluimos la dificultad seleccionada
-      };
-      requestBody = JSON.stringify(textData);
-      headers["Content-Type"] = "application/json";
-    }
-    // headers['Authorization'] = `Bearer ${tu_token}`;
 
+      formData.append("prompt", promptText);
+      requestBody = formData;
+      console.log(requestBody);
+    }
+    console.log("Preparando JSON para texto...");
+
+    // Configure Toast without a timer
+    const Toast = Swal.mixin({
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      // timer: 3000,  Remove the timer
+      // timerProgressBar: true, // Remove the progress bar
+      didOpen: (toast) => {
+        toast.addEventListener("mouseenter", Swal.stopTimer);
+        toast.addEventListener("mouseleave", Swal.resumeTimer);
+      },
+    });
+    Toast.fire({
+      html: `<span className="loader"></span>`,
+      title: "Generando el examen",
+      allowOutsideClick: false, // Prevent closing by clicking outside
+      stopKeydownPropagation: false, // Prevent keydown events from propagating
+      //allowEscapeKey: false, // To disable ESC key, it requires stopKeydownPropagation be false
+    });
     try {
-      const response = await fetch("/api/generate-from-content", {
+      const response = await fetch("http://localhost:3000/api/upload_files", {
         method: "POST",
-        headers: headers,
+        headers: {
+          authorization: `Bearer ${session && session.access_token}`,
+        },
         body: requestBody,
       });
+      const Toast = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.onmouseenter = Swal.stopTimer;
+          toast.onmouseleave = Swal.resumeTimer;
+        },
+      });
+
       if (!response.ok) {
         let errorMsg = `Error del servidor: ${response.status}`;
         try {
@@ -124,12 +162,37 @@ export function ExamQuestions() {
           errorMsg = errorData.error || errorData.message || errorMsg;
         } catch (jsonError) {
           console.log(jsonError);
+          Swal.close();
+          Toast.fire({
+            icon: "error",
+            title: "Error del servidor interno",
+          });
         }
         throw new Error(errorMsg);
       }
       const result = await response.json();
       console.log("Respuesta de generación desde contenido:", result);
-      alert("¡Generación completada! Revisa la consola.");
+
+      if (!result.examId) {
+        Swal.close();
+        Toast.fire({
+          icon: "error",
+          title: "La respuesta del servidor no contenia un ID de examen valido",
+        });
+        throw new Error(
+          "La respuesta del servidor no contenía un ID de examen válido.",
+        );
+      }
+
+      console.log("Examen generado y guardado con ID:", result.examId);
+
+      // --- NAVEGACIÓN CON ID ---
+      navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del examen
+
+      Toast.fire({
+        icon: "success",
+        title: "Examen generado con exito",
+      });
     } catch (error) {
       console.error("Error al generar desde contenido:", error);
       alert(`Error: ${error}`);
@@ -138,16 +201,36 @@ export function ExamQuestions() {
     }
   };
 
+  type FileTypeIcons = {
+    [key: string]: string; // string key and string value
+  };
+
+  const fileTypeIcons: FileTypeIcons = {
+    "application/pdf": "fa-file-pdf bg-red-100 text-red-600",
+    "image/": "fa-image bg-blue-100 text-blue-600",
+    "video/": "fa-video bg-green-100 text-green-600",
+  };
+
+  // Function to determine the appropriate icon class based on file type
+  function getFileIconClass(fileType: string): string {
+    for (const typePattern in fileTypeIcons) {
+      if (fileType.startsWith(typePattern)) {
+        return fileTypeIcons[typePattern];
+      }
+    }
+    // Default icon if no match is found:
+    return "fa-file bg-gray-200 text-gray-600"; // Or some other default
+  }
+
   // El botón se deshabilita si falta contenido O si falta dificultad (si permites null inicial)
   const isGenerateDisabled =
-    (!selectedFiles && !pastedText.trim()) || isLoading; //|| !difficulty || isLoading;
+    (files.length == 0 && !pastedText.trim()) || isLoading; //|| !difficulty || isLoading;
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden p-6 sm:p-8 mb-8 border border-gray-200">
       <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 border-b pb-3">
         Genera Exámenes desde Contenido
       </h2>
-
       {/* --- Sección de Carga de Archivos (Sin cambios) --- */}
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center mb-6 transition-colors duration-200 ${
@@ -185,33 +268,42 @@ export function ExamQuestions() {
           className="hidden"
           multiple
           onChange={handleFileChange}
-          accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
         />
-        <p className="text-xs text-gray-500 mt-4">Soportados: PDF, DOCX, TXT</p>
       </div>
-
       {/* Mostrar archivos seleccionados (Sin cambios) */}
-      {selectedFiles && selectedFiles.length > 0 /* ... */ && (
+      {files && files.length > 0 /* ... */ && (
         <div className="mb-6 p-3 bg-gray-50 rounded-md border border-gray-200">
           <h4 className="text-sm font-medium text-gray-600 mb-2">
             Archivos seleccionados:
           </h4>
-          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700 max-h-32 overflow-y-auto">
-            {Array.from(selectedFiles).map((file, index) => (
-              <li key={index}>
-                {" "}
-                {file.name}{" "}
-                <span className="text-gray-400 text-xs">
-                  ({(file.size / 1024).toFixed(1)} KB)
-                </span>{" "}
+          <ul className="list-disc pl-5 text-sm text-gray-700 max-h-64 overflow-y-auto grid grid-cols-2 gap-2">
+            {Array.from(files).map((file, index) => (
+              <li
+                key={index}
+                className="transition-all duration-300 flex flex-row justify-between border-2 p-2 items-center rounded-lg hover:bg-gray-100"
+              >
+                <div className="flex flex-row  items-center gap-2">
+                  <i
+                    className={`fas ${getFileIconClass(file.type)} p-2 m-auto rounded-md`}
+                  ></i>
+                  <div></div>
+                  {file.name}
+                  <span className="text-gray-400 text-xs">
+                    ({(file.size / 1024).toFixed(1)} KB)
+                  </span>{" "}
+                </div>
+                <button
+                  className="fas fa-xmark bg-red-100 text-red-600 p-2 rounded-md hover:bg-red-200 transition-all duration-300"
+                  onClick={() => {
+                    handleDeleteFile(index);
+                  }}
+                ></button>
               </li>
             ))}
           </ul>
         </div>
       )}
-
       <div className="text-center my-4 text-gray-500 font-semibold">O</div>
-
       {/* --- Sección de Pegar Texto (Sin cambios) --- */}
       <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
         {/* ... Contenido del textarea sin cambios ... */}
@@ -231,17 +323,16 @@ export function ExamQuestions() {
           onChange={handleTextChange}
         ></textarea>
       </div>
-
       <Personalization
         fineTuning={fineTuning}
         onFineTuningChange={handleFineTuningChange}
       />
-
       {/* --- Botón de Generar (Sin cambios) --- */}
       <ExamButton
         onGenerateClick={handleGenerate}
         disabled={isGenerateDisabled}
       />
+      nome vez?
       {isLoading /* ... Indicador de carga sin cambios ... */ && (
         <div className="mt-4 text-center text-sm text-indigo-600">
           {" "}
