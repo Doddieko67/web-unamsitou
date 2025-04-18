@@ -246,6 +246,7 @@ export function ExamenPage() {
   const resultados = isSubmitted ? calcularResultados() : null;
   const preguntaActual = preguntas[currentQuestionIndex];
 
+  const today = new Date();
   // --- Renderizado ---
   return (
     <div className="min-h-screen bg-gray-100">
@@ -270,7 +271,9 @@ export function ExamenPage() {
                             {examenData.titulo}
                           </h1>
                           <p className="text-gray-600">
-                            {examenData.fecha_inicio}
+                            Empezaste el {today.getFullYear()}/
+                            {today.getMonth()}/{today.getDay()} a la hora{" "}
+                            {today.getHours()}:{today.getMinutes()}
                           </p>
                         </div>
                         <div className="mt-4 md:mt-0 bg-indigo-50 text-indigo-800 px-4 py-2 rounded-lg">

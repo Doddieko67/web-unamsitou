@@ -1,5 +1,3 @@
-import React from "react";
-
 interface QuestionSelectorProps {
   totalQuestions: number;
   currentQuestionIndex: number;
@@ -18,7 +16,7 @@ export function QuestionSelector({
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
       <h2 className="text-lg font-semibold text-gray-700 mb-4">Preguntas</h2>
-      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-20 gap-2">
         {Array.from({ length: totalQuestions }).map((_, index) => {
           const isCurrent = index === currentQuestionIndex;
           const isAnswered = answeredQuestions[index] !== undefined;

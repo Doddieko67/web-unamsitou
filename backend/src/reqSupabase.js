@@ -1,9 +1,55 @@
 import { supabase } from "../supabase.config.js";
 
+export const SelectAuthExamUser = async (res, user_id, exam_id) => {
+  let query = supabase.from("examenes").select("*").eq("user_id", user_id);
+
+  // Añade la condición de exam_id solo si se proporciona
+  if (exam_id) {
+    query = query.eq("id", exam_id);
+  }
+
+  try {
+    const { data: examen, error } = await query;
+    if (error) {
+      console.error(
+        "Error al guardar visualizar el/los examen/es en Supabase:",
+        error,
+      );
+      return res
+        .status(500)
+        .json({ error: "No se pudo recolectar el/los examen/es." });
+    }
+
+    if (!examen) {
+      console.error("Supabase no devolvió un ID después de insertar.");
+      return res
+        .status(500)
+        .json({ error: "Error al obtener ID del/de los examen/es." });
+    }
+
+    console.log("Examen visualiazdo", user_id);
+  } catch (error) {
+    console.error("Error general en /api/generate-content:", error);
+    // ... (manejo de error de Gemini como antes) ...
+    res.status(500).json({ error: "Error interno al generar el examen." });
+  }
+};
+
+export const updateAuthExamUser = async (
+  res,
+  user_id,
+  data,
+  tiempo_tomado_segundos,
+  puntaje_porcentaje,
+) => {
+  console.log(user_id);
+  console.log(data);
+};
 export const CreateAuthExamUser = async (
   res,
   user_id,
   titulo,
+  descripcion,
   dato,
   dificultad,
   numero_preguntas,
@@ -11,6 +57,7 @@ export const CreateAuthExamUser = async (
   console.log("Creando examen con:");
   console.log("  user_id:", user_id);
   console.log("  titulo:", titulo);
+  console.log("  descripcion", descripcion);
   console.log("  dato:", dato);
   console.log("  dificultad:", dificultad);
   console.log("  numero_preguntas:", numero_preguntas);
@@ -27,6 +74,7 @@ export const CreateAuthExamUser = async (
       .insert({
         user_id: user_id,
         titulo: titulo,
+        descripcion: descripcion,
         datos: dato,
         dificultad: dificultad,
         numero_preguntas: numero_preguntas,
