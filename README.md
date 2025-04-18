@@ -16,11 +16,13 @@ node --watch src/index.js
 ```
 ## Crea un .env en frontend y backend por separados para el funcionamiento de supabase y gemini
 
+```
 reacti
-  |- frontend /
-    |- .env /
-  |- backend /
-    |- .env /
+  |- frontend 
+    |- .env 
+  |- backend
+    |- .env 
+```
 
 # Frontend
 ```
