@@ -1,59 +1,37 @@
-<<<<<<< HEAD
-# web-unamsitou
-thosnuhonteuhno
-=======
-# React + TypeScript + Vite
+### Muy buenas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```
+git clone -b master https://github.com/Doddieko67/web-unamsitou
+```
+```
+cd frontend
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
 ```
->>>>>>> 1bee2a9 (primero)
+cd backend
+npm install
+node --watch src/index.js
+```
+## Crea un .env en frontend y backend por separados para el funcionamiento de supabase y gemini
+
+reacti
+  |- frontend
+    |- .env
+  |- backend
+    |- .env
+
+# Frontend
+```
+VITE_SUPABASE_URL=https://lazazrhysqbkgmfqdlug.supabase.co
+VITE_SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhemF6cmh5c3Fia2dtZnFkbHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwNTcxMjAsImV4cCI6MjA1OTYzMzEyMH0.vMMn48ulGvMo0RYto44I1dPhUWVZRJ3uH3YpGcjhyys
+```
+
+# Backend
+```
+GEMINI_API_KEY=AIzaSyDz-WYNCd0y1Zycydm1fW9DbL66StkIx38
+SUPABASE_URL=https://lazazrhysqbkgmfqdlug.supabase.co
+PORT=3000
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhemF6cmh5c3Fia2dtZnFkbHVnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDA1NzEyMCwiZXhwIjoyMDU5NjMzMTIwfQ.JUdtsfeXQsqnFnz4D6YEXYQSC8hy4xCdfrmUoqvIu2U
+```
