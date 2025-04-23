@@ -53,6 +53,7 @@ export const CreateAuthExamUser = async (
   dato,
   dificultad,
   numero_preguntas,
+  tiempo_limite_segundos,
 ) => {
   console.log("Creando examen con:");
   console.log("  user_id:", user_id);
@@ -78,6 +79,7 @@ export const CreateAuthExamUser = async (
         datos: dato,
         dificultad: dificultad,
         numero_preguntas: numero_preguntas,
+        tiempo_limite_segundos: tiempo_limite_segundos,
       })
       .select("")
       .single();
