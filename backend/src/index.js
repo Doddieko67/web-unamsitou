@@ -243,7 +243,7 @@ app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
 app.post("/api/generate-content", getUserFromRequest, async (req, res) => {
   try {
     console.log("aqui?");
-    const { prompt, dificultad } = req.body; // Recibe el input del frontend
+    const { prompt, dificultad, tiempo_limite_segundos } = req.body; // Recibe el input del frontend
 
     if (!prompt)
       return res.status(400).json({ error: "Falta el prompt en el body" });
@@ -349,6 +349,7 @@ app.post("/api/generate-content", getUserFromRequest, async (req, res) => {
       examenData.dato,
       dificultad,
       examenData.numero_preguntas,
+      tiempo_limite_segundos,
     );
 
     // Envía la respuesta de vuelta al frontend
