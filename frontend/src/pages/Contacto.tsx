@@ -11,7 +11,7 @@ export function Contacto() {
         </p>
       </div>
 
-      <div class="bg-white rounded-2xl contact-container p-8 text-start">
+      <div className="bg-white rounded-2xl contact-container p-8 text-start">
         <form className="space-y-6">
           <div>
             <label

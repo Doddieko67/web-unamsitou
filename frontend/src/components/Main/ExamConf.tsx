@@ -4,9 +4,9 @@ import { DifficultExam } from "./DifficultExam";
 import { Materias } from "./Materias";
 import { Personalization } from "./Personalization";
 import { QuestionConf } from "./QuestionConf";
-import Swal from "sweetalert2";
 import { useNavigate } from "react-router";
 import { UserAuth } from "../../context/AuthContext";
+import { TimerConf } from "../TimerConf";
 
 // Tipos
 interface Subject {
@@ -65,6 +65,9 @@ export function ExamConf() {
     useState<Difficulty | null>(null);
   const [fineTuning, setFineTuning] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [hour, setHour] = useState<number>(3);
+  const [minute, setMinute] = useState<number>(0);
+  const [second, setSecond] = useState<number>(0);
 
   // --- Handlers ---
 
@@ -137,6 +140,7 @@ export function ExamConf() {
           body: JSON.stringify({
             prompt: promptText,
             dificultad: selectedDifficulty,
+            tiempo_limite_segundos: hour * 3600 + minute * 60 + second,
           }),
         },
       );
@@ -200,10 +204,20 @@ export function ExamConf() {
         onDifficultySelect={handleDifficultySelect}
       />
 
+      <TimerConf
+        hour={hour}
+        setHour={setHour}
+        minute={minute}
+        setMinute={setMinute}
+        second={second}
+        setSecond={setSecond}
+      ></TimerConf>
+
       <Personalization
         fineTuning={fineTuning}
         onFineTuningChange={handleFineTuningChange}
       />
+
       <ExamButton
         onGenerateClick={handleGenerateExam}
         disabled={isGenerateDisabled}
