@@ -14,6 +14,8 @@ interface QuestionSelectorProps {
   onQuestionSelect: (index: number) => void;
   isSubmitted: boolean;
   title: string;
+  pinnedQuestions: { [key: number]: boolean };
+  pinnedMode?: boolean; // New prop to indicate we're in pinned mode
 }
 
 export function QuestionSelector({
@@ -24,15 +26,36 @@ export function QuestionSelector({
   onQuestionSelect,
   isSubmitted,
   title = "Preguntas",
+  pinnedQuestions,
+  pinnedMode = false, // Default to false
 }: QuestionSelectorProps) {
+  // If we're in pinned mode, we'll create a mapping of filtered indices to original indices
+  const pinnedIndices = pinnedMode
+    ? Object.keys(pinnedQuestions)
+        .map(Number)
+        .sort((a, b) => a - b)
+    : [];
+
+  // Get the actual number of questions to display
+  const displayCount = pinnedMode ? pinnedIndices.length : totalQuestions;
+
+  // If there are no pinned questions and we're in pinned mode, don't render anything
+  if (pinnedMode && displayCount === 0) {
+    return null;
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
       <h2 className="text-2xl font-semibold text-gray-700 mb-6">{title}</h2>
       <div className="grid grid-cols-8 gap-2">
-        {Array.from({ length: totalQuestions }).map((_, index) => {
+        {Array.from({ length: displayCount }).map((_, i) => {
+          // If in pinned mode, map the index to the original question index
+          const index = pinnedMode ? pinnedIndices[i] : i;
+
           const isCurrent = index === currentQuestionIndex;
           const isAnswered = answeredQuestions[index] !== undefined;
           let isCorrect = false; // Default to false
+
           if (isSubmitted && isAnswered) {
             const correctAnswer = preguntas[index]?.correcta; // Get correct answer index safely
             isCorrect = answeredQuestions[index] === correctAnswer;
@@ -44,7 +67,7 @@ export function QuestionSelector({
           `;
 
           if (isSubmitted) {
-            // Estilo después de enviar (simplificado, podrías añadir correcto/incorrecto si pasas más datos)
+            // Estilo después de enviar
             buttonClasses += isAnswered
               ? isCorrect
                 ? " bg-green-200 text-green-600 cursor-pointer"
@@ -56,7 +79,10 @@ export function QuestionSelector({
           } else {
             // Estilo antes de enviar
             if (isCurrent) {
-              buttonClasses += " bg-indigo-600 text-white border-indigo-700";
+              buttonClasses +=
+                pinnedQuestions[index] !== undefined
+                  ? " bg-pink-400 text-white border-pink-200"
+                  : " bg-indigo-600 text-white border-indigo-700";
             } else if (isAnswered) {
               buttonClasses +=
                 " bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200";
@@ -67,6 +93,11 @@ export function QuestionSelector({
             buttonClasses += " cursor-pointer";
           }
 
+          // Always add the pink outline for pinned questions
+          if (pinnedQuestions[index] !== undefined) {
+            buttonClasses += " outline-pink-400 outline-2";
+          }
+
           return (
             <button
               key={index}
@@ -75,7 +106,7 @@ export function QuestionSelector({
               onClick={() => onQuestionSelect(index)}
               aria-current={isCurrent ? "page" : undefined}
             >
-              {index + 1}
+              {index + 1} {/* Display original question number */}
             </button>
           );
         })}

@@ -617,6 +617,32 @@ export function ExamenPage() {
                 </div>
               </div>
 
+              {/* Claudeee, aqui quiero que filtres questionSelector solo para preguntas fijadas, mira
+                <QuestionSelector
+                  totalQuestions={preguntas.length}
+                  currentQuestionIndex={currentQuestionIndex}
+                  answeredQuestions={userAnswers}
+                  preguntas={preguntas}
+                  onQuestionSelect={handleQuestionSelect}
+                  isSubmitted={isSubmitted}
+                  title={"Fijados"}
+                  pinnedQuestions={pinnedQuestions}
+                />
+                */}
+              {Object.keys(pinnedQuestions).length > 0 && (
+                <QuestionSelector
+                  totalQuestions={preguntas.length}
+                  currentQuestionIndex={currentQuestionIndex}
+                  answeredQuestions={userAnswers}
+                  preguntas={preguntas}
+                  onQuestionSelect={handleQuestionSelect}
+                  isSubmitted={isSubmitted}
+                  title={"Fijados"}
+                  pinnedQuestions={pinnedQuestions}
+                  pinnedMode={true}
+                />
+              )}
+
               <QuestionSelector
                 totalQuestions={preguntas.length}
                 currentQuestionIndex={currentQuestionIndex}
@@ -625,6 +651,7 @@ export function ExamenPage() {
                 onQuestionSelect={handleQuestionSelect}
                 isSubmitted={isSubmitted}
                 title={"Preguntas"}
+                pinnedQuestions={pinnedQuestions}
               />
             </div>
 
