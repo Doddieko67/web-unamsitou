@@ -6,6 +6,7 @@ import { Personalization } from "./Main/Personalization";
 import { UserAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
 import Swal from "sweetalert2";
+import { TimerConf } from "./TimerConf";
 
 // Tipo para la dificultad (puede ser null si quieres un estado inicial sin selección)
 // type GeneralDifficulty = "mixed" | "easy" | "medium" | "hard";
@@ -19,6 +20,9 @@ export function ExamQuestions() {
   const [fineTuning, setFineTuning] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
   const { session } = UserAuth();
+  const [hour, setHour] = useState<number>(3);
+  const [minute, setMinute] = useState<number>(0);
+  const [second, setSecond] = useState<number>(0);
 
   // --- Handlers ---
   const handleDeleteFile = (indexToDelete: number) => {
@@ -323,6 +327,14 @@ export function ExamQuestions() {
           onChange={handleTextChange}
         ></textarea>
       </div>
+      <TimerConf
+        hour={hour}
+        setHour={setHour}
+        minute={minute}
+        setMinute={setMinute}
+        second={second}
+        setSecond={setSecond}
+      ></TimerConf>
       <Personalization
         fineTuning={fineTuning}
         onFineTuningChange={handleFineTuningChange}

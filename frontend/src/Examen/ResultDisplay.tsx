@@ -1,5 +1,4 @@
 // src/components/ResultsDisplay.tsx (Potentially modify)
-import React from "react";
 
 interface Resultados {
   correctas: number;

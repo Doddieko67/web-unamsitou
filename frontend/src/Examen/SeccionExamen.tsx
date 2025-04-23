@@ -3,21 +3,31 @@ interface Pregunta {
   pregunta: string;
   opciones: string[];
   correcta: number;
+  respuesta?: number;
+  feedback?: string;
 }
 
 interface SeccionExamenProps {
-  pregunta: Pregunta; // La pregunta actual a mostrar
-  questionIndex: number; // El índice de esta pregunta
+  pregunta: Pregunta;
+  questionIndex: number;
   totalQuestions: number;
-  selectedAnswer: number | undefined; // El índice de la respuesta seleccionada por el usuario para ESTA pregunta
-  onAnswerSelect: (questionIndex: number, optionIndex: number) => void; // Función para registrar la respuesta
-  onPrevious: () => void; // Función para ir a la anterior
-  onNext: () => void; // Función para ir a la siguiente
-  onFinalize: () => void; // Función para finalizar desde el botón de la última pregunta
-  isSubmitted: boolean; // Indica si el examen ya fue enviado
-  // Pasamos todas las respuestas y preguntas para mostrar feedback correcto/incorrecto
+  selectedAnswer: number | undefined;
+  onAnswerSelect: (questionIndex: number, optionIndex: number) => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  onFinalize: () => void;
+  isSubmitted: boolean;
   userAnswers: { [key: number]: number };
   preguntas: Pregunta[];
+  habilitarBotones: boolean; // Clave para el colapso
+  mostrarLista: boolean;
+  mostrarEncabezado: boolean;
+  onPinToggle: (questionIndex: number) => void;
+  isCurrentQuestionPinned: boolean;
+  mostrarBandera?: boolean;
+  handleScrollToQuestion?: (questionIndex: number) => void;
+  onScrollToPreview?: ((questionIndex: number) => void) | null;
+  id?: string;
 }
 
 export function SeccionExamen({
@@ -30,138 +40,259 @@ export function SeccionExamen({
   onNext,
   onFinalize,
   isSubmitted,
-  userAnswers, // Usado para mostrar feedback
-  preguntas, // Usado para saber la correcta
+  userAnswers,
+  preguntas,
+  habilitarBotones, // Usaremos este prop directamente
+  mostrarLista = true,
+  mostrarEncabezado = true,
+  onPinToggle,
+  isCurrentQuestionPinned,
+  mostrarBandera = true,
+  handleScrollToQuestion = () => {},
+  onScrollToPreview = null,
+  id = "",
 }: SeccionExamenProps) {
-  const letras = ["A", "B", "C", "D"]; // Asegúrate de tener suficientes letras
+  const letras = ["A", "B", "C", "D"];
+  const defaultFeedback = "Hola, muy buenas, has crackedo, muy bueno :)";
 
-  // --- Clases Dinámicas para Opciones (similar a antes, pero usa props) ---
+  // --- Clases para las Opciones ---
   const getOptionClassName = (opcionIndex: number): string => {
     const baseClasses =
-      "p-3 border rounded-lg transition-all duration-200 flex items-center text-sm sm:text-base";
-    const hoverClass = !isSubmitted
-      ? "hover:bg-indigo-50 hover:border-indigo-300 cursor-pointer"
-      : "cursor-default";
+      "p-3 border rounded-lg flex items-center text-sm sm:text-base transition-colors duration-200"; // Quitado transition-all y efectos hover complejos
     let stateClasses = "border-gray-200";
+    let interactionClasses = ""; // Clases de hover/cursor
 
     const isSelected = selectedAnswer === opcionIndex;
 
     if (isSubmitted) {
+      // Lógica post-envío (sin cambios)
       const userAnswerForThisQuestion = userAnswers[questionIndex];
       const isActuallyCorrect =
-        preguntas[questionIndex].correcta === opcionIndex; // Verifica contra el array completo
-
+        preguntas[questionIndex].correcta === opcionIndex;
       if (isActuallyCorrect) {
         stateClasses =
-          "bg-green-100 border-green-400 text-green-800 font-medium"; // Correcta (siempre verde)
+          "bg-green-100 border-green-400 text-green-800 font-medium";
       } else if (
         userAnswerForThisQuestion === opcionIndex &&
         !isActuallyCorrect
       ) {
-        stateClasses = "bg-red-100 border-red-400 text-red-800"; // Incorrecta seleccionada (rojo)
+        stateClasses = "bg-red-100 border-red-400 text-red-800";
       } else {
-        stateClasses = "bg-gray-50 border-gray-200 text-gray-500 line-through"; // No seleccionada e incorrecta (gris/tachado)
+        stateClasses = "bg-gray-50 border-gray-200 text-gray-500 line-through";
       }
-    } else if (isSelected) {
-      stateClasses = "bg-indigo-100 border-indigo-400 font-medium"; // Seleccionada antes de enviar
+      // No hay interacción hover/click después de enviar
+    } else if (habilitarBotones) {
+      // Lógica ANTES de enviar (SI botones habilitados)
+      interactionClasses =
+        "hover:bg-indigo-50 hover:border-indigo-300 cursor-pointer"; // Permite hover y cursor
+      if (isSelected) {
+        stateClasses = "bg-indigo-50 border-indigo-300 font-medium";
+      } else {
+        stateClasses += "bg-white border-gray-300"; // Estilo normal seleccionable
+      }
+    } else {
+      // Lógica ANTES de enviar (SI botones DEShabilitados - modo solo lectura)
+      stateClasses = "bg-gray-50 border-gray-200 text-gray-600"; // Estilo neutro, no interactivo
+      if (isSelected) {
+        stateClasses = "bg-indigo-50 border-indigo-300 font-medium";
+      } else {
+        stateClasses += "bg-white border-gray-300"; // Estilo normal seleccionable
+      }
+      // No hay interactionClasses
     }
 
-    return `${baseClasses} ${hoverClass} ${stateClasses}`;
+    return `${baseClasses} ${stateClasses} ${interactionClasses}`;
   };
 
+  const getResponseClassName = () => {
+    let buttonClasses = `bg-gray-100 text-gray-400 cursor-pointer hover:bg-gray-200`;
+    const isAnswered = userAnswers[questionIndex] !== undefined;
+    if (isAnswered)
+      buttonClasses =
+        " bg-indigo-100 text-indigo-600 cursor-pointer hover:bg-indigo-50";
+    if (isCurrentQuestionPinned)
+      buttonClasses =
+        " bg-pink-100 text-pink-600 cursor-pointer hover:bg-pink-200";
+    if (!isSubmitted) return buttonClasses;
+    let isCorrect = false; // Default to false
+    if (isSubmitted && isAnswered) {
+      const correctAnswer = pregunta?.correcta; // Get correct answer index safely
+      isCorrect = selectedAnswer === correctAnswer;
+    }
+
+    if (isSubmitted) {
+      // Estilo después de enviar (simplificado, podrías añadir correcto/incorrecto si pasas más datos)
+      buttonClasses = isAnswered
+        ? isCorrect
+          ? " bg-green-100 text-green-600 cursor-pointer hover:bg-green-200"
+          : " bg-red-100 text-red-600 cursor-pointer hover:bg-red-200"
+        : isCurrentQuestionPinned
+          ? " bg-pink-100 text-pink-600 cursor-pointer hover:bg-pink-200"
+          : " bg-gray-100 text-gray-400 cursor-pointer hover:bg-gray-200";
+    }
+
+    return buttonClasses;
+  };
+  // Determina si se puede hacer clic en una opción
+  const canSelectOption = habilitarBotones && !isSubmitted;
+
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden">
-      <div className="p-4 sm:p-6">
-        <div className="question-item mb-6 p-4 border-l-4 border-indigo-300">
-          {/* Encabezado de la Pregunta */}
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-800">
-              Pregunta {questionIndex + 1}
-            </h3>
-            {/* Podrías añadir categoría aquí si existiera */}
-          </div>
-
-          {/* Texto de la Pregunta */}
-          <p className="text-gray-700 mb-6 text-base sm:text-lg">
-            {pregunta.pregunta}
-          </p>
-
-          {/* Opciones */}
-          <div className="space-y-3">
-            {pregunta.opciones.map((opcion, opcionIndex) => (
-              <div
-                key={opcionIndex}
-                className={getOptionClassName(opcionIndex)}
-                onClick={() =>
-                  !isSubmitted && onAnswerSelect(questionIndex, opcionIndex)
-                }
-              >
-                <div className="w-6 h-6 rounded-full border border-current mr-3 flex items-center justify-center text-sm font-medium flex-shrink-0">
-                  <span>{letras[opcionIndex]}</span>
-                </div>
-                <span className="flex-grow">{opcion}</span>
-                {/* Iconos de Feedback */}
-                {isSubmitted && (
-                  <>
-                    {preguntas[questionIndex].correcta === opcionIndex && (
-                      <i className="fas fa-check text-green-600 ml-3 flex-shrink-0"></i>
-                    )}
-                    {userAnswers[questionIndex] === opcionIndex &&
-                      preguntas[questionIndex].correcta !== opcionIndex && (
-                        <i className="fas fa-times text-red-600 ml-3 flex-shrink-0"></i>
-                      )}
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Navegación y Finalizar */}
-        <div className="border-t border-gray-200 pt-6 flex justify-between items-center">
+    // Contenedor principal de la tarjeta
+    <div
+      className={`bg-white rounded-xl shadow-md overflow-hidden transition-all`}
+    >
+      {mostrarBandera && (
+        <div className="flex justify-end">
           <button
-            onClick={onPrevious}
-            disabled={questionIndex === 0 || isSubmitted}
-            className={`px-3 sm:px-4 py-2 rounded-lg font-medium flex items-center text-xs sm:text-sm ${
-              questionIndex === 0 || isSubmitted
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+            className={`border-2 absolute p-2 mr-2 mt-2 cursor-pointer hover:opacity-90 transition-all ease-out delay-100 rounded-md opacity-50 text-xs ${isCurrentQuestionPinned ? "text-pink-600 bg-pink-200 border-pink-500" : "text-gray-600 bg-gray-200 border-gray-500"}`}
+            onClick={() => onPinToggle(questionIndex)}
           >
-            <i className="fas fa-arrow-left mr-1 sm:mr-2"></i> Anterior
+            <i className="fa-solid fa-font-awesome fa-2xl"></i>
           </button>
-
-          {/* Indicador de Pregunta Actual */}
-          <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
-            Pregunta {questionIndex + 1} / {totalQuestions}
-          </span>
-
-          {questionIndex === totalQuestions - 1 ? (
-            // Botón Finalizar en la última pregunta (solo si no se ha enviado)
-            !isSubmitted && (
-              <button
-                onClick={onFinalize}
-                className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-green-700 flex items-center text-xs sm:text-sm"
-                // Opcional: Deshabilitar si no todas están respondidas
-                // disabled={Object.keys(userAnswers).length !== totalQuestions}
-              >
-                Finalizar <i className="fas fa-check ml-1 sm:ml-2"></i>
-              </button>
-            )
-          ) : (
-            // Botón Siguiente
-            <button
-              onClick={onNext}
-              disabled={isSubmitted}
-              className={`bg-indigo-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 flex items-center text-xs sm:text-sm ${
-                isSubmitted ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              Siguiente <i className="fas fa-arrow-right ml-1 sm:ml-2"></i>
-            </button>
-          )}
         </div>
-      </div>
-    </div>
+      )}
+      {mostrarEncabezado && (
+        <div
+          className={`p-4 sm:p-6 border-l-4 border-indigo-300 transition-all delay-100 ${getResponseClassName()} ${mostrarLista === false && "max-h-[200px]"}`}
+          id={id}
+          onClick={() =>
+            onScrollToPreview === null
+              ? handleScrollToQuestion(questionIndex)
+              : onScrollToPreview(questionIndex)
+          }
+        >
+          <div className="flex justify-between items-center">
+            {" "}
+            {/* items-center para alinear icono */}
+            {/* Info Pregunta */}
+            <div className="flex-grow mr-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-1">
+                Pregunta {questionIndex + 1}
+                <span className="text-xs sm:text-sm text-gray-500 sm:inline">
+                  {" "}
+                  {/* Espacio */} / {totalQuestions}
+                </span>
+              </h3>
+              <p className="text-gray-700 text-base sm:text-lg line-clamp-3">
+                {" "}
+                {/* line-clamp por si acaso */}
+                {pregunta.pregunta}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ----- CUERPO COLAPSABLE (Contiene Opciones y Feedback) ----- */}
+      {mostrarLista && (
+        <div>
+          {/* Contenedor Interno para medir altura con Ref */}
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+            {" "}
+            {/* Ajustado padding (pt-2 para separar un poco del header) */}
+            {/* ---- Sección de Opciones y Botones Laterales ---- */}
+            <div className="flex flex-row space-x-4 my-4">
+              {/* Botón Anterior (Condicional) */}
+              {habilitarBotones && (
+                <button
+                  onClick={onPrevious}
+                  disabled={questionIndex === 0}
+                  className={`px-3 sm:px-4 py-2 rounded-lg w-14 hover:scale-105 hover:w-16 hover:translate-x-1 transition-all duration-200 font-medium block text-xs sm:text-sm ${
+                    questionIndex === 0
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <i className="fas fa-arrow-left"></i>
+                </button>
+              )}
+
+              {/* Contenedor de Opciones */}
+              {/* Usamos w-full siempre, pero si no hay botones, el layout se ajusta */}
+              <div className="space-y-3 w-full">
+                {pregunta.opciones.map((opcion, opcionIndex) => (
+                  <div
+                    key={opcionIndex}
+                    className={getOptionClassName(opcionIndex)}
+                    onClick={() =>
+                      canSelectOption &&
+                      onAnswerSelect(questionIndex, opcionIndex)
+                    } // Solo permite seleccionar si canSelectOption es true
+                  >
+                    <div className="w-6 h-6 rounded-full border border-current mr-3 flex items-center justify-center text-sm font-medium flex-shrink-0">
+                      <span>{letras[opcionIndex]}</span>
+                    </div>
+                    <span className="flex-grow">{opcion}</span>
+                    {/* Iconos de Feedback Correcto/Incorrecto (Post-Submit) */}
+                    {isSubmitted && (
+                      <>
+                        {preguntas[questionIndex].correcta === opcionIndex && (
+                          <i className="fas fa-check text-green-600 ml-3 flex-shrink-0"></i>
+                        )}
+                        {userAnswers[questionIndex] === opcionIndex &&
+                          preguntas[questionIndex].correcta !== opcionIndex && (
+                            <i className="fas fa-times text-red-600 ml-3 flex-shrink-0"></i>
+                          )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Botón Siguiente/Finalizar (Condicional) */}
+              {habilitarBotones && (
+                <>
+                  {questionIndex === totalQuestions - 1 ? (
+                    !isSubmitted ? (
+                      <button
+                        onClick={onFinalize}
+                        className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-green-700 flex items-center text-xs sm:text-sm hover:scale-105 hover:-translate-x-1 transition-all duration-200"
+                      >
+                        Finalizar <i className="fas fa-check ml-1 sm:ml-2"></i>
+                      </button>
+                    ) : (
+                      // Si es la última y ya se envió, podemos mostrar un botón deshabilitado o nada
+                      // Mostremos uno deshabilitado para consistencia de layout
+                      <button
+                        className={`block text-gray-400 bg-gray-100 px-3 sm:px-4 py-2 rounded-lg font-medium w-14 transition-all duration-200 text-xs sm:text-sm cursor-not-allowed`}
+                        disabled={true}
+                      >
+                        <i className="fas fa-arrow-right"></i>
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      onClick={onNext}
+                      className={`block bg-indigo-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-indigo-400 w-14 hover:scale-105 hover:w-16 hover:-translate-x-1 transition-all duration-200 text-xs sm:text-sm `}
+                    >
+                      <i className="fas fa-arrow-right"></i>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>{" "}
+            {/* Fin de flex-row (opciones y botones laterales) */}
+            {/* ---- Sección de Feedback (si isSubmitted) ---- */}
+            {isSubmitted && (
+              <div className="overflow-hidden rounded-lg bg-yellow-100 text-yellow-800 shadow-lg text-start">
+                {/* Contenido colapsable con max-height animado */}
+                <div className="ml-2 overflow-hidden">
+                  {/* Contenedor del contenido real para padding y ref */}
+                  <div className="p-2">
+                    {" "}
+                    {/* El ref va aquí */}
+                    <p className={`${!mostrarEncabezado && "text-[0.55em]"}`}>
+                      {pregunta.feedback || defaultFeedback}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Fin de isSubmitted */}
+          </div>
+          {/* Fin del div con ref={bodyContentRef} */}
+        </div>
+      )}
+      {/* Fin del div colapsable principal */}
+    </div> // Fin del contenedor principal de la tarjeta
   );
 }

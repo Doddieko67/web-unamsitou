@@ -9,6 +9,20 @@ export function QuestionConf({
   questionCount,
   onQuestionCountChange,
 }: QuestionConfProps) {
+  const handleIncrement = () => {
+    // Primero, verifica que no excedas el máximo permitido
+    if (questionCount < 128) {
+      onQuestionCountChange(questionCount + 1); // Incrementa el valor
+    }
+  };
+
+  const handleDecrement = () => {
+    // Primero, verifica que no bajes el mínimo permitido
+    if (questionCount > 5) {
+      onQuestionCountChange(questionCount - 1); // Decrementa el valor
+    }
+  };
+
   return (
     <div className="mb-8">
       <h3 className="text-lg font-medium text-gray-700 mb-4">
@@ -25,16 +39,15 @@ export function QuestionConf({
         </p>
       </div> */}
 
-      <div className="flex items-center bg-gray-50 p-4 rounded-lg">
+      <div className="flex items-center bg-indigo-50 p-4 rounded-lg">
         <label
           htmlFor="total-questions-slider"
-          className="block text-sm font-medium text-gray-700 mr-4 whitespace-nowrap"
+          className="block text-sm font-medium text-indigo-700 mr-4 whitespace-nowrap"
         >
           Total de preguntas:
         </label>
         <div className="flex-1 mx-4">
           <input
-            id="total-questions-slider"
             type="range"
             min="5"
             max="128"
@@ -42,19 +55,34 @@ export function QuestionConf({
             value={questionCount}
             // Llama a la función del padre cuando el valor cambia
             onChange={(e) => onQuestionCountChange(Number(e.target.value))}
-            className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer range-lg accent-indigo-600" // Usar accent color
+            className="slider w-full h-2 bg-indigo-300 rounded-lg appearance-none cursor-pointer range-lg accent-indigo-600" // Usar accent color
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-indigo-500 mt-1">
             <span>5</span>
             <span>128</span>
           </div>
         </div>
-        <span
-          className="ml-4 text-indigo-700 font-bold text-lg w-12 text-center bg-indigo-100 px-2 py-1 rounded"
-          id="total-questions-value"
-        >
-          {questionCount}
-        </span>
+        <button onClick={handleDecrement}>
+          <i className="fas fa-minus ml-4 mr-1 text-indigo-700 fa-lg px-3 py-4 rounded bg-indigo-100"></i>
+        </button>
+        <input
+          type="text"
+          className="text-indigo-700 font-bold border-indigo-400 focus:border-indigo-300 focus:outline focus:outline-indigo-400 text-lg w-12 text-center bg-indigo-100 px-2 py-1 rounded"
+          value={questionCount}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            if (!isNaN(value) && 0 < value && value < 128) {
+              // isNaN(value) es true si value NO es un número
+              onQuestionCountChange(value);
+            } else {
+              // Si no es un número, reseteamos el valor al anterior o a un valor por defecto (ej: 0)
+              onQuestionCountChange(0); // O cualquier valor predeterminado
+            }
+          }}
+        ></input>
+        <button onClick={handleIncrement}>
+          <i className="fas fa-plus ml-1 text-indigo-700 fa-lg px-3 py-4 rounded bg-indigo-100"></i>
+        </button>
       </div>
     </div>
   );

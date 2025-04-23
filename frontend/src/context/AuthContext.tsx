@@ -343,10 +343,6 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
         const currentPath = window.location.pathname;
         const publicRoutes = ["/login", "/signup", "/reset-password"]; // Rutas públicas permitidas
 
-        if (event === "SIGNED_IN" && session) {
-          console.log("Usuario acaba de iniciar sesión. Redirigiendo a /");
-          navigate("/", { replace: true }); // <--- ¡Redirige a la página principal! Cambia '/' si quieres ir a otro lado.
-        }
         if (
           (event === "SIGNED_OUT" || session === null) &&
           !publicRoutes.includes(currentPath)

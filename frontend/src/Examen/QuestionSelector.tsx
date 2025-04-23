@@ -1,25 +1,42 @@
+interface Pregunta {
+  id: number;
+  pregunta: string;
+  opciones: string[];
+  correcta: number;
+  respuesta?: number;
+}
+
 interface QuestionSelectorProps {
   totalQuestions: number;
   currentQuestionIndex: number;
   answeredQuestions: { [key: number]: number }; // Para saber cuáles están respondidas
+  preguntas: Pregunta[]; // Array de preguntas
   onQuestionSelect: (index: number) => void;
   isSubmitted: boolean;
+  title: string;
 }
 
 export function QuestionSelector({
   totalQuestions,
   currentQuestionIndex,
   answeredQuestions,
+  preguntas,
   onQuestionSelect,
   isSubmitted,
+  title = "Preguntas",
 }: QuestionSelectorProps) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-lg font-semibold text-gray-700 mb-4">Preguntas</h2>
-      <div className="grid grid-cols-20 gap-2">
+      <h2 className="text-2xl font-semibold text-gray-700 mb-6">{title}</h2>
+      <div className="grid grid-cols-8 gap-2">
         {Array.from({ length: totalQuestions }).map((_, index) => {
           const isCurrent = index === currentQuestionIndex;
           const isAnswered = answeredQuestions[index] !== undefined;
+          let isCorrect = false; // Default to false
+          if (isSubmitted && isAnswered) {
+            const correctAnswer = preguntas[index]?.correcta; // Get correct answer index safely
+            isCorrect = answeredQuestions[index] === correctAnswer;
+          }
 
           let buttonClasses = `
             p-2 rounded border text-center font-medium text-sm transition-colors duration-150
@@ -29,8 +46,10 @@ export function QuestionSelector({
           if (isSubmitted) {
             // Estilo después de enviar (simplificado, podrías añadir correcto/incorrecto si pasas más datos)
             buttonClasses += isAnswered
-              ? " bg-gray-200 text-gray-600 cursor-default"
-              : " bg-gray-100 text-gray-400 cursor-default";
+              ? isCorrect
+                ? " bg-green-200 text-green-600 cursor-pointer"
+                : " bg-red-200 text-red-600 cursor-pointer"
+              : " bg-gray-100 text-gray-400 cursor-pointer";
             if (isCurrent) {
               buttonClasses += " ring-2 ring-gray-400"; // Resaltar actual incluso después de enviar
             }
@@ -53,20 +72,14 @@ export function QuestionSelector({
               key={index}
               type="button"
               className={buttonClasses}
-              onClick={() => !isSubmitted && onQuestionSelect(index)}
+              onClick={() => onQuestionSelect(index)}
               aria-current={isCurrent ? "page" : undefined}
-              disabled={isSubmitted}
             >
               {index + 1}
             </button>
           );
         })}
       </div>
-      {isSubmitted && (
-        <p className="text-xs text-gray-500 mt-3 text-center">
-          Examen finalizado. Navegación desactivada.
-        </p>
-      )}
     </div>
   );
 }

@@ -296,3 +296,39 @@ textarea {
         opacity: 0;
     }
 }
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    background: #04aa6d;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 25px; /* Set a specific slider handle width */
+    height: 25px; /* Slider handle height */
+    background: #6366f1; /* Green background */
+    cursor: pointer; /* Cursor on hover */
+    border: #4f46e5;
+}
+
+/* Añade estos estilos a tu archivo CSS */
+
+@keyframes pulse-outline {
+    0% {
+        background-color: rgba(234, 218, 255, 0.8);
+    }
+    50% {
+        background-color: rgba(234, 218, 255, 0.2);
+    }
+    100% {
+        background-color: rgba(234, 218, 255, 0.8);
+    }
+}
+
+.outline-pulse-repeated {
+    animation: pulse-outline 0.5s ease-in-out;
+    animation-iteration-count: 5; /* Repetir 5 veces */
+}
