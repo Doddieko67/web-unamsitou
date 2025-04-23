@@ -107,12 +107,12 @@ export function SeccionExamen({
   const getResponseClassName = () => {
     let buttonClasses = `bg-gray-100 text-gray-400 cursor-pointer hover:bg-gray-200`;
     const isAnswered = userAnswers[questionIndex] !== undefined;
-    if (isAnswered)
-      buttonClasses =
-        " bg-indigo-100 text-indigo-600 cursor-pointer hover:bg-indigo-50";
     if (isCurrentQuestionPinned)
       buttonClasses =
         " bg-pink-100 text-pink-600 cursor-pointer hover:bg-pink-200";
+    if (isAnswered)
+      buttonClasses =
+        " bg-indigo-100 text-indigo-600 cursor-pointer hover:bg-indigo-50";
     if (!isSubmitted) return buttonClasses;
     let isCorrect = false; // Default to false
     if (isSubmitted && isAnswered) {
