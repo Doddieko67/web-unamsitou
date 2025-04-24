@@ -26,6 +26,7 @@ interface PreviewableSeccionExamenProps {
   handleScrollToQuestion: (questionIndex: number) => void;
   directed?: boolean;
   id?: string;
+  indexGrid: number;
 }
 
 // Umbral en píxeles desde el borde superior del viewport.
@@ -44,6 +45,7 @@ export function PreviewableSeccionExamen({
   isThisPinned,
   handleScrollToQuestion,
   id = "",
+  indexGrid = 0,
 }: PreviewableSeccionExamenProps) {
   const [showPreviewBelow, setShowPreviewBelow] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ export function PreviewableSeccionExamen({
   };
 
   // --- Construcción dinámica de clases ---
-  const isEvenIndex = index % 2 === 0; // Columna 1 (izquierda)
+  const isEvenIndex = indexGrid % 2 === 0; // Columna 1 (izquierda)
 
   const basePreviewClasses = `
     absolute z-10 w-full max-w-md /* Añadido max-width para evitar que sea gigante */

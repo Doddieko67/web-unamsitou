@@ -1,3 +1,5 @@
+import Swal from "sweetalert2";
+
 interface Pregunta {
   id: number;
   pregunta: string;
@@ -244,7 +246,23 @@ export function SeccionExamen({
                   {questionIndex === totalQuestions - 1 ? (
                     !isSubmitted ? (
                       <button
-                        onClick={onFinalize}
+                        onClick={async () => {
+                          const confirmar = await Swal.fire({
+                            title: "¿Estás seguro?",
+                            text: "Una vez terminado, no podrás cambiar tus respuestas.",
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonColor: "#3085d6",
+                            cancelButtonColor: "#d33",
+                            confirmButtonText: "Sí, terminar examen",
+                            cancelButtonText: "Cancelar",
+                          }).then((result) => {
+                            return result.isConfirmed;
+                          });
+
+                          if (!confirmar) return; // Si el usuario cancela, salir
+                          onFinalize();
+                        }}
                         className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-green-700 flex items-center text-xs sm:text-sm hover:scale-105 hover:-translate-x-1 transition-all duration-200"
                       >
                         Finalizar <i className="fas fa-check ml-1 sm:ml-2"></i>
