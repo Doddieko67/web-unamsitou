@@ -1,15 +1,16 @@
 import Swal from "sweetalert2";
 
 interface Pregunta {
-  id: number;
+  id?: number;
   pregunta: string;
-  opciones: string[];
-  correcta: number;
+  opciones?: string[];
+  correcta?: number;
   respuesta?: number;
   feedback?: string;
 }
 
 interface SeccionExamenProps {
+  feedback?: string;
   pregunta: Pregunta;
   questionIndex: number;
   totalQuestions: number;
@@ -33,6 +34,7 @@ interface SeccionExamenProps {
 }
 
 export function SeccionExamen({
+  feedback = undefined,
   pregunta,
   questionIndex,
   totalQuestions,
@@ -55,16 +57,20 @@ export function SeccionExamen({
   id = "",
 }: SeccionExamenProps) {
   const letras = ["A", "B", "C", "D"];
-  const defaultFeedback = "Hola, muy buenas, has crackedo, muy bueno :)";
 
   // --- Clases para las Opciones ---
   const getOptionClassName = (opcionIndex: number): string => {
     const baseClasses =
-      "p-3 border rounded-lg flex items-center text-sm sm:text-base transition-colors duration-200"; // Quitado transition-all y efectos hover complejos
+      "p-3 border rounded-lg flex items-center text-sm sm:text-base transition-all duration-200 hover:-translate-x-1"; // Quitado transition-all y efectos hover complejos
     let stateClasses = "border-gray-200";
     let interactionClasses = ""; // Clases de hover/cursor
 
     const isSelected = selectedAnswer === opcionIndex;
+
+    if (pregunta.id === undefined) {
+      habilitarBotones = false;
+      mostrarLista = false;
+    }
 
     if (isSubmitted) {
       // Lógica post-envío (sin cambios)
@@ -122,7 +128,10 @@ export function SeccionExamen({
       isCorrect = selectedAnswer === correctAnswer;
     }
 
-    if (isSubmitted) {
+    if (pregunta.id === undefined) {
+      buttonClasses =
+        " bg-purple-100 text-purple-600 cursor-pointer hover:bg-purple-200";
+    } else if (isSubmitted) {
       // Estilo después de enviar (simplificado, podrías añadir correcto/incorrecto si pasas más datos)
       buttonClasses = isAnswered
         ? isCorrect
@@ -141,7 +150,7 @@ export function SeccionExamen({
   return (
     // Contenedor principal de la tarjeta
     <div
-      className={`bg-white rounded-xl shadow-md overflow-hidden transition-all`}
+      className={`bg-white rounded-xl shadow-md overflow-hidden transition-all `}
     >
       {mostrarBandera && (
         <div className="flex justify-end">
@@ -155,7 +164,7 @@ export function SeccionExamen({
       )}
       {mostrarEncabezado && (
         <div
-          className={`p-4 sm:p-6 border-l-4 border-indigo-300 transition-all delay-100 ${getResponseClassName()} ${mostrarLista === false && "max-h-[200px]"}`}
+          className={`p-4 sm:p-6 border-l-4 border-indigo-300 transition-all delay-100 ${getResponseClassName()} h-full`}
           id={id}
           onClick={() =>
             onScrollToPreview === null
@@ -168,14 +177,18 @@ export function SeccionExamen({
             {/* items-center para alinear icono */}
             {/* Info Pregunta */}
             <div className="flex-grow mr-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-1">
-                Pregunta {questionIndex + 1}
-                <span className="text-xs sm:text-sm text-gray-500 sm:inline">
-                  {" "}
-                  {/* Espacio */} / {totalQuestions}
-                </span>
-              </h3>
-              <p className="text-gray-700 text-base sm:text-lg line-clamp-3">
+              {pregunta.id !== undefined && (
+                <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-1">
+                  {pregunta.id}
+                  <span className="text-xs sm:text-sm text-gray-500 sm:inline">
+                    {" "}
+                    {/* Espacio */} / {preguntas[preguntas.length - 1].id}
+                  </span>
+                </h3>
+              )}
+              <p
+                className={`text-gray-700 text-base sm:text-lg ${mostrarLista === false && "line-clamp-3"}`}
+              >
                 {" "}
                 {/* line-clamp por si acaso */}
                 {pregunta.pregunta}
@@ -211,10 +224,10 @@ export function SeccionExamen({
               {/* Contenedor de Opciones */}
               {/* Usamos w-full siempre, pero si no hay botones, el layout se ajusta */}
               <div className="space-y-3 w-full">
-                {pregunta.opciones.map((opcion, opcionIndex) => (
+                {pregunta.opciones?.map((opcion, opcionIndex) => (
                   <div
                     key={opcionIndex}
-                    className={getOptionClassName(opcionIndex)}
+                    className={`${getOptionClassName(opcionIndex)}`}
                     onClick={() =>
                       canSelectOption &&
                       onAnswerSelect(questionIndex, opcionIndex)
@@ -290,21 +303,23 @@ export function SeccionExamen({
             </div>{" "}
             {/* Fin de flex-row (opciones y botones laterales) */}
             {/* ---- Sección de Feedback (si isSubmitted) ---- */}
-            {isSubmitted && (
-              <div className="overflow-hidden rounded-lg bg-yellow-100 text-yellow-800 shadow-lg text-start">
-                {/* Contenido colapsable con max-height animado */}
-                <div className="ml-2 overflow-hidden">
-                  {/* Contenedor del contenido real para padding y ref */}
-                  <div className="p-2">
-                    {" "}
-                    {/* El ref va aquí */}
-                    <p className={`${!mostrarEncabezado && "text-[0.55em]"}`}>
-                      {pregunta.feedback || defaultFeedback}
-                    </p>
+            {isSubmitted &&
+              feedback !== undefined &&
+              feedback !== "undefined" && (
+                <div className="overflow-hidden rounded-lg bg-yellow-100 text-yellow-800 shadow-lg text-start">
+                  {/* Contenido colapsable con max-height animado */}
+                  <div className="ml-2 overflow-hidden">
+                    {/* Contenedor del contenido real para padding y ref */}
+                    <div className="p-2">
+                      {" "}
+                      {/* El ref va aquí */}
+                      <p className={`${!mostrarEncabezado && "text-[0.55em]"}`}>
+                        {feedback}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
             {/* Fin de isSubmitted */}
           </div>
           {/* Fin del div con ref={bodyContentRef} */}

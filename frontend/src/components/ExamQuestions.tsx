@@ -115,48 +115,22 @@ export function ExamQuestions() {
       }
 
       formData.append("prompt", promptText);
+      formData.append(
+        "tiempo_limite_segundos",
+        (hour * 3600 + minute * 60 + second).toString(),
+      );
       requestBody = formData;
       console.log(requestBody);
     }
     console.log("Preparando JSON para texto...");
 
-    // Configure Toast without a timer
-    const Toast = Swal.mixin({
-      toast: true,
-      position: "top-end",
-      showConfirmButton: false,
-      // timer: 3000,  Remove the timer
-      // timerProgressBar: true, // Remove the progress bar
-      didOpen: (toast) => {
-        toast.addEventListener("mouseenter", Swal.stopTimer);
-        toast.addEventListener("mouseleave", Swal.resumeTimer);
-      },
-    });
-    Toast.fire({
-      html: `<span className="loader"></span>`,
-      title: "Generando el examen",
-      allowOutsideClick: false, // Prevent closing by clicking outside
-      stopKeydownPropagation: false, // Prevent keydown events from propagating
-      //allowEscapeKey: false, // To disable ESC key, it requires stopKeydownPropagation be false
-    });
     try {
-      const response = await fetch("http://localhost:3000/api/upload_files", {
+      let response = await fetch("http://localhost:3000/api/upload_files", {
         method: "POST",
         headers: {
           authorization: `Bearer ${session && session.access_token}`,
         },
         body: requestBody,
-      });
-      const Toast = Swal.mixin({
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-          toast.onmouseenter = Swal.stopTimer;
-          toast.onmouseleave = Swal.resumeTimer;
-        },
       });
 
       if (!response.ok) {
@@ -166,8 +140,7 @@ export function ExamQuestions() {
           errorMsg = errorData.error || errorData.message || errorMsg;
         } catch (jsonError) {
           console.log(jsonError);
-          Swal.close();
-          Toast.fire({
+          Swal.fire({
             icon: "error",
             title: "Error del servidor interno",
           });
@@ -178,8 +151,7 @@ export function ExamQuestions() {
       console.log("Respuesta de generación desde contenido:", result);
 
       if (!result.examId) {
-        Swal.close();
-        Toast.fire({
+        Swal.fire({
           icon: "error",
           title: "La respuesta del servidor no contenia un ID de examen valido",
         });
@@ -192,11 +164,6 @@ export function ExamQuestions() {
 
       // --- NAVEGACIÓN CON ID ---
       navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del examen
-
-      Toast.fire({
-        icon: "success",
-        title: "Examen generado con exito",
-      });
     } catch (error) {
       console.error("Error al generar desde contenido:", error);
       alert(`Error: ${error}`);
