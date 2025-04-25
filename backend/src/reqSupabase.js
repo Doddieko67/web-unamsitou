@@ -45,6 +45,40 @@ export const updateAuthExamUser = async (
   console.log(user_id);
   console.log(data);
 };
+
+export const verifyAuthExamUser = async (res, user_id, examen_id) => {
+  const { data: examenCompleto, error: fetchFullError } = await supabase
+    .from("examenes")
+    .select("feedback, datos, respuestas_usuario") // Selecciona feedback Y los datos necesarios para generar el prompt
+    .eq("id", examen_id)
+    .eq("user_id", user_id) // Opcional: Añadir esta condición para asegurarse de que el usuario es el dueño del examen
+    .single();
+
+  if (fetchFullError && fetchFullError.code !== "PGRST116") {
+    // PGRST116 es "No rows found"
+    console.error(
+      "Error al buscar examen completo en Supabase:",
+      fetchFullError,
+    );
+    return res.status(500).json({ error: "Error al buscar examen." });
+  }
+
+  if (!examenCompleto) {
+    console.warn(`Examen con ID ${examen_id} no encontrado.`);
+    return res.status(404).json({ error: "Examen no encontrado." });
+  }
+
+  // --- PASO 2: Verificar si el feedback ya existe ---
+  if (examenCompleto.feedback !== null) {
+    console.log(
+      `Feedback ya existe para examen ${examen_id}. Devolviendo existente.`,
+    );
+    // Si ya existe, lo devolvemos directamente.
+    return res.status(200);
+  }
+  return examenCompleto;
+};
+
 export const CreateAuthExamUser = async (
   res,
   user_id,
@@ -105,4 +139,29 @@ export const CreateAuthExamUser = async (
     // ... (manejo de error de Gemini como antes) ...
     res.status(500).json({ error: "Error interno al generar el examen." });
   }
+};
+
+export const CreateAuthFeedback = async (res, user_id, exam_id, feedback) => {
+  try {
+    console.log(feedback);
+    const { error } = await supabase
+      .from("examenes")
+      .update({ feedback: feedback })
+      .eq("id", exam_id);
+
+    if (error) {
+      console.error("Error al guardar examen en Supabase:", error);
+      return res
+        .status(500)
+        .json({ error: "No se pudo guardar el examen generado." });
+    }
+
+    console.log("Examen generado", user_id);
+    res.sendStatus(200); // Estado 201 Creado
+  } catch (error) {
+    console.error("Error general en /api/generate-exam-test:", error);
+    // ... (manejo de error de Gemini como antes) ...
+    res.status(500).json({ error: "Error interno al generar el examen." });
+  }
+  res.status(200);
 };

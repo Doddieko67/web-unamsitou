@@ -14,15 +14,15 @@ import { AnimatePresence, motion } from "motion/react"; // Usar framer-motion en
 // --- Interfaces y Datos (igual que antes) ---
 
 interface Pregunta {
-  id: number;
+  id?: number;
   pregunta: string;
-  opciones: string[];
-  correcta: number;
+  opciones?: string[];
+  correcta?: number;
   respuesta?: number;
-  feedback?: string;
 }
 
 interface ExamenData {
+  feedback?: { [key: number]: string };
   id: string; // UUID
   user_id: string; // UUID
   titulo: string;
@@ -40,7 +40,7 @@ interface ExamenData {
 // --- Componente Padre ---
 export function ExamenPage() {
   const navigate = useNavigate();
-  const { user } = UserAuth();
+  const { user, session } = UserAuth();
   const { examId } = useParams<{ examId: string }>(); // Obtener el :examId
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: number }>({});
@@ -66,6 +66,8 @@ export function ExamenPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [reset, setReset] = useState(false);
+  const [feedback, setFeedback] = useState<{ [key: number]: string }>({});
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // --- CAMBIO CLAVE 2: Referencia para isSubmitted para usarla dentro del intervalo ---
   const isSubmittedRef = useRef(isSubmitted);
@@ -212,6 +214,7 @@ export function ExamenPage() {
         setExamenData(estadoGuardado.examenData || {});
         setTimeLeft(estadoGuardado.timeLeft || 0);
         setIsSubmitted(estadoGuardado.isSubmitted || false);
+        setFeedback(estadoGuardado.feedback || null);
         // setPinnedQuestions(estadoGuardado.pinnedQuestions || {});
       }
       try {
@@ -292,6 +295,7 @@ export function ExamenPage() {
         }
 
         console.log("Datos del examen cargados:", data);
+        setFeedback(data.feedback || {});
         setExamenData(data); // Guarda Todos los datos
         setPreguntas(data.datos); // Guarda específicamente las preguntas
 
@@ -546,12 +550,12 @@ export function ExamenPage() {
   ]);
 
   const handleReset = useCallback(() => {
-    console.log("⏰ handleReset llamado. Estableciendo isSubmitted a false.");
-    setReset(false);
+    console.log("⏰ handleReset llamado. Creando otro examen.");
+    setReset(true);
   }, [setReset]);
 
   useEffect(() => {
-    console.log("✅ useEffect Finalization Actions:", { reset });
+    console.log("✅ useEffect Reset Actions:", { reset });
     if (!user || !examenData) return;
     if (reset) {
       console.log(
@@ -561,15 +565,19 @@ export function ExamenPage() {
       const performResetActions = async () => {
         // Acceder a los últimos valores de estado (estos ya están frescos aquí porque isSubmitted cambió)
         try {
-          const { error } = await supabase.from("examenes").insert({
-            user_id: user.id,
-            titulo: examenData.titulo,
-            descripcion: examenData.descripcion,
-            datos: preguntas,
-            dificultad: examenData.dificultad,
-            numero_preguntas: preguntas.length,
-            tiempo_limite_segundos: examenData.tiempo_limite_segundos,
-          });
+          const { data: examenCreado, error } = await supabase
+            .from("examenes")
+            .insert({
+              user_id: user.id,
+              titulo: examenData.titulo,
+              descripcion: examenData.descripcion,
+              datos: preguntas,
+              dificultad: examenData.dificultad,
+              numero_preguntas: preguntas.length,
+              tiempo_limite_segundos: examenData.tiempo_limite_segundos,
+            })
+            .select("id")
+            .single();
 
           if (error) {
             console.error(
@@ -580,16 +588,19 @@ export function ExamenPage() {
           } else {
             console.log("✅ Estado final guardado en Supabase con éxito.");
           }
+
+          if (!examenCreado || !examenCreado.id) {
+            console.error("No se pudo obtener el ID del examen");
+            return;
+          }
+
+          navigate(`/examen/${examenCreado.id}`);
         } catch (error) {
           console.error(
             "Error general al actualizar el estado del examen:",
             error,
           );
           // Considerar mostrar un error al usuario
-        } finally {
-          // Navegar SIEMPRE después de intentar guardar
-          console.log(`✅ Navegando a /examen/${examId}`);
-          navigate(`/examen/${examId}`);
         }
       };
 
@@ -598,7 +609,85 @@ export function ExamenPage() {
     }
     // Dependencias: Reaccionar a isSubmitted. Usar los últimos valores de estado (tiempoTomadoSegundos, userAnswers)
     // y otras variables necesarias para Supabase/navegación (examId, user, navigate).
-  }, [setReset, user, examenData]);
+  }, [setReset, user, examenData, navigate, preguntas, reset]);
+
+  const handleFeedback = useCallback(() => {
+    console.log(
+      "⏰ handleFeedback llamado. Estableciendo isSubmitted a false.",
+    );
+    setIsGenerating(true);
+  }, [setIsGenerating]);
+
+  useEffect(() => {
+    console.log("✅ useEffect Feedback Actions:", { isGenerating });
+    if (!user || !examenData) {
+      setIsGenerating(false);
+      return;
+    }
+    if (isGenerating) {
+      console.log(
+        "✅ Feedback es true. Ejecutando acciones de feedback (Guardar en DB y proporcionar feedback al usuario).",
+      );
+
+      const performFeedbackActions = async () => {
+        try {
+          // Llama al backend, enviando el prompt como texto
+          // (Puedes usar la misma ruta o una diferente si prefieres)
+          const response = await fetch(
+            "http://localhost:3000/api/generate-feedback",
+            {
+              // O '/api/generate-exam-simple'
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json", // Todavía enviamos JSON, pero con una estructura simple
+                authorization: `Bearer ${session && session.access_token}`,
+              },
+              // Envía un objeto JSON con una clave 'prompt' que contiene el texto construido
+              body: JSON.stringify({
+                examen_id: examenData.id,
+              }),
+            },
+          );
+
+          if (!response.ok) {
+            /* ... manejo de error ... */ throw new Error(
+              "Error al generar/guardar",
+            );
+          }
+
+          console.log(response);
+
+          const { data, error } = await supabase
+            .from("examenes")
+            .select("feedback")
+            .eq("id", examenData.id)
+            .single();
+          if (error) {
+            /* ... manejo de error ... */ throw new Error(
+              "Error al obtener feedback",
+            );
+          }
+          if (!data) {
+            /* ... manejo de error ... */ throw new Error(
+              "No se encontró feedback",
+            );
+          }
+          setFeedback(data);
+        } catch (error) {
+          /* ... Manejo de error ... */
+          console.error("Error en la llamada de generación:", error);
+          alert(`Error: ${error}`);
+        } finally {
+          setIsGenerating(false);
+        }
+      };
+
+      // Ejecutar las acciones asíncronas
+      performFeedbackActions();
+    }
+    // Dependencias: Reaccionar a isSubmitted. Usar los últimos valores de estado (tiempoTomadoSegundos, userAnswers)
+    // y otras variables necesarias para Supabase/navegación (examId, user, navigate).
+  }, [setIsGenerating, isGenerating, session, user, examenData]);
 
   // Guardado automático cada 5 segundos
   useEffect(() => {
@@ -606,6 +695,8 @@ export function ExamenPage() {
     console.log("Iniciando auto-guardado cada 5 segundos...");
     const autoSaveInterval = setInterval(() => {
       console.log("Ejecutando auto-guardado...");
+      console.log(feedback);
+      console.log(userAnswers);
       guardarEstadoActual();
     }, 5000); // Guardar cada 5 segundos
 
@@ -854,36 +945,24 @@ export function ExamenPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      {feedback && Object.keys(feedback).length < 1 && (
+                        <button
+                          onClick={handleFeedback}
+                          className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center"
+                          title="Retroalimentar Examen"
+                        >
+                          <i className="fa-solid fa-wheat-awn-circle-exclamation mr-2"></i>{" "}
+                          {isGenerating ? (
+                            <i className="fa-solid fa-spinner fa-spin animate-ping"></i>
+                          ) : (
+                            <span>Retroalimentar todo</span>
+                          )}
+                        </button>
+                      )}
                       <button
-                        onClick={async () => {
-                          const confirmar = await Swal.fire({
-                            title: "¿Estás seguro?",
-                            text: "Seguro que quieres suspender el examen? Simplemente se guardará el estado actual del examen en la base de datos y pausará el tiempo restante.",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonColor: "#3085d6",
-                            cancelButtonColor: "#d33",
-                            confirmButtonText: "Sí, suspender examen",
-                            cancelButtonText: "Cancelar",
-                          }).then((result) => {
-                            return result.isConfirmed;
-                          });
-
-                          if (!confirmar) return; // Si el usuario cancela, salir
-                          handleFinalizar();
-                        }}
-                        className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center"
-                        title="Retroalimentar Examen"
-                        disabled={timeLeft <= 0} // Deshabilitar si el tiempo se agotó antes de enviar
-                      >
-                        <i class="fa-solid fa-wheat-awn-circle-exclamation mr-2"></i>{" "}
-                        <span>Retroalimentar todo</span>
-                      </button>
-                      <button
-                        onClick={handleFinalizar}
+                        onClick={handleReset}
                         className="w-full text-purple-600 bg-purple-100 shadow-purple-100 border-purple-300 border-2 hover:shadow-purple-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center"
                         title="Suspender y Enviar Examen"
-                        disabled={timeLeft <= 0} // Deshabilitar si el tiempo se agotó antes de enviar
                       >
                         <i className="fas fa-undo mr-2"></i>
                         <span>Reiniciar el examen</span>
@@ -911,7 +990,7 @@ export function ExamenPage() {
                     <div className="mt-4 md:mt-0 bg-indigo-50 text-indigo-800 px-4 py-2 rounded-lg">
                       <i className="fas fa-info-circle mr-2"></i>
                       <span>
-                        {examenData.numero_preguntas} preguntas •{" "}
+                        {preguntas[preguntas.length - 1].id} preguntas •{" "}
                         {formatTime(examenData.tiempo_limite_segundos)} •
                         Dificultad: {examenData.dificultad}
                       </span>
@@ -991,12 +1070,28 @@ export function ExamenPage() {
               </div>
             </div>
           </div>
+          {preguntas.length > 56 && (
+            <div className="my-8">
+              <QuestionSelector
+                totalQuestions={preguntas.length}
+                currentQuestionIndex={currentQuestionIndex}
+                answeredQuestions={userAnswers}
+                preguntas={preguntas}
+                onQuestionSelect={handleQuestionSelect}
+                isSubmitted={isSubmitted}
+                title={"Preguntas"}
+                pinnedQuestions={pinnedQuestions}
+                grid={25}
+              />
+            </div>
+          )}
           <div className="flex flex-col lg:flex-row gap-8" id="question-viewer">
             {/* Columna Izquierda (Info y Navegador) */}
-            <div className="lg:w-1/3 space-y-8 flex-shrink-0">
-              {/* Tarjeta de Controles: Timer y Envío */}
+            {preguntas.length <= 56 && (
+              <div className="lg:w-1/3 space-y-8 flex-shrink-0">
+                {/* Tarjeta de Controles: Timer y Envío */}
 
-              {/* Claudeee, aqui quiero que filtres questionSelector solo para preguntas fijadas, mira
+                {/* Claudeee, aqui quiero que filtres questionSelector solo para preguntas fijadas, mira
                 <QuestionSelector
                   totalQuestions={preguntas.length}
                   currentQuestionIndex={currentQuestionIndex}
@@ -1009,44 +1104,50 @@ export function ExamenPage() {
                 />
                 */}
 
-              <QuestionSelector
-                totalQuestions={preguntas.length}
-                currentQuestionIndex={currentQuestionIndex}
-                answeredQuestions={userAnswers}
-                preguntas={preguntas}
-                onQuestionSelect={handleQuestionSelect}
-                isSubmitted={isSubmitted}
-                title={"Preguntas"}
-                pinnedQuestions={pinnedQuestions}
-              />
+                <QuestionSelector
+                  totalQuestions={preguntas.length}
+                  currentQuestionIndex={currentQuestionIndex}
+                  answeredQuestions={userAnswers}
+                  preguntas={preguntas}
+                  onQuestionSelect={handleQuestionSelect}
+                  isSubmitted={isSubmitted}
+                  title={"Preguntas"}
+                  pinnedQuestions={pinnedQuestions}
+                />
 
-              <div className="lg:hidden">
-                {Object.keys(pinnedQuestions).length > 0 ? (
-                  <QuestionSelector
-                    totalQuestions={preguntas.length}
-                    currentQuestionIndex={currentQuestionIndex}
-                    answeredQuestions={userAnswers}
-                    preguntas={preguntas}
-                    onQuestionSelect={handleQuestionSelect}
-                    isSubmitted={isSubmitted}
-                    title={"Fijados"}
-                    pinnedQuestions={pinnedQuestions}
-                    pinnedMode={true}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full w-full bg-white p-4 rounded-lg shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-500">
-                      Fija una pregunta
-                    </h2>
-                  </div>
-                )}
+                <div className="lg:hidden">
+                  {Object.keys(pinnedQuestions).length > 0 ? (
+                    <QuestionSelector
+                      totalQuestions={preguntas.length}
+                      currentQuestionIndex={currentQuestionIndex}
+                      answeredQuestions={userAnswers}
+                      preguntas={preguntas}
+                      onQuestionSelect={handleQuestionSelect}
+                      isSubmitted={isSubmitted}
+                      title={"Fijados"}
+                      pinnedQuestions={pinnedQuestions}
+                      pinnedMode={true}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full w-full bg-white p-4 rounded-lg shadow-lg">
+                      <h2 className="text-2xl font-bold text-gray-500">
+                        Fija una pregunta
+                      </h2>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Columna Derecha (Pregunta Actual) */}
             <div className="lg:w-2/3 lg:flex-grow">
               {preguntaActual ? (
                 <SeccionExamen
+                  feedback={
+                    feedback && preguntaActual.id
+                      ? (String(feedback[preguntaActual.id]) as string)
+                      : undefined
+                  }
                   pregunta={preguntaActual}
                   questionIndex={currentQuestionIndex}
                   totalQuestions={preguntas.length}
@@ -1090,6 +1191,11 @@ export function ExamenPage() {
 
                   return (
                     <PreviewableSeccionExamen
+                      feedback={
+                        feedback && preguntaFijada.id
+                          ? (String(feedback[preguntaFijada.id]) as string)
+                          : undefined
+                      }
                       key={preguntaFijada.id || originalIndex}
                       pregunta={preguntaFijada}
                       index={originalIndex} // Pasamos el índice original
@@ -1208,6 +1314,11 @@ export function ExamenPage() {
                       transition={{ duration: 0.5 }}
                     >
                       <PreviewableSeccionExamen
+                        feedback={
+                          feedback && pregunta.id
+                            ? (String(feedback[pregunta.id]) as string)
+                            : undefined
+                        }
                         key={pregunta.id || index}
                         pregunta={pregunta}
                         index={index} // Mantenemos el índice original

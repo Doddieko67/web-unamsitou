@@ -4,16 +4,17 @@ import { SeccionExamen } from "./SeccionExamen"; // Ajusta la ruta
 // o pásala a través de las props como un tipo genérico si es necesario.
 
 interface Pregunta {
-  id: number;
+  id?: number;
   pregunta: string;
-  opciones: string[];
-  correcta: number;
+  opciones?: string[];
+  correcta?: number;
   respuesta?: number;
   feedback?: string;
 }
 
 // Define las props que este componente necesita
 interface PreviewableSeccionExamenProps {
+  feedback?: string;
   pregunta: Pregunta; // O el tipo correcto si `Pregunta` no está definida aquí
   index: number; // Necesario para la lógica de columna
   totalQuestions: number;
@@ -34,6 +35,7 @@ interface PreviewableSeccionExamenProps {
 const VIEWPORT_TOP_THRESHOLD = 300; // Intenta con 150px, por ejemplo
 
 export function PreviewableSeccionExamen({
+  feedback,
   pregunta,
   index,
   totalQuestions,
@@ -120,6 +122,7 @@ export function PreviewableSeccionExamen({
     >
       {/* Componente Original */}
       <SeccionExamen
+        feedback={feedback}
         pregunta={pregunta}
         questionIndex={index}
         totalQuestions={totalQuestions}
@@ -146,6 +149,7 @@ export function PreviewableSeccionExamen({
         <div className="h-auto w-full bg-white shadow-xl rounded-lg border border-gray-200 overflow-hidden">
           {/* Contenido de la Preview */}
           <SeccionExamen
+            feedback={feedback}
             pregunta={pregunta}
             questionIndex={index}
             totalQuestions={totalQuestions}
@@ -158,8 +162,8 @@ export function PreviewableSeccionExamen({
             userAnswers={userAnswers}
             preguntas={preguntas}
             habilitarBotones={false} // Siempre false
-            mostrarLista={true}
-            mostrarEncabezado={false}
+            mostrarLista={pregunta.id !== undefined}
+            mostrarEncabezado={pregunta.id === undefined}
             mostrarBandera={false}
             onPinToggle={() => {}}
             isCurrentQuestionPinned={isThisPinned}

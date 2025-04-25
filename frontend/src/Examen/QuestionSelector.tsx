@@ -1,8 +1,8 @@
 interface Pregunta {
-  id: number;
+  id?: number;
   pregunta: string;
-  opciones: string[];
-  correcta: number;
+  opciones?: string[];
+  correcta?: number;
   respuesta?: number;
 }
 
@@ -16,6 +16,7 @@ interface QuestionSelectorProps {
   title: string;
   pinnedQuestions: { [key: number]: boolean };
   pinnedMode?: boolean; // New prop to indicate we're in pinned mode
+  grid?: number;
 }
 
 export function QuestionSelector({
@@ -28,6 +29,7 @@ export function QuestionSelector({
   title = "Preguntas",
   pinnedQuestions,
   pinnedMode = false, // Default to false
+  grid = 8, // Default to 8 columns
 }: QuestionSelectorProps) {
   // If we're in pinned mode, we'll create a mapping of filtered indices to original indices
   const pinnedIndices = pinnedMode
@@ -47,7 +49,7 @@ export function QuestionSelector({
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
       <h2 className="text-2xl font-semibold text-gray-700 mb-6">{title}</h2>
-      <div className="grid grid-cols-8 gap-2">
+      <div className={`grid grid-cols-${grid} gap-2`}>
         {Array.from({ length: displayCount }).map((_, i) => {
           // If in pinned mode, map the index to the original question index
           const index = pinnedMode ? pinnedIndices[i] : i;
@@ -66,7 +68,9 @@ export function QuestionSelector({
             focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400
           `;
 
-          if (isSubmitted) {
+          if (preguntas[index]?.id === undefined) {
+            buttonClasses += "bg-purple-200 text-purple-600 cursor-pointer";
+          } else if (isSubmitted) {
             // Estilo después de enviar
             buttonClasses += isAnswered
               ? isCorrect
@@ -106,7 +110,12 @@ export function QuestionSelector({
               onClick={() => onQuestionSelect(index)}
               aria-current={isCurrent ? "page" : undefined}
             >
-              {index + 1} {/* Display original question number */}
+              {preguntas[index]?.id ? (
+                preguntas[index].id
+              ) : (
+                <i className="fas fa-book"></i>
+              )}{" "}
+              {/* Display original question number */}
             </button>
           );
         })}
