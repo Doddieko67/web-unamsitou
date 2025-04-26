@@ -49,7 +49,7 @@ export function QuestionSelector({
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
       <h2 className="text-2xl font-semibold text-gray-700 mb-6">{title}</h2>
-      <div className={`grid grid-cols-${grid} gap-2`}>
+      <div className={`flex flex-wrap gap-2`}>
         {Array.from({ length: displayCount }).map((_, i) => {
           // If in pinned mode, map the index to the original question index
           const index = pinnedMode ? pinnedIndices[i] : i;
@@ -65,7 +65,7 @@ export function QuestionSelector({
 
           let buttonClasses = `
             p-2 rounded border text-center font-medium text-sm transition-colors duration-150
-            focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400
+            focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-400 w-[41px]
           `;
 
           if (preguntas[index]?.id === undefined) {

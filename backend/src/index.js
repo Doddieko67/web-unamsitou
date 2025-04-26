@@ -196,58 +196,74 @@ app.post(
   },
 );
 
+// Función para generar retroalimentación
 app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
   try {
     const { examen_id } = req.body;
-
     const user_id = req.user.id;
-    console.log(user_id);
-
-    const prompt = await verifyAuthExamUser(res, user_id, examen_id);
-    console.log(prompt);
 
     console.log(
-      `Feedback no encontrado para examen ${examen_id}. Generando nueva retroalimentación...`,
+      `Generando retroalimentación para usuario ${user_id}, examen ${examen_id}`,
     );
 
+    // Verificar autorización y obtener datos procesados del examen
+    const promptData = await verifyAuthExamUser(res, user_id, examen_id);
+
+    if (!promptData || promptData.error) {
+      // Si verifyAuthExamUser ya manejó el error o devolvió una respuesta
+      return;
+    }
+
+    console.log(
+      `Generando nueva retroalimentación para examen ${examen_id}...`,
+    );
+
+    // Instrucción mejorada para el sistema
+    const systemInstruction = `
+    Analiza el siguiente examen completado por un estudiante y proporciona retroalimentación detallada.
+    Para cada pregunta:
+    - Verifica si la respuesta del usuario (índice respuestaUsuario) coincide con la respuesta correcta (índice correcta).
+    - Si coinciden, la respuesta es correcta. Si no, es incorrecta.
+    - IMPORTANTE: Los índices en las respuestas empiezan desde 0, así que la opción 1 corresponde al índice 0, la opción 2 al índice 1, etc.
+    El usuario termino el examen, pero necesita
+            saber la retroalimentacion de algunos examenes con resultados,
+            entonces, necesito que analices, y en cada pregunta,
+            que le expliques por que su respuesta podria
+            estar mal y otra que esta bien. Pero no solo eso, puede ser que
+           el usuario seleccione la respuesta al azar dejando al suerte y
+          sorprendemente, la responde bien, entonces, tambien explica este.
+          No necesitas decirle que la respuesta es correcta o incorrecta.
+
+    Tu respuesta debe seguir EXACTAMENTE este formato:
+    ##PREGUNTA_1##
+    Tu explicación detallada para la pregunta 1 aquí.
+    ##FIN_PREGUNTA_1##
+    ##PREGUNTA_2##
+    Tu explicación detallada para la pregunta 2 aquí.
+    ##FIN_PREGUNTA_2##
+
+    No incluyas ningún otro texto fuera de los delimitadores.
+    Usa solo texto plano (no JSON, no markdown). Todo en español.
+    `;
+
+    console.log(promptData);
+    // Generar retroalimentación con la IA
     const model = "gemini-2.0-flash";
     const response = await ai.models.generateContent({
       model: model,
-      contents: JSON.stringify(prompt),
+      contents: promptData,
       config: {
-        systemInstruction: `El usuario terminó el examen y necesita retroalimentación detallada.
-        Para cada pregunta, analiza si la respuesta del usuario es correcta o incorrecta, y proporciona una explicación
-        clara de por qué. Si la respuesta es incorrecta, explica por qué está mal y cuál sería la correcta.
-        Si la respuesta es correcta (incluso si fue por azar), felicita al usuario y explica por qué es correcta.
-        Si el usuario no proporciona una respuesta, explicale cual es la respuesta correcta y por que.
-        No debe ser en markdown
-
-        Tu respuesta debe seguir EXACTAMENTE este formato:
-
-        ##PREGUNTA_1##
-        Tu explicación detallada para la pregunta 1 aquí.
-        Puedes usar varios párrafos, listas, y todo el formato necesario para una explicación clara.
-        ##FIN_PREGUNTA_1##
-
-        ##PREGUNTA_2##
-        Tu explicación detallada para la pregunta 2 aquí.
-        ##FIN_PREGUNTA_2##
-
-        Y así sucesivamente para cada pregunta.
-
-        NO incluyas ningún otro texto fuera de los delimitadores ##PREGUNTA_X## y ##FIN_PREGUNTA_X##.
-        NO uses formato JSON. Usa solo texto plano dentro de los delimitadores.
-        Todo el texto debe estar en español.`,
+        systemInstruction: systemInstruction,
       },
     });
 
     let responseText = response.text;
 
-    // Procesar la respuesta con delimitadores en lugar de JSON
+    // Procesar la respuesta con delimitadores
     const examenData = {};
     const regex = /##PREGUNTA_(\d+)##([\s\S]*?)##FIN_PREGUNTA_\d+##/g;
-
     let match;
+
     while ((match = regex.exec(responseText)) !== null) {
       const questionNumber = match[1];
       const explanation = match[2].trim();
@@ -261,9 +277,8 @@ app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
       );
       console.error("Respuesta recibida:", responseText);
 
-      // Intento de respaldo: probar con análisis JSON si el formato de delimitadores falló
+      // Intento de respaldo: probar con análisis JSON
       try {
-        // Eliminar posibles marcadores de código markdown
         const cleanedText = responseText.replace(/```json|```/g, "").trim();
         const jsonData = JSON.parse(cleanedText);
 
@@ -273,7 +288,7 @@ app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
           Object.keys(jsonData).length > 0
         ) {
           console.log("Respuesta procesada como JSON después de fallback");
-          CreateAuthFeedback(res, user_id, examen_id, jsonData);
+          await CreateAuthFeedback(res, user_id, examen_id, jsonData);
           return;
         }
       } catch (jsonError) {
@@ -289,8 +304,8 @@ app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
       });
     }
 
-    // Continuar con el procesamiento normal
-    CreateAuthFeedback(res, user_id, examen_id, examenData);
+    // Crear feedback en la base de datos
+    await CreateAuthFeedback(res, user_id, examen_id, examenData);
   } catch (error) {
     console.error("Error en /api/generate-feedback:", error);
     res.status(500).json({ error: "Error al generar contenido" });

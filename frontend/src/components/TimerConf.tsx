@@ -172,7 +172,7 @@ export function TimerConf({
         <div className="relative">
           <input
             type="range"
-            min="0"
+            min="300"
             max={maxSliderValue}
             value={totalSeconds}
             onChange={(e) => handleSliderChange(parseInt(e.target.value, 10))}
