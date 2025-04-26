@@ -35,6 +35,7 @@ interface ExamenData {
   tiempo_tomado_segundos?: number; // Añadir esto si no estaba
   respuestas_usuario?: { [key: number]: number }; // Añadir esto si no estaba
   descripcion: string;
+  questions_pinned?: { [key: number]: boolean };
 }
 
 // --- Componente Padre ---
@@ -57,7 +58,6 @@ export function ExamenPage() {
   const [preguntas, setPreguntas] = useState<Pregunta[]>([]); // Inicializar vacío, no con dummy data
   const [, setIsLoadingData] = useState<boolean>(true);
   const [tiempoTomadoSegundos, setTiempoTomadoSegundos] = useState(0);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pinnedQuestions, setPinnedQuestions] = useState<{
     [key: number]: boolean;
   }>({});
@@ -68,9 +68,17 @@ export function ExamenPage() {
   const [reset, setReset] = useState(false);
   const [feedback, setFeedback] = useState<{ [key: number]: string }>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [suspender, setSuspender] = useState(false);
+  const tiempoTomadoSegundosRef = useRef(tiempoTomadoSegundos);
+  const timeLeftRef = useRef(timeLeft);
+  const userAnswersRef = useRef(userAnswers);
+  const pinnedQuestionsRef = useRef(pinnedQuestions);
+  const currentQuestionIndexRef = useRef(currentQuestionIndex);
 
   // --- CAMBIO CLAVE 2: Referencia para isSubmitted para usarla dentro del intervalo ---
   const isSubmittedRef = useRef(isSubmitted);
+  type SyncStatus = "idle" | "syncing" | "success" | "error" | "offline";
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
 
   // --- CAMBIO CLAVE 3: useEffect para mantener isSubmittedRef actualizada ---
   useEffect(() => {
@@ -114,16 +122,33 @@ export function ExamenPage() {
   }, [preguntas, searchTerm, searchCategory, userAnswers, isSubmitted]);
 
   // Detectar cambios en la conexión
+  // Detectar cambios en la conexión
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = () => {
+      console.log("Network status: Online");
+      setSyncStatus("idle"); // O iniciar un intento de sincronización si hay pendientes
+      // Intenta sincronizar el estado pendiente al volver online (ver punto 6)
+      trySyncPendingState();
+    };
+    const handleOffline = () => {
+      console.log("Network status: Offline");
+      setSyncStatus("offline");
+    };
+
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+
+    // Estado inicial
+    if (!navigator.onLine) {
+      handleOffline();
+    }
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, []);
+    // Añade trySyncPendingState si lo creas como useCallback
+  }, [setSyncStatus]);
 
   // Función para cargar el estado guardado de localStorage
   const cargarEstadoGuardado = useCallback(() => {
@@ -145,42 +170,40 @@ export function ExamenPage() {
     }
   }, [examId]);
 
-  // Función para guardar el estado actual en localStorage
   const guardarEstadoActual = useCallback(() => {
-    if (!examId) return; // No guardar si ya fue enviado
+    // No guardar si no hay examId o si ya fue enviado (usando la ref)
+    if (!examId) {
+      console.log("Auto-guardado omitido (sin ID o ya enviado).");
+      return;
+    }
 
     try {
+      // Leer los valores ACTUALES desde las refs
       const estadoActual = {
-        tiempoTomadoSegundos,
-        userAnswers,
-        examenData, // Guardar los datos completos del examen también
-        preguntas, // Guardar las preguntas también
-        currentQuestionIndex,
-        pinnedQuestions,
-        timeLeft,
-        isSubmitted: isSubmittedRef.current, // Asegurarnos de guardar el estado de envío
+        tiempoTomadoSegundos: tiempoTomadoSegundosRef.current, // <-- Leer Ref
+        userAnswers: userAnswersRef.current, // <-- Leer Ref
+        examenData, // Estos probablemente no cambian tan seguido
+        preguntas, // Estos probablemente no cambian tan seguido
+        currentQuestionIndex: currentQuestionIndexRef.current, // Este puede cambiar, podrías usar ref si causa problemas
+        pinnedQuestions: pinnedQuestionsRef.current, // Este puede cambiar, podrías usar ref si causa problemas
+        timeLeft: timeLeftRef.current, // <-- Leer Ref
+        isSubmitted: isSubmittedRef.current, // <-- Leer Ref
         ultimaActualizacion: new Date().toISOString(),
       };
       localStorage.setItem(
         `examen_estado_${examId}`,
         JSON.stringify(estadoActual),
       );
-      console.log("Estado actual guardado en localStorage.");
+      console.log("Estado actual guardado en localStorage via auto-save.");
     } catch (error) {
-      console.error("Error al guardar estado:", error);
+      console.error("Error al auto-guardar estado:", error);
     }
-  }, [
-    examId,
-    tiempoTomadoSegundos,
-    userAnswers,
-    preguntas,
-    examenData,
-    currentQuestionIndex,
-    pinnedQuestions,
-    timeLeft,
-    isSubmittedRef, // Usar la ref para saber si ya se envió
-  ]);
+    // Dependencias: Solo incluye variables/estados que REALMENTE cambian la LÓGICA
+    // de cómo guardar o QUÉ guardar, y que NO cambien cada segundo.
+    // isSubmittedRef es una ref, su objeto NUNCA cambia, por lo que no necesita estar aquí.
+  }, [examId, examenData, preguntas]);
 
+  // Cargar datos del examen y estado guardado al inicio
   // Cargar datos del examen y estado guardado al inicio
   useEffect(() => {
     const fetchExamenData = async () => {
@@ -189,6 +212,7 @@ export function ExamenPage() {
       setLoadError(null);
       setExamenData(null);
       setPreguntas([]); // Limpiar preguntas al inicio de la carga
+      isSubmittedRef.current = false;
 
       if (!examId) {
         setLoadError("ID de examen no encontrado en la URL.");
@@ -203,23 +227,33 @@ export function ExamenPage() {
         return;
       }
 
+      // Cargar estado guardado *temprano* para tenerlo disponible
       const estadoGuardado = cargarEstadoGuardado();
-      if (estadoGuardado) {
-        console.log("Cargando estado desde localStorage...");
-        setTiempoTomadoSegundos(estadoGuardado.tiempoTomadoSegundos || 0);
-        setUserAnswers(estadoGuardado.userAnswers || {});
-        setPinnedQuestions(estadoGuardado.pinnedQuestions || []);
-        setCurrentQuestionIndex(estadoGuardado.currentQuestionIndex || 0); // Opcional: volver a la última pregunta
-        setPreguntas(estadoGuardado.preguntas || []);
-        setExamenData(estadoGuardado.examenData || {});
-        setTimeLeft(estadoGuardado.timeLeft || 0);
-        setIsSubmitted(estadoGuardado.isSubmitted || false);
-        setFeedback(estadoGuardado.feedback || null);
-        // setPinnedQuestions(estadoGuardado.pinnedQuestions || {});
-      }
+
       try {
+        if (estadoGuardado) {
+          console.log("Cargando estado desde localStorage...");
+          setTiempoTomadoSegundos(estadoGuardado.tiempoTomadoSegundos || 0);
+          setUserAnswers(estadoGuardado.userAnswers || {});
+          setPinnedQuestions(estadoGuardado.pinnedQuestions || []);
+          setCurrentQuestionIndex(estadoGuardado.currentQuestionIndex || 0); // Opcional: volver a la última pregunta
+          setPreguntas(estadoGuardado.preguntas || []);
+          setExamenData(estadoGuardado.examenData || {});
+          // setPinnedQuestions(estadoGuardado.pinnedQuestions || {}); // Ya se estableció arriba
+
+          // *** CAMBIO CLAVE: ¡Actualizar las refs aquí también! ***
+          tiempoTomadoSegundosRef.current =
+            estadoGuardado.tiempoTomadoSegundos || 0;
+          userAnswersRef.current = estadoGuardado.userAnswers || {};
+          pinnedQuestionsRef.current = estadoGuardado.pinnedQuestions || [];
+          currentQuestionIndexRef.current =
+            estadoGuardado.currentQuestionIndex || 0;
+          timeLeftRef.current = estadoGuardado.timeLeft || 0;
+          isSubmittedRef.current = estadoGuardado.isSubmitted || false; // Asegurar isSubmittedRef también
+          // ... actualiza cualquier otra ref relevante que guardes en localStorage ...
+        }
         let data: ExamenData | null = null;
-        let estadoGuardado = null;
+        // let estadoGuardado = null; // Ya cargado arriba
 
         // 1. Intentar cargar desde Supabase primero para el estado más reciente (incluyendo si ya terminó)
         console.log(
@@ -248,36 +282,25 @@ export function ExamenPage() {
         data = supabaseData as ExamenData; // Usamos los datos de Supabase
 
         // 2. Cargar estado guardado local si el examen NO ha sido terminado/suspendido en Supabase
-        if (data.estado !== "terminado" && data.estado !== "suspendido") {
-          estadoGuardado = cargarEstadoGuardado();
-          if (estadoGuardado) {
-            console.log("Cargando estado desde localStorage...");
-            setTiempoTomadoSegundos(estadoGuardado.tiempoTomadoSegundos || 0);
-            setUserAnswers(estadoGuardado.userAnswers || {});
-            setPinnedQuestions(estadoGuardado.pinnedQuestions || []);
-            setCurrentQuestionIndex(estadoGuardado.currentQuestionIndex || 0); // Opcional: volver a la última pregunta
-            setPreguntas(estadoGuardado.preguntas || []);
-            // Otros estados locales si los guardaste (e.g., pinnedQuestions)
-            // setPinnedQuestions(estadoGuardado.pinnedQuestions || {});
-          }
-        } else {
+
+        const tiempoLimite = data.tiempo_limite_segundos;
+        const tiempoTomado = data.tiempo_tomado_segundos || 0; // Usar tiempo guardado si existe
+        const tiempoRestante = Math.max(0, tiempoLimite - tiempoTomado);
+        setTimeLeft(tiempoRestante);
+
+        if (data.estado === "terminado") {
           // Si el examen ya terminó en Supabase, forzar el estado isSubmitted
-          setIsSubmitted(true);
+          setIsSubmitted(true); // Esto actualizará isSubmittedRef en su propio useEffect
           console.log(
             "Examen ya marcado como terminado en Supabase. Forzando estado 'enviado'.",
           );
           // Limpiar cualquier estado local si el examen ya terminó en DB
-          localStorage.removeItem(`examen_estado_${examId}`);
           // Cargar respuestas y tiempo tomado desde Supabase si el estado es terminado
-          if (data.estado === "terminado") {
-            setUserAnswers(data.respuestas_usuario || {});
-            setTiempoTomadoSegundos(data.tiempo_tomado_segundos || 0);
-          }
-          // No calculamos timeLeft si ya terminó
-          const tiempoLimite = data.tiempo_limite_segundos;
-          const tiempoTomado = data.tiempo_tomado_segundos || 0; // Usar tiempo guardado si existe
-          const tiempoRestante = Math.max(0, tiempoLimite - tiempoTomado);
-          setTimeLeft(tiempoRestante);
+          // Esto actualizará timeLeftRef en su callback del timer si estuviera activo (pero no lo estará)
+          // También puedes actualizar explícitamente aquí si es necesario, pero la ref de timeLeft se actualizará
+          // en el timer callback con 0 si el tiempo ya expiró.
+          // timeLeftRef.current = tiempoRestante; // Opcional pero seguro
+
           console.log(
             `Tiempo límite: ${tiempoLimite}, Tiempo tomado guardado: ${tiempoTomado}, Tiempo restante calculado: ${tiempoRestante}`,
           );
@@ -295,24 +318,63 @@ export function ExamenPage() {
         }
 
         console.log("Datos del examen cargados:", data);
+
+        // Aunque ya actualizaste refs arriba si cargaste de localStorage,
+        // los valores de Supabase podrían ser más recientes si NO cargaste de localStorage
+        // (porque el estado en Supabase NO estaba 'terminado').
+        // Lo más seguro es actualizar los estados y las refs con los datos *finales* aquí.
+        // Esto podría ser un poco redundante si cargaste de localStorage, pero garantiza consistencia.
+        setUserAnswers(data.respuestas_usuario || {});
+        setTiempoTomadoSegundos(data.tiempo_tomado_segundos || 0);
         setFeedback(data.feedback || {});
         setExamenData(data); // Guarda Todos los datos
         setPreguntas(data.datos); // Guarda específicamente las preguntas
+        setPinnedQuestions(data.questions_pinned || {}); // <-- Aquí es donde pinnedQuestions obtiene su valor final
+
+        // *** CAMBIO CLAVE: ¡Actualizar las refs aquí también con los datos finales de Supabase si NO cargaste de localStorage! ***
+        // O simplemente siempre con los datos finales (que serán los de localStorage si se cargaron y el examen no terminó,
+        // o los de Supabase si el examen terminó o no había localStorage).
+        // ... actualiza cualquier otra ref relevante que guardes en localStorage ...
+        // currentQuestionIndexRef y timeLeftRef se manejan mejor en sus propios useEffects o callbacks de timer.
+
+        // Leer los valores ACTUALES desde las refs
+        const estadoActual = {
+          tiempoTomadoSegundos: tiempoTomadoSegundosRef.current, // <-- Leer Ref
+          userAnswers: userAnswersRef.current, // <-- Leer Ref
+          examenData: data, // Estos probablemente no cambian tan seguido
+          preguntas: data.datos, // Estos probablemente no cambian tan seguido
+          currentQuestionIndex: currentQuestionIndexRef.current, // Este puede cambiar, podrías usar ref si causa problemas
+          pinnedQuestions: pinnedQuestionsRef.current, // Este puede cambiar, podrías usar ref si causa problemas
+          timeLeft: tiempoRestante, // <-- Leer Ref
+          isSubmitted: isSubmittedRef.current, // <-- Leer Ref
+          ultimaActualizacion: new Date().toISOString(),
+        };
+        localStorage.setItem(
+          `examen_estado_${examId}`,
+          JSON.stringify(estadoActual),
+        );
+        console.log("Estado actual guardado en localStorage via auto-save.");
 
         // Calcular tiempo restante solo si el examen NO está terminado/suspendido
-        if (data.estado !== "terminado" && data.estado !== "suspendido") {
+        // Este bloque ya maneja setTimeLeft correctamente. La ref timeLeftRef se actualizará
+        // en el callback del timer si el timer se inicia.
+        if (data.estado !== "terminado") {
           const tiempoLimite = data.tiempo_limite_segundos;
-          const tiempoTomado = estadoGuardado?.tiempoTomadoSegundos || 0; // Usar tiempo guardado si existe
+          const tiempoTomado =
+            estadoGuardado?.tiempoTomadoSegundos ||
+            data.tiempo_tomado_segundos ||
+            0; // Usar localStorage si existe y no terminó, si no, Supabase.
           const tiempoRestante = Math.max(0, tiempoLimite - tiempoTomado);
           setTimeLeft(tiempoRestante);
+          // No necesitas actualizar timeLeftRef.current aquí, el timer lo hará.
           console.log(
-            `Tiempo límite: ${tiempoLimite}, Tiempo tomado guardado: ${tiempoTomado}, Tiempo restante calculado: ${tiempoRestante}`,
+            `Tiempo límite: ${tiempoLimite}, Tiempo tomado (localStorage/Supabase): ${tiempoTomado}, Tiempo restante calculado: ${tiempoRestante}`,
           );
 
           // Opcional: Marcar el examen como 'en_progreso' si estaba 'pendiente'
           if (data.estado === "pendiente") {
             console.log("Marcando examen como 'en_progreso'...");
-            await supabase
+            const { error } = await supabase
               .from("examenes")
               .update({
                 estado: "en_progreso",
@@ -320,19 +382,29 @@ export function ExamenPage() {
               })
               .eq("id", examId)
               .eq("user_id", user.id);
+            if (error) {
+              console.error("Error al actualizar el estado del examen:", error);
+            }
+          } else if (data.estado === "suspendido") {
+            console.log("Marcando examen como 'en_progreso'...");
+            const { error } = await supabase
+              .from("examenes")
+              .update({
+                estado: "en_progreso",
+              })
+              .eq("id", examId)
+              .eq("user_id", user.id);
+            if (error) {
+              console.error("Error al actualizar el estado del examen:", error);
+            }
           }
         } else {
           // Si ya estaba terminado/suspendido, setTimeLeft ya fue puesto a 0 arriba.
         }
       } catch (error) {
-        console.error("Error al cargar/procesar examen:", error);
-        setLoadError(
-          error instanceof Error
-            ? error.message
-            : "Ocurrió un error desconocido al cargar el examen.",
-        );
-        // Podrías redirigir a una página de error
-        // navigate('/error', { state: { message: error.message } });
+        console.error("Error al actualizar el estado del examen:", error);
+
+        // ... (manejo de error)
       } finally {
         setIsLoadingData(false);
       }
@@ -340,8 +412,7 @@ export function ExamenPage() {
 
     fetchExamenData();
 
-    // Limpieza al desmontar: detener el timer si aún está corriendo
-    // Esto lo haremos en el useEffect del timer principal ahora.
+    // ... (limpieza)
   }, [
     examId,
     user,
@@ -351,7 +422,18 @@ export function ExamenPage() {
     setTiempoTomadoSegundos,
     setUserAnswers,
     setTimeLeft,
-  ]); // Agregar dependencias de setters
+    setExamenData, // Añadir setters de estado usados en la carga
+    setPreguntas,
+    setFeedback,
+    setPinnedQuestions,
+    isSubmittedRef, // Añadir refs que se actualizan en el efecto de carga
+    tiempoTomadoSegundosRef,
+    userAnswersRef,
+    pinnedQuestionsRef,
+    timeLeftRef, // Si la actualizas aquí
+    currentQuestionIndexRef, // Si la actualizas aquí
+    // isSubmittedRef, // Ya está en el array de deps de arriba
+  ]);
 
   // --- REMOVER stopTimer y startTimer como funciones separadas de useCallback ---
   // Toda la lógica de inicio/detención del timer se moverá al useEffect principal del timer.
@@ -384,45 +466,18 @@ export function ExamenPage() {
       stopTimer(); // Limpia cualquier timer previo
 
       const intervalId = setInterval(() => {
-        // Lógica que se ejecuta cada segundo
-        console.log("⏰ Tick del intervalo...");
-
-        // Incrementar tiempo tomado
-        setTiempoTomadoSegundos((prev) => prev + 1);
-
-        // Decrementar tiempo restante
-        setTimeLeft((prev) => {
-          // Manejar caso inicial prev = null
-          const newTime = (prev || 0) - 1;
-
-          if (newTime <= 0) {
-            console.log(
-              "⏰ Tiempo agotado en el intervalo. Desencadenando finalización...",
-            );
-            // Detener este intervalo específico desde dentro
-            clearInterval(intervalId); // Usa la variable local `intervalId` de esta instancia
-            timerIntervalIdRef.current = null; // Limpiar la referencia global también
-
-            // CAMBIO CLAVE 5: Señalizar fin de tiempo cambiando el estado `isSubmitted`.
-            // El `useEffect` que maneja las acciones de finalización reaccionará a esto.
-            // Usar la ref para acceder al estado actual de isSubmitted
-            if (!isSubmittedRef.current) {
-              // Solo intentar finalizar si NO ha sido enviado ya (por el botón)
-              console.log(
-                "⏰ Estableciendo isSubmitted a true desde el intervalo (tiempo agotado).",
-              );
-              setIsSubmitted(true);
-            } else {
-              console.log(
-                "⏰ Tiempo agotado, pero isSubmitted ya es true. No se desencadena finalización adicional.",
-              );
-            }
-
-            return 0; // Establecer el tiempo restante a 0
-          }
-          return newTime; // Continuar decrementando
+        setTiempoTomadoSegundos((prev) => {
+          const nuevoTiempo = prev + 1;
+          tiempoTomadoSegundosRef.current = nuevoTiempo; // <-- Actualizar Ref
+          return nuevoTiempo;
         });
-      }, 1000); // 1000 milisegundos = 1 segundo
+        setTimeLeft((prev) => {
+          const newTime = (prev || 0) - 1;
+          timeLeftRef.current = newTime > 0 ? newTime : 0; // <-- Actualizar Ref
+          // ... resto de la lógica del timer ...
+          return newTime > 0 ? newTime : 0;
+        });
+      }, 1000);
 
       // CAMBIO CLAVE 6: Guardar el ID del nuevo intervalo en la referencia
       timerIntervalIdRef.current = intervalId;
@@ -473,15 +528,9 @@ export function ExamenPage() {
     // y el NUEVO `useEffect` de finalización (para guardar y navegar).
     setIsSubmitted(true);
 
-    // Limpiar localStorage inmediatamente al finalizar (éxito o tiempo agotado)
-    if (examId) {
-      localStorage.removeItem(`examen_estado_${examId}`);
-      console.log(`localStorage limpiado para examen_${examId}`);
-    }
-
     // Las acciones de guardar y navegar se hacen ahora en el useEffect de finalización
     // console.log( "Examen finalizado. Tiempo tomado:", tiempoTomadoSegundos, "Respuestas:", userAnswers ); // Logs pueden quedarse, pero los valores podrían estar ligeramente desactualizados aquí
-  }, [examId, setIsSubmitted]); // Dependencias solo incluyen cosas usadas directamente aquí (examId, setIsSubmitted)
+  }, [setIsSubmitted]); // Dependencias solo incluyen cosas usadas directamente aquí (examId, setIsSubmitted)
 
   // --- CAMBIO CLAVE 10: Nuevo useEffect para ejecutar acciones de Finalización (Guardar y Navegar) ---
   // Este efecto se dispara CUANDO `isSubmitted` cambia a `true`.
@@ -493,60 +542,87 @@ export function ExamenPage() {
       );
 
       const performFinalizationActions = async () => {
-        // Acceder a los últimos valores de estado (estos ya están frescos aquí porque isSubmitted cambió)
-        console.log(
-          "✅ Guardando estado final. Tiempo tomado:",
-          tiempoTomadoSegundos, // Estado fresco
-          "Respuestas:",
-          userAnswers, // Estado fresco
-        );
-        try {
-          const { error } = await supabase
-            .from("examenes")
-            .update({
-              estado: "terminado", // O 'suspendido' si tuvieras un botón específico para eso
-              tiempo_tomado_segundos: tiempoTomadoSegundos,
-              respuestas_usuario: userAnswers,
-              questions_pinned: pinnedQuestions,
-              fecha_fin: new Date().toISOString(), // Registrar fecha/hora de fin
-            })
-            .eq("id", examId);
+        const finalState = {
+          estado: "terminado" as const, // Asegura el tipo
+          tiempo_tomado_segundos: tiempoTomadoSegundosRef.current, // Usa refs para el valor más actual
+          respuestas_usuario: userAnswersRef.current,
+          questions_pinned: pinnedQuestionsRef.current,
+          fecha_fin: new Date().toISOString(),
+        };
 
-          if (error) {
-            console.error(
-              "Error de Supabase al actualizar estado del examen:",
-              error,
-            );
-            // Considerar mostrar un error al usuario
-          } else {
-            console.log("✅ Estado final guardado en Supabase con éxito.");
-          }
-        } catch (error) {
-          console.error(
-            "Error general al actualizar el estado del examen:",
-            error,
+        console.log("✅ Preparing final state:", finalState);
+
+        try {
+          localStorage.setItem(
+            `examen_final_pending_${examId}`,
+            JSON.stringify(finalState),
           );
-          // Considerar mostrar un error al usuario
-        } finally {
-          // Navegar SIEMPRE después de intentar guardar
-          console.log(`✅ Navegando a /examen/${examId}`);
+          console.log(
+            "💾 Final state intent saved to localStorage pending sync.",
+          );
+        } catch (e) {
+          console.error("Error saving final pending state to localStorage:", e);
+          // Considerar notificar al usuario de este error grave
+        }
+        if (navigator.onLine) {
+          console.log("Online: Attempting to sync final state to Supabase...");
+          setSyncStatus("syncing");
+          try {
+            const { error } = await supabase
+              .from("examenes")
+              .update(finalState)
+              .eq("id", examId)
+              .eq("user_id", user?.id);
+
+            if (error) {
+              console.error("Error Supabase finalization sync:", error);
+              setSyncStatus("error");
+            } else {
+              console.log("✅ Final state synced to Supabase successfully.");
+              setSyncStatus("success");
+              localStorage.removeItem(`examen_final_pending_${examId}`); // Limpiar estado pendiente local SI la sincronización fue exitosa
+              console.log("✅ Pending final state removed from localStorage.");
+            }
+          } catch (error) {
+            console.error("General error during finalization sync:", error);
+            setSyncStatus("error");
+            Swal.fire({
+              title: "Error Inesperado",
+              text: "Ocurrió un error al finalizar. Tu progreso está guardado localmente.",
+              icon: "error",
+            });
+          } finally {
+            // Navegar independientemente del éxito del sync online, ya que la intención está guardada localmente
+            console.log(`✅ Navigating to results page (sync attempted).`);
+            navigate(`/examen/${examId}`);
+          }
+        } else {
+          // --- Finalización Offline ---
+          console.log(
+            "Offline: Final state saved locally. Will sync when back online.",
+          );
+          setSyncStatus("offline");
+          Swal.fire({
+            title: "Examen Terminado (Offline)",
+            text: "Tus respuestas se han guardado localmente. Se enviarán al servidor cuando vuelvas a tener conexión.",
+            icon: "info",
+          });
+          // Navegar inmediatamente, el sync ocurrirá después
+          console.log(`✅ Navigating to results page (offline).`);
           navigate(`/examen/${examId}`);
         }
       };
 
-      // Ejecutar las acciones asíncronas
       performFinalizationActions();
     }
-    // Dependencias: Reaccionar a isSubmitted. Usar los últimos valores de estado (tiempoTomadoSegundos, userAnswers)
-    // y otras variables necesarias para Supabase/navegación (examId, user, navigate).
   }, [
     isSubmitted,
-    tiempoTomadoSegundos,
-    userAnswers,
     examId,
-    user,
+    user?.id,
     navigate,
-    pinnedQuestions,
+    setSyncStatus, // Añadir dependencia
+    // No necesitamos los estados (tiempoTomadoSegundos, userAnswers, etc.) como deps
+    // porque leemos sus refs (.current) dentro del efecto.
   ]);
 
   const handleReset = useCallback(() => {
@@ -565,9 +641,11 @@ export function ExamenPage() {
       const performResetActions = async () => {
         // Acceder a los últimos valores de estado (estos ya están frescos aquí porque isSubmitted cambió)
         try {
+          console.log(examenData.tiempo_limite_segundos);
           const { data: examenCreado, error } = await supabase
             .from("examenes")
             .insert({
+              estado: "pendiente",
               user_id: user.id,
               titulo: examenData.titulo,
               descripcion: examenData.descripcion,
@@ -575,6 +653,7 @@ export function ExamenPage() {
               dificultad: examenData.dificultad,
               numero_preguntas: preguntas.length,
               tiempo_limite_segundos: examenData.tiempo_limite_segundos,
+              tiempo_tomado_segundos: 0,
             })
             .select("id")
             .single();
@@ -586,6 +665,7 @@ export function ExamenPage() {
             );
             // Considerar mostrar un error al usuario
           } else {
+            localStorage.removeItem(`examen_estado_${examId}`);
             console.log("✅ Estado final guardado en Supabase con éxito.");
           }
 
@@ -609,7 +689,7 @@ export function ExamenPage() {
     }
     // Dependencias: Reaccionar a isSubmitted. Usar los últimos valores de estado (tiempoTomadoSegundos, userAnswers)
     // y otras variables necesarias para Supabase/navegación (examId, user, navigate).
-  }, [setReset, user, examenData, navigate, preguntas, reset]);
+  }, [setReset, user, examenData, navigate, preguntas, reset, examId]);
 
   const handleFeedback = useCallback(() => {
     console.log(
@@ -655,24 +735,18 @@ export function ExamenPage() {
             );
           }
 
-          console.log(response);
+          const responseData = await response.json();
 
-          const { data, error } = await supabase
-            .from("examenes")
-            .select("feedback")
-            .eq("id", examenData.id)
-            .single();
-          if (error) {
-            /* ... manejo de error ... */ throw new Error(
-              "Error al obtener feedback",
+          if (responseData && responseData.feedback) {
+            setFeedback(responseData.feedback); // ¡Actualiza el estado con la respuesta directa!
+            console.log(
+              "Feedback state updated directly from API response:",
+              responseData.feedback,
             );
+          } else {
+            console.warn("La API no devolvió el objeto de feedback esperado.");
+            setFeedback({}); // O maneja como error
           }
-          if (!data) {
-            /* ... manejo de error ... */ throw new Error(
-              "No se encontró feedback",
-            );
-          }
-          setFeedback(data);
         } catch (error) {
           /* ... Manejo de error ... */
           console.error("Error en la llamada de generación:", error);
@@ -689,22 +763,123 @@ export function ExamenPage() {
     // y otras variables necesarias para Supabase/navegación (examId, user, navigate).
   }, [setIsGenerating, isGenerating, session, user, examenData]);
 
-  // Guardado automático cada 5 segundos
-  useEffect(() => {
-    // Guardar solo si NO está enviado
-    console.log("Iniciando auto-guardado cada 5 segundos...");
-    const autoSaveInterval = setInterval(() => {
-      console.log("Ejecutando auto-guardado...");
-      console.log(feedback);
-      console.log(userAnswers);
-      guardarEstadoActual();
-    }, 5000); // Guardar cada 5 segundos
+  const handleSuspender = useCallback(() => {
+    setSuspender(true);
+  }, [setSuspender]);
 
+  useEffect(() => {
+    if (suspender) {
+      setSuspender(false);
+      (async () => {
+        try {
+          const { error } = await supabase
+            .from("examenes")
+            .update({
+              estado: "suspendido",
+              tiempo_tomado_segundos: tiempoTomadoSegundosRef.current,
+              respuestas_usuario: userAnswersRef.current,
+              questions_pinned: pinnedQuestionsRef.current,
+            })
+            .eq("id", examId);
+
+          if (error) {
+            console.error(
+              "Error de Supabase al actualizar estado del examen:",
+              error,
+            );
+            // Considerar mostrar un error al usuario
+          } else {
+            navigate("/examenes");
+            console.log("✅ Estado final guardado en Supabase con éxito.");
+          }
+        } catch (error) {
+          console.error(
+            "Error general al actualizar el estado del examen:",
+            error,
+          );
+          // Considerar mostrar un error al usuario
+        }
+      })();
+    }
+  }, [setSuspender, suspender, examId, user, navigate]);
+
+  // CAMBIO CLAVE: useEffect para mantener pinnedQuestionsRef actualizada
+  useEffect(() => {
+    pinnedQuestionsRef.current = pinnedQuestions;
+    console.log("Ref pinnedQuestions actualizada:", pinnedQuestions);
+  }, [pinnedQuestions]); // Se ejecuta cada vez que pinnedQuestions cambia
+
+  // CAMBIO CLAVE: useEffect para mantener currentQuestionIndexRef actualizada
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentQuestionIndex;
+    console.log("Ref currentQuestionIndex actualizada:", currentQuestionIndex);
+  }, [currentQuestionIndex]); // Se ejecuta cada vez que currentQuestionIndex cambia
+
+  useEffect(() => {
+    console.log("Iniciando ciclo de auto-guardado cada 5 segundos...");
+
+    const autoSaveInterval = setInterval(() => {
+      // Comprobación DENTRO del intervalo usando la ref
+      console.log("Ejecutando auto-guardado...");
+      guardarEstadoActual(); // Llamar a la función estable
+      let prompt;
+      if (!isSubmittedRef.current) {
+        prompt = {
+          tiempo_tomado_segundos: tiempoTomadoSegundosRef.current,
+          respuestas_usuario: userAnswersRef.current,
+          questions_pinned: pinnedQuestionsRef.current,
+        };
+      } else {
+        prompt = {
+          questions_pinned: pinnedQuestionsRef.current,
+        };
+      }
+      if (navigator.onLine) {
+        // Usa navigator.onLine para la comprobación más actualizada
+        setSyncStatus("syncing"); // Indica que se está
+        (async () => {
+          try {
+            const style =
+              "background-color: blue; cyan; border: 1px solid black;";
+            console.log(
+              `%c ${JSON.stringify(pinnedQuestionsRef.current)}`,
+              style,
+            );
+            const { error } = await supabase
+              .from("examenes")
+              .update(prompt)
+              .eq("id", examId);
+
+            if (error) {
+              console.error("Error Supabase auto-save:", error);
+              setSyncStatus("error"); // Hubo un error en el intento
+            } else {
+              console.log("✅ Auto-save Supabase success.");
+              setSyncStatus("success"); // Se sincronizó correctamente
+              // Opcional: limpiar bandera de 'cambios pendientes locales' si la implementas
+            }
+          } catch (error) {
+            console.error("Error general auto-save:", error);
+            setSyncStatus("error");
+          }
+        })();
+      } else {
+        console.log(
+          "Offline: Skipping Supabase auto-save. State saved locally.",
+        );
+        setSyncStatus("offline"); // Sigue offline
+      }
+    }, 7000); // Guardar cada 5 segundos
+
+    // Limpieza al desmontar o si las dependencias cambian (si las hay)
     return () => {
       console.log("Limpiando intervalo de auto-guardado.");
       clearInterval(autoSaveInterval);
     };
-  }, [guardarEstadoActual]); // Depende de guardarEstadoActual y si ya se envió
+    // Ahora depende de la función estable.
+    // Si quieres que SOLO se ejecute al montar/desmontar, usa []
+    // pero asegúrate de que la lógica interna (como isSubmittedRef) sea correcta.
+  }, [guardarEstadoActual, examId]);
 
   // En caso de que el usuario cierre la pestaña/navegador, guardar estado antes de salir
   useEffect(() => {
@@ -772,17 +947,21 @@ export function ExamenPage() {
 
   const handleAnswerSelect = useCallback(
     (questionIndex: number, optionIndex: number) => {
-      // Solo permitir responder si el examen no ha sido enviado
-      if (!isSubmitted) {
-        setUserAnswers((prevAnswers) => ({
-          ...prevAnswers,
-          [questionIndex]: optionIndex,
-        }));
+      if (!isSubmittedRef.current) {
+        // Usa la ref aquí también por consistencia
+        setUserAnswers((prevAnswers) => {
+          const newAnswers = {
+            ...prevAnswers,
+            [questionIndex]: optionIndex,
+          };
+          userAnswersRef.current = newAnswers; // <-- Actualizar Ref
+          return newAnswers;
+        });
       } else {
-        console.log("Intento de responder pregunta, pero examen ya enviado.");
+        console.log("Intento de responder, pero examen ya enviado.");
       }
     },
-    [isSubmitted], // Esta función solo cambia si isSubmitted cambia
+    [isSubmittedRef], // Ya no necesita setUserAnswers como dependencia directa si usas ref
   );
 
   const handleNavigatePrevious = useCallback(() => {
@@ -850,9 +1029,88 @@ export function ExamenPage() {
     currentQuestionIndex,
   ]);
 
+  useEffect(() => {
+    // Verifica las condiciones para finalizar el examen
+    // 1. El examen no ha sido enviado (!isSubmitted)
+    // 2. El tiempo restante es cero o menos (timeLeft <= 0)
+    if (!isSubmitted && timeLeft !== null && timeLeft <= 0) {
+      console.log("Tiempo llegado a 0 y examen no enviado. Finalizando..."); // Optional logging
+      setIsSubmitted(true);
+    }
+
+    // No necesitas una condición de 'return' separada aquí.
+    // Si timeLeft > 0, la condición principal (timeLeft <= 0) será false, y handleFinalizar no se llamará.
+  }, [isSubmitted, timeLeft, handleFinalizar]); // Las
+
   const preguntaActual = preguntas[currentQuestionIndex];
   const today = new Date(examenData?.fecha_inicio || Date.now()); // Usar fecha de inicio del examen si existe
 
+  const trySyncPendingState = useCallback(async () => {
+    if (!examId || !user?.id) return; // Asegurarse de tener lo necesario
+
+    const pendingStateRaw = localStorage.getItem(
+      `examen_final_pending_${examId}`,
+    );
+    if (pendingStateRaw) {
+      console.log(
+        "Attempting to sync pending final state found in localStorage...",
+      );
+      setSyncStatus("syncing");
+      try {
+        const pendingState = JSON.parse(pendingStateRaw);
+
+        // Opcional: Verificar si el examen ya está 'terminado' en Supabase antes de intentar actualizar
+        // const { data: currentDbState, error: fetchError } = await supabase.from("examenes").select("estado").eq("id", examId).single();
+        // if (fetchError || currentDbState?.estado === 'terminado') {
+        //    console.log("Examen ya marcado como terminado en DB o error al verificar. Limpiando estado local pendiente.");
+        //    localStorage.removeItem(`examen_final_pending_${examId}`);
+        //    setSyncStatus('idle');
+        //    return;
+        // }
+
+        const { error: syncError } = await supabase
+          .from("examenes")
+          .update(pendingState)
+          .eq("id", examId)
+          .eq("user_id", user.id);
+
+        if (syncError) {
+          console.error("Error syncing pending final state:", syncError);
+          setSyncStatus("error");
+          // Podrías notificar al usuario que el sync falló de nuevo
+        } else {
+          console.log(
+            "✅ Pending final state synced successfully on reconnect.",
+          );
+          setSyncStatus("success");
+          localStorage.removeItem(`examen_final_pending_${examId}`); // Limpiar al sincronizar con éxito
+        }
+      } catch (error) {
+        console.error("Error parsing or syncing pending final state:", error);
+        setSyncStatus("error");
+      }
+    } else {
+      console.log("No pending final state found to sync.");
+      // Podrías opcionalmente intentar sincronizar el estado 'en progreso' si no hay uno final pendiente
+      // if (isOnline && !isSubmitted) { /* Lógica para sincronizar estado en progreso */ }
+    }
+  }, [examId, user?.id, setSyncStatus /*, isOnline, isSubmitted */]); // Añadir isOnline/isSubmitted si sincronizas estado en progreso
+
+  const getClassOnline = () => {
+    if (syncStatus === "offline") {
+      return "fa-wifi text-red-500 border-red-300 bg-red-100 animate-pulse";
+    } else if (syncStatus === "success") {
+      return "fa-wifi bg-green-100 border-green-300 text-green-600";
+    } else if (syncStatus === "error") {
+      return "fa-exclamation-triangle bg-orange-100 border-orange-300 text-orange-600";
+    } else if (syncStatus === "syncing") {
+      return "fa-sync bg-blue-100 border-blue-300 text-blue-600";
+    } else {
+      return "";
+    }
+  };
+
+  // Llama a trySyncPendingState en el listener 'online' y quizás una vez al montar el componente si está online.
   // --- Renderizado ---
   return (
     <div className="min-h-screen bg-gray-100">
@@ -892,6 +1150,9 @@ export function ExamenPage() {
                 <div className="pt-4 w-full">
                   {!isSubmitted ? (
                     <div className="space-y-4">
+                      <div className="sync-status-indicator">
+                        {/* Puedes ocultar 'idle' o mostrar otro estado */}
+                      </div>
                       <button
                         onClick={async () => {
                           const confirmar = await Swal.fire({
@@ -912,7 +1173,7 @@ export function ExamenPage() {
                         }}
                         className="w-full gradient-bg text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Finalizar y Enviar Examen"
-                        disabled={timeLeft <= 0} // Deshabilitar si el tiempo se agotó antes de enviar
+                        disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
                       >
                         <i className="fas fa-paper-plane mr-2"></i>
                         <span>Enviar Examen Ahora</span>
@@ -933,11 +1194,11 @@ export function ExamenPage() {
                           });
 
                           if (!confirmar) return; // Si el usuario cancela, salir
-                          handleFinalizar();
+                          handleSuspender();
                         }}
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Suspender y Enviar Examen"
-                        disabled={timeLeft <= 0} // Deshabilitar si el tiempo se agotó antes de enviar
+                        disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
                       >
                         <i className="fas fa-calendar-xmark mr-2"></i>
                         <span>Suspender el Examen</span>
@@ -975,7 +1236,7 @@ export function ExamenPage() {
                 <div className="bg-white flex justify-center rounded-xl shadow-md overflow-hidden w-full p-6 relative">
                   <div className="absolute top-2 right-2">
                     <i
-                      className={`fas fa-wifi p-3 rounded-lg border-2 ${isOnline ? "bg-green-100 border-green-300 text-green-600" : "text-red-500 border-red-300 bg-red-100 animate-pulse"}`}
+                      className={`fas fa-wifi p-3 rounded-lg border-2 ${getClassOnline()}`}
                     ></i>
                   </div>
                   <div className="flex flex-col justify-center items-center align-middle">
@@ -1029,7 +1290,7 @@ export function ExamenPage() {
                         }}
                         className="w-full gradient-bg text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Finalizar y Enviar Examen"
-                        disabled={timeLeft <= 0} // Deshabilitar si el tiempo se agotó antes de enviar
+                        disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
                       >
                         <i className="fas fa-paper-plane mr-2"></i>
                         <span>Enviar Examen Ahora</span>
@@ -1050,20 +1311,40 @@ export function ExamenPage() {
                           });
 
                           if (!confirmar) return; // Si el usuario cancela, salir
-                          handleFinalizar();
+                          handleSuspender();
                         }}
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Suspender y Enviar Examen"
-                        disabled={timeLeft <= 0} // Deshabilitar si el tiempo se agotó antes de enviar
+                        disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
                       >
                         <i className="fas fa-calendar-xmark mr-2"></i>
                         <span>Suspender el Examen</span>
                       </button>
                     </div>
                   ) : (
-                    <div className="w-full bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base text-center flex items-center justify-center shadow-inner">
-                      <i className="fas fa-check-circle mr-2"></i>
-                      <span>Examen Enviado Correctamente</span>
+                    <div className="space-y-4">
+                      {feedback && Object.keys(feedback).length < 1 && (
+                        <button
+                          onClick={handleFeedback}
+                          className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center"
+                          title="Retroalimentar Examen"
+                        >
+                          <i className="fa-solid fa-wheat-awn-circle-exclamation mr-2"></i>{" "}
+                          {isGenerating ? (
+                            <i className="fa-solid fa-spinner fa-spin animate-ping"></i>
+                          ) : (
+                            <span>Retroalimentar todo</span>
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleReset}
+                        className="w-full text-purple-600 bg-purple-100 shadow-purple-100 border-purple-300 border-2 hover:shadow-purple-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center"
+                        title="Suspender y Enviar Examen"
+                      >
+                        <i className="fas fa-undo mr-2"></i>
+                        <span>Reiniciar el examen</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1140,7 +1421,7 @@ export function ExamenPage() {
             )}
 
             {/* Columna Derecha (Pregunta Actual) */}
-            <div className="lg:w-2/3 lg:flex-grow">
+            <div className="mx-auto w-full lg:max-w-2/3 lg:flex-grow">
               {preguntaActual ? (
                 <SeccionExamen
                   feedback={

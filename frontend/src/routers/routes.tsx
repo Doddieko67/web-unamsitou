@@ -10,6 +10,15 @@ import { ResetPassword } from "../pages/ResetPassword";
 import { UpdatePassword } from "../pages/updatePassword";
 import { Perfil } from "../pages/Perfil";
 import { ExamenPage } from "../Examen/ExamenPage";
+import { useParams } from "react-router";
+
+function ExamenPageWrapper() {
+  const { examId } = useParams();
+  // 2. Renderiza ExamenPage pasándole examId como key
+  //    Esto le dice a React: si examId cambia, trata esto como
+  //    un componente COMPLETAMENTE NUEVO.
+  return <ExamenPage key={examId} />;
+}
 
 export function MyRoutes() {
   return (
@@ -17,7 +26,7 @@ export function MyRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="*" element={<NotFound></NotFound>} />
       <Route path="/inicio" element={<Main></Main>} />
-      <Route path="/examen/:examId" element={<ExamenPage />} />
+      <Route path="/examen/:examId" element={<ExamenPageWrapper />} />
       <Route path="/examenes" element={<Examenes />} />
       <Route path="/mi-perfil" element={<Perfil />}></Route>
       <Route path="/login" element={<Login />}></Route>

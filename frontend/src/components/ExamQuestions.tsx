@@ -125,7 +125,7 @@ export function ExamQuestions() {
     console.log("Preparando JSON para texto...");
 
     try {
-      let response = await fetch("http://localhost:3000/api/upload_files", {
+      const response = await fetch("http://localhost:3000/api/upload_files", {
         method: "POST",
         headers: {
           authorization: `Bearer ${session && session.access_token}`,

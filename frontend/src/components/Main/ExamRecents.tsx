@@ -123,75 +123,67 @@ const formatDateDisplay = (dateString: string | null | undefined): string => {
 };
 
 // --- React Component ---
-
 export function ExamRecents() {
-  const { user } = UserAuth(); // Only need the user from the context
-  const [recentExams, setRecentExams] = useState<ExamenData[]>([]); // State for exams
-  const [isLoading, setIsLoading] = useState(true); // State for loading
-  const [error, setError] = useState<string | null>(null); // State for errors
+  const { user } = UserAuth();
+  const [recentExams, setRecentExams] = useState<ExamenData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch exams when the component mounts or user changes
+  // Nuevo estado para controlar cuántas tarjetas se muestran
+  const [visibleCount, setVisibleCount] = useState(6);
+
   useEffect(() => {
     const fetchRecentExams = async () => {
       if (!user) {
-        // If no user, clear exams, set loading false, maybe show a message
         setRecentExams([]);
         setIsLoading(false);
-        setError(null); // No user is not necessarily an error state for fetching, maybe just no exams
-        console.log("No user authenticated, cannot fetch recent exams.");
-        return; // Exit if no user
+        setError(null);
+        return;
       }
-
       setIsLoading(true);
-      setError(null); // Clear previous errors
+      setError(null);
 
       try {
-        console.log(`Fetching recent exams for user: ${user.id}`);
-        // Assume 'supabase' client is available (imported or globally configured)
         const { data, error } = await supabase
           .from("examenes")
-          .select("*") // Select all columns needed
-          .eq("user_id", user.id) // Filter by the current user's ID
-          .order("fecha_inicio", { ascending: false }); // Order by start date, newest first
+          .select("*")
+          .eq("user_id", user.id)
+          .order("fecha_inicio", { ascending: false });
 
         if (error) {
-          console.error("Error fetching recent exams:", error);
-          setError(`Error al cargar los exámenes recientes: ${error.message}`);
-          setRecentExams([]); // Clear previous data on error
+          setError(`Error: ${error.message}`);
+          setRecentExams([]);
         } else {
-          console.log("Recent exams fetched:", data);
-          // Ensure data is treated as ExamenData[]
           setRecentExams(data as ExamenData[]);
         }
       } catch (err) {
-        console.error("Unexpected error fetching recent exams:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Ocurrió un error desconocido al cargar los exámenes.",
-        );
-        setRecentExams([]); // Clear previous data on unexpected error
+        setError(err instanceof Error ? err.message : "Error desconocido");
+        setRecentExams([]);
       } finally {
-        setIsLoading(false); // Always set loading to false when done
+        setIsLoading(false);
       }
     };
 
     fetchRecentExams();
-  }, [user]); // Depend on 'user' so it refetches if the user object changes (e.g., login/logout)
+  }, [user]);
 
-  // --- Render Logic ---
+  // Handler para cargar 6 tarjetas más
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 6);
+  };
+
+  // Slice de los exámenes según visibleCount
+  const examsToShow = recentExams.slice(0, visibleCount);
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-gray-800">
           Tus exámenes recientes
         </h2>
-        {/* Consider making this link dynamic to a full list page */}
-        {/* Or hide it if there are no exams */}
         {recentExams.length > 0 && (
           <a
-            href="#" // Replace with actual link to All Exams page
+            href="#" // Link a la página completa de exámenes
             className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
           >
             Ver todo
@@ -200,37 +192,30 @@ export function ExamRecents() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Show loading state */}
         {isLoading && (
-          <p className="text-gray-600 text-center">Cargando exámenes...</p>
-        )}
-
-        {/* Show error state */}
-        {!isLoading && error && (
-          <p className="text-red-600 col-span-full text-center">
-            Error: {error}
+          <p className="text-gray-600 text-center col-span-full">
+            Cargando exámenes...
           </p>
         )}
 
-        {/* Check if there are exams to display after loading */}
-        {!isLoading && !error && recentExams.length === 0 ? (
-          <p className="text-gray-600 h-full col-span-full text-center flex items-center align-middle">
+        {!isLoading && error && (
+          <p className="text-red-600 col-span-full text-center">{error}</p>
+        )}
+
+        {!isLoading && !error && examsToShow.length === 0 && (
+          <p className="text-gray-600 col-span-full text-center">
             No tienes exámenes recientes.
           </p>
-        ) : (
-          // Map through the recent exams array to render each card
-          !isLoading &&
+        )}
+
+        {!isLoading &&
           !error &&
-          recentExams.map((exam) => {
-            // Only map if not loading and no error
+          examsToShow.map((exam) => {
             const difficultyInfo = getDifficultyDisplay(exam.dificultad);
-            const scorePercentage = calculateScorePercentage(exam); // Only for 'terminado'
+            const scorePercentage = calculateScorePercentage(exam);
             const progressBarColor = getProgressBarColor(scorePercentage);
-            // Use fecha_inicio for sorting, but maybe display fecha_terminacion if available?
-            // Sticking with fecha_inicio for now as it's in the data
             const dateDisplay = formatDateDisplay(exam.fecha_inicio);
 
-            // Determine what to show in the progress section based on state
             let progressContent;
             if (exam.estado === "terminado") {
               progressContent = (
@@ -241,77 +226,79 @@ export function ExamRecents() {
                   <div className="w-16 bg-gray-200 rounded-full h-1.5">
                     <div
                       className={`${progressBarColor} h-1.5 rounded-full`}
-                      style={{ width: `${scorePercentage}%` }} // Dynamic width
-                    ></div>
+                      style={{ width: `${scorePercentage}%` }}
+                    />
                   </div>
                 </div>
               );
             } else if (exam.estado === "en_progreso") {
-              // You could potentially show progress based on answered questions count
-              // e.g., `${Object.keys(exam.respuestas_usuario || {}).length} / ${exam.numero_preguntas} respondidas`
               progressContent = (
                 <span className="text-sm font-medium text-yellow-600">
                   En Progreso
                 </span>
               );
             } else {
-              // pendiente, suspendido, etc.
               progressContent = (
                 <span className="text-sm font-medium text-gray-500">
-                  {exam.estado.charAt(0).toUpperCase() + exam.estado.slice(1)}{" "}
-                  {/* Capitalize first letter */}
+                  {exam.estado.charAt(0).toUpperCase() + exam.estado.slice(1)}
                 </span>
               );
             }
 
             return (
-              <div
-                key={exam.id} // Important for lists in React
-                className="exam-card bg-white border border-gray-200 rounded-lg p-5 hover:border-indigo-300 transition duration-200 ease-in-out"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    {/* Difficulty badge */}
+              <div>
+                <div
+                  key={exam.id}
+                  className="exam-card bg-white border border-gray-200 rounded-lg p-5 hover:border-indigo-300 transition duration-200 ease-in-out"
+                >
+                  <div className="flex justify-between items-start mb-3">
                     <span
                       className={`difficulty-badge text-xs font-semibold px-2.5 py-0.5 rounded ${difficultyInfo.class}`}
                     >
                       {difficultyInfo.text}
                     </span>
+                    <span className="text-xs text-gray-500">{dateDisplay}</span>
                   </div>
-                  {/* Date/Status */}
-                  <span className="text-xs text-gray-500">{dateDisplay}</span>
-                </div>
 
-                {/* Title */}
-                <h3 className="font-medium text-gray-800 mb-2">
-                  {exam.titulo}
-                </h3>
+                  <h3 className="font-medium text-gray-800 mb-2">
+                    {exam.titulo}
+                  </h3>
 
-                {/* Description */}
-                <p className="text-sm text-gray-600 mb-4">
-                  {exam.numero_preguntas} preguntas
-                  {exam.tiempo_limite_segundos > 0 &&
-                    ` | Límite: ${Math.ceil(exam.tiempo_limite_segundos / 60)} min`}
-                </p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {exam.numero_preguntas} preguntas
+                    {exam.tiempo_tomado_segundos
+                      ? ` | Te tomo: ${Math.ceil(
+                          exam.tiempo_tomado_segundos / 60,
+                        )} min`
+                      : " | Te tomo: 0 min"}
+                  </p>
 
-                {/* Progress / Status and Details Button */}
-                <div className="flex justify-between items-center">
-                  {progressContent}{" "}
-                  {/* Dynamically display progress or status */}
-                  {/* Consider making this a dynamic link to the exam page using a routing library */}
-                  {/* Example with React Router or Next.js: */}
-                  <Link
-                    className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
-                    to={`/examen/${exam.id}`}
-                  >
-                    Ver detalles
-                  </Link>
+                  <div className="flex justify-between items-center">
+                    {progressContent}
+                    <Link
+                      className="text-md font-medium text-indigo-600 hover:text-indigo-500"
+                      to={`/examen/${exam.id}`}
+                    >
+                      Ver detalles
+                    </Link>
+                  </div>
                 </div>
               </div>
             );
-          })
-        )}
+          })}
       </div>
+
+      {/* Botón Cargar más */}
+      {!isLoading && !error && visibleCount < recentExams.length && (
+        <div className="col-span-full flex justify-center mt-6">
+          <button
+            onClick={handleLoadMore}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition"
+          >
+            Cargar más ({Math.min(6, recentExams.length - visibleCount)})
+          </button>
+        </div>
+      )}
     </div>
   );
 }
