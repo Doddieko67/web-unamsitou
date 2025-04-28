@@ -38,7 +38,7 @@ export function UpdatePassword() {
         </div>
 
         <div className="bg-white rounded-2xl login-container p-8">
-          <form onSubmit={handleUpdatePassword} className="space-y-6">
+          <form onSubmit={() => handleUpdatePassword} className="space-y-6">
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label

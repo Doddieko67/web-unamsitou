@@ -1,132 +1,109 @@
-// src/components/ExamBasedOnHistory.tsx
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react"; // <-- Añadir useMemo
 import { ExamButton } from "./ExamButton";
 import { Personalization } from "./Main/Personalization";
 import { QuestionConf } from "./Main/QuestionConf";
 import { useNavigate } from "react-router";
 import { UserAuth } from "../context/AuthContext";
 import { TimerConf } from "./TimerConf";
-import { PreviewableRecentExamCard } from "./Main/PreviewableExamRecents"; // Asegúrate de que la ruta sea correcta
-import { supabase } from "../supabase.config"; // Asegúrate de que la ruta sea correcta
-import { ExamenData } from "./Main/interfacesExam"; // Asegúrate de que la ruta y la interfaz sean correctas
-
-// Importar SweetAlert2
-import Swal from "sweetalert2";
+import { PreviewableRecentExamCard } from "./Main/PreviewableExamRecents";
+import { supabase } from "../supabase.config";
+import { ExamenData } from "./Main/interfacesExam";
 
 export function ExamBasedOnHistory() {
-  const { session, user } = UserAuth(); // Obtener la sesión y el usuario
+  const { session } = UserAuth();
   const navigate = useNavigate();
+  const { user } = UserAuth(); // Obtener el usuario
 
   // --- Estados para la generación del examen ---
-  // Estado para los IDs de exámenes PINNEADOS que servirán de BASE para el nuevo examen.
-  // El objeto key-value { examId: true } es útil para búsquedas rápidas O(1).
-  const [pinnedExams, setPinnedExams] = useState<{ [examId: string]: boolean }>(
-    {},
-  );
+  // Estado para los IDs de exámenes SELECCIONADOS para generar el nuevo examen
+  const [, setselectedExams] = useState<string[]>([]);
   const [questionCount, setQuestionCount] = useState<number>(10);
   const [fineTuning, setFineTuning] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [hour, setHour] = useState<number>(0); // Estado para horas del NUEVO examen
-  const [minute, setMinute] = useState<number>(30); // Estado para minutos del NUEVO examen (ej: 30min por defecto)
-  const [second, setSecond] = useState<number>(0); // Estado para segundos del NUEVO examen
+  const [hour, setHour] = useState<number>(3);
+  const [minute, setMinute] = useState<number>(0);
+  const [second, setSecond] = useState<number>(0);
 
   // --- Estados para la lista de exámenes recientes (y su visualización/filtrado) ---
   const [recentExams, setRecentExams] = useState<ExamenData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Estado de carga al obtener exámenes
-  const [error, setError] = useState<string | null>(null); // Estado para errores al obtener exámenes
-  // Estado para la paginación de los NO pinneados en la UI
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Loading state for fetching exams
+  const [error, setError] = useState<string | null>(null);
+  // Estado para los IDs de exámenes PINNEADOS (para la visualización en UI)
+  const [pinnedExams, setPinnedExams] = useState<{ [examId: string]: boolean }>(
+    {},
+  );
+  // Estado para la paginación de los NO pinneados
   const [visibleCount, setVisibleCount] = useState(6);
 
-  // --- Handlers para la configuración del NUEVO examen ---
+  // --- Handlers para la generación del examen ---
 
   const handleQuestionCountChange = useCallback((count: number) => {
     setQuestionCount(count);
   }, []);
-
   const handleFineTuningChange = useCallback((text: string) => {
     setFineTuning(text);
   }, []);
 
-  // Handler principal para generar el nuevo examen basado en historial
   const handleGenerateExam = async () => {
-    // --- Validación Inicial con Swal ---
-    // Comprobar si se ha seleccionado al menos un examen base (pinneado)
+    // Validación inicial (igual que antes)
     if (Object.keys(pinnedExams).length === 0) {
-      Swal.fire({
-        icon: "warning",
-        title: "Selecciona Exámenes Base",
-        text: "Por favor, selecciona al menos un examen anterior fijándolo con el ícono de pin para usarlo como base.",
-        confirmButtonColor: "#3085d6", // Color azul estándar de Swal
-      });
-      return; // Detiene la ejecución si la validación falla
+      // Usar selectedExams
+      alert(
+        "Por favor, selecciona al menos un examen anterior y un nivel de dificultad.",
+      );
+      return;
+    }
+    setIsGenerating(true);
+
+    // --- CONSTRUIR EL PROMPT/LLAMADA AL BACKEND ---
+    // Aquí deberías decidir cómo usar los IDs de `selectedExams` para el backend.
+    // Podrías enviar la lista de IDs o la lista completa de objetos examen,
+    // dependiendo de cómo esté diseñado tu endpoint '/api/generate-content'.
+    // Si el backend necesita los datos de los exámenes seleccionados,
+    // tendrías que buscarlos en `recentExams` basándote en los `selectedExams` IDs.
+    // Para este ejemplo, asumiremos que el backend puede manejar una lista de IDs.
+
+    let promptText = `Genera un examen de ${questionCount} preguntas.\n`;
+    if (fineTuning && fineTuning.trim() !== "") {
+      promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
     }
 
-    setIsGenerating(true); // Habilita el indicador de carga
+    console.log(
+      "Prompt construido en Frontend (para generación basada en historia):",
+      promptText,
+    ); // Para depuración
 
     try {
-      // --- Preparar datos para enviar al backend ---
-      // El backend necesitará saber qué exámenes usar como base (sus IDs).
-      // También puede necesitar el número de preguntas, tiempo, fine-tuning, etc.
-      const baseExamIds = Object.keys(pinnedExams); // Obtiene un array de IDs de los exámenes pinneados
-
-      // Construir un prompt de texto básico si el backend lo espera (aunque la lógica principal puede basarse en los IDs)
-      let promptText = `Genera un examen de ${questionCount} preguntas`;
-      if (fineTuning && fineTuning.trim() !== "") {
-        promptText += ` con las siguientes instrucciones adicionales: ${fineTuning.trim()}.`;
-      } else {
-        promptText += `.`;
-      }
-      // Puedes añadir al prompt que se base en los temas/dificultades de los exámenes con IDs: ${baseExamIds.join(', ')}
-      // pero esto depende de si tu modelo AI puede procesar esa información textualmente o si el backend lo gestiona.
-
-      console.log(
-        "Datos enviados al Backend para generación basada en historial:",
-        {
-          prompt: promptText,
-          base_exams_id: baseExamIds, // Enviar los IDs de los exámenes pinneados
-          cantidad_preguntas: questionCount, // También puedes enviar esto estructurado
-          tiempo_limite_segundos: hour * 3600 + minute * 60 + second, // Tiempo para el NUEVO examen
-          instrucciones_adicionales: fineTuning.trim(), // Fine-tuning estructurado
-          // user_id: user?.id, // Podrías enviar el user_id si el backend lo necesita explícitamente
-        },
-      ); // Para depuración
-
-      // --- Llama al backend para generar el examen ---
+      // Llama al backend, enviando el prompt como texto y otros parámetros relevantes
       const response = await fetch(
-        // Usa una ruta específica si la generación basada en historia tiene un endpoint diferente
-        "http://localhost:3000/api/generate-exam-from-history", // Ejemplo de ruta
+        "http://localhost:3000/api/generate-content", // O la ruta adecuada para generación basada en historia
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Incluye el token de autorización si es necesario
-            authorization: `Bearer ${session?.access_token}`, // Usa encadenamiento opcional
+            authorization: `Bearer ${session && session.access_token}`,
           },
           body: JSON.stringify({
-            prompt: promptText, // Envía el prompt construido
-            base_exams_id: baseExamIds, // Envía el array de IDs de los exámenes base
-            cantidad_preguntas: questionCount,
-            tiempo_limite_segundos: hour * 3600 + minute * 60 + second,
-            instrucciones_adicionales: fineTuning.trim(),
-            // Añade cualquier otro parámetro que el backend necesite
+            prompt: promptText,
+            // También puedes enviar otros parámetros relevantes si tu backend los usa,
+            // como la lista de IDs de los exámenes base, la dificultad seleccionada, el tiempo, etc.
+            // Ejemplo:
+            exams_id: pinnedExams, // Enviar los IDs seleccionados
+            tiempo_limite_segundos: hour * 3600 + minute * 60 + second, // Tiempo para el NUEVO examen
           }),
         },
       );
 
-      // --- Manejo de la respuesta del backend ---
       if (!response.ok) {
-        // Intenta leer el mensaje de error del cuerpo de la respuesta si está disponible
-        const errorBody = await response.json().catch(() => null); // Intenta parsear JSON, ignora errores si no es JSON
-        const errorMessage =
-          errorBody?.message ||
-          `Error del servidor: ${response.status} ${response.statusText}`;
-        throw new Error(errorMessage); // Lanza un error con un mensaje más específico
+        const errorDetail = await response.text(); // Intenta obtener el texto del error
+        throw new Error(
+          `Error al generar el examen (${response.status}): ${errorDetail || response.statusText}`,
+        );
       }
 
-      const result = await response.json();
+      const result = await response.json(); // Espera { examId: '...' }
 
-      // Verifica si la respuesta contiene el ID del examen
-      if (!result || !result.examId) {
+      if (!result.examId) {
         throw new Error(
           "La respuesta del servidor no contenía un ID de examen válido.",
         );
@@ -134,128 +111,79 @@ export function ExamBasedOnHistory() {
 
       console.log("Nuevo examen generado y guardado con ID:", result.examId);
 
-      // --- NAVEGACIÓN A LA PÁGINA DEL NUEVO EXAMEN ---
-      // Navega a la ruta con el ID del examen generado.
-      // No se muestra un Swal de éxito aquí porque la navegación es la indicación visual de éxito.
-      navigate(`/examen/${result.examId}`);
+      navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del NUEVO examen
     } catch (error) {
-      // Especifica 'any' o un tipo de error más específico si lo conoces
-      // --- Manejo de Errores con Swal ---
-      console.error("Error en la llamada de generación:", error); // Loguea el error completo para debugging
-      Swal.fire({
-        icon: "error",
-        title: "Error al Generar Examen",
-        text: `Hubo un problema al intentar generar tu examen. Por favor, inténtalo de nuevo.`,
-        confirmButtonColor: "#d33", // Color rojo estándar de Swal
-      });
+      console.error("Error en la llamada de generación:", error);
+      alert(
+        `Error al generar examen: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
-      // Este bloque siempre se ejecuta, ya sea que haya éxito o error
-      setIsGenerating(false); // Deshabilita el indicador de carga
+      setIsGenerating(false);
     }
   };
 
   // --- Handlers para la visualización/filtrado de exámenes recientes ---
 
-  // Handler para PINNEAR/DESPINNEAR exámenes (clic en el icono de pin o en la tarjeta completa)
+  // Handler para PINNEAR/DESPINNEAR exámenes (clic en el icono de pin)
   const handlePinExam = useCallback((examId: string) => {
     setPinnedExams((prevPinned) => {
       const newPinned = { ...prevPinned };
-      // Toggle logic: Si ya está pinneado, lo quita; si no, lo añade
+      // Toggle logic
       if (newPinned[examId]) {
-        delete newPinned[examId]; // Despinnear
-        console.log(`Examen ${examId} despinnneado.`);
+        delete newPinned[examId]; // Unpin
       } else {
-        newPinned[examId] = true; // Pinnear
-        console.log(`Examen ${examId} pinneado.`);
+        newPinned[examId] = true; // Pin
       }
-      // TODO: Considerar persistir este estado (e.g., localStorage, metadatos del usuario en DB)
-      // para que los pines no se pierdan al recargar la página.
+      // TODO: Consider persisting this state (e.g., localStorage, user metadata in DB)
+      // so pins aren't lost on refresh.
       return newPinned;
     });
-  }, []); // Dependencias vacías, solo actualiza el estado local
+  }, []); // Sin dependencias, solo actualiza el estado local
 
-  // Handler para eliminar un examen
-  const handleDeleteExam = useCallback(
-    async (examId: string) => {
-      // Confirmación antes de eliminar
-      const result = await Swal.fire({
-        title: "¿Estás seguro?",
-        text: "¡No podrás revertir esta acción!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33", // Rojo para confirmar eliminación
-        cancelButtonColor: "#3085d6", // Azul para cancelar
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar",
+  const handleDeleteExam = useCallback(async (examId: string) => {
+    // Podrías mostrar un indicador de carga específico para la eliminación si quieres
+    // setIsLoading(true);
+
+    try {
+      // 1. Quitar el pin si está pinneado
+      setPinnedExams((prevPinned) => {
+        const newPinned = { ...prevPinned };
+        delete newPinned[examId];
+        return newPinned;
       });
 
-      // Si el usuario confirma
-      if (result.isConfirmed) {
-        // Podrías mostrar un indicador de carga específico para la eliminación si quieres
-        // setIsLoading(true); // Esto podría interferir con el loading general
+      // 2. Quitar de la selección si estaba seleccionado
+      setselectedExams((prevSelected) =>
+        prevSelected.filter((id) => id !== examId),
+      );
 
-        try {
-          // 1. Quitar el pin si está pinneado en el estado local inmediatamente (optimista)
-          setPinnedExams((prevPinned) => {
-            const newPinned = { ...prevPinned };
-            delete newPinned[examId];
-            return newPinned;
-          });
+      // 3. Eliminar de la base de datos
+      const { error: examError } = await supabase
+        .from("examenes")
+        .delete()
+        .eq("id", examId);
 
-          // 2. Eliminar de la base de datos
-          const { error: examError } = await supabase
-            .from("examenes")
-            .delete()
-            .eq("id", examId)
-            .eq("user_id", user?.id); // Asegurar que solo el dueño pueda eliminar
-
-          if (examError) {
-            console.error("Error deleting exam:", examError);
-            // Si falla la eliminación en DB, podrías revertir el estado de pin si quieres
-            // Podrías mostrar un Swal de error aquí
-            Swal.fire({
-              icon: "error",
-              title: "Error al Eliminar",
-              text: `No se pudo eliminar el examen: ${examError.message}`,
-            });
-          } else {
-            // 3. Eliminar del estado local recentExams si la DB tuvo éxito
-            setRecentExams((prevExams) =>
-              prevExams.filter((exam) => exam.id !== examId),
-            );
-            // Mostrar Swal de éxito (opcional, ya que la eliminación visual es el feedback principal)
-            Swal.fire({
-              icon: "success",
-              title: "Eliminado",
-              text: "El examen ha sido eliminado correctamente.",
-              toast: true,
-              position: "top-end",
-              showConfirmButton: false,
-              timer: 3000,
-              timerProgressBar: true,
-            });
-          }
-        } catch (error) {
-          console.error("Error deleting exam:", error);
-          // Mostrar Swal de error genérico
-          Swal.fire({
-            icon: "error",
-            title: "Error al Eliminar",
-            text: `Ocurrió un error inesperado: ${error || "Error desconocido"}`,
-          });
-        } finally {
-          // Si usaste un indicador de carga específico, restablece aquí
-          // setIsLoading(false);
-        }
+      if (examError) {
+        console.error("Error deleting exam:", examError);
+        // Podrías revertir el estado de pin/seleccion si la eliminación falla catastróficamente
+      } else {
+        // 4. Eliminar del estado local si la DB tuvo éxito
+        setRecentExams((prevExams) =>
+          prevExams.filter((exam) => exam.id !== examId),
+        );
       }
-    },
-    [user],
-  ); // Dependencia: user es necesario para la comprobación de user_id en supabase
+    } catch (error) {
+      console.error("Error deleting exam:", error);
+      // Podrías mostrar un mensaje de error al usuario
+    } finally {
+      // Si usaste un indicador de carga específico, restablece aquí
+      // setIsLoading(false);
+    }
+  }, []); // Sin dependencias explícitas que afecten la lógica interna
 
-  // Cargar exámenes recientes al inicio para mostrarlos como opciones base
+  // Cargar exámenes recientes al inicio
   useEffect(() => {
     const fetchRecentExams = async () => {
-      // No cargar si no hay usuario logueado
       if (!user) {
         setRecentExams([]);
         setIsLoading(false);
@@ -266,73 +194,64 @@ export function ExamBasedOnHistory() {
       setError(null); // Limpiar errores anteriores
 
       try {
-        // Consultar exámenes del usuario, ordenados por fecha descendente
         const { data, error: fetchError } = await supabase
           .from("examenes")
-          .select("*") // Seleccionar todas las columnas
-          .eq("user_id", user.id) // Filtrar por el ID del usuario actual
-          .order("fecha_inicio", { ascending: false }); // Ordenar por fecha
+          .select("*")
+          .eq("user_id", user.id)
+          .order("fecha_inicio", { ascending: false });
 
         if (fetchError) {
-          console.error("Supabase fetch error:", fetchError); // Log para depuración
           setError(`Error al cargar exámenes: ${fetchError.message}`);
           setRecentExams([]);
         } else {
-          // Formatear los datos si es necesario (ej: asegurar que 'datos' es un array)
           const formattedData = data.map((item) => ({
             ...item,
-            datos: Array.isArray(item.datos) ? item.datos : [], // Asegurar que 'datos' es un array, o ajusta según tu tipo
+            datos: Array.isArray(item.datos) ? item.datos : [],
+            // Podrías cargar el estado 'pinnedExams' aquí si lo guardaras en DB/localStorage
           }));
           setRecentExams(formattedData as ExamenData[]);
-          // Aquí podrías también cargar el estado 'pinnedExams' si lo persistieras
-          // Por ejemplo: cargar de localStorage o de metadatos del usuario si aplica
         }
       } catch (err) {
-        console.error("General fetch error:", err); // Log para depuración
         setError(
           err instanceof Error
-            ? `Error desconocido al cargar exámenes: ${err.message}`
+            ? err.message
             : "Error desconocido al cargar exámenes.",
         );
-        setRecentExams([]); // Limpiar exámenes en caso de error
+        setRecentExams([]);
       } finally {
         setIsLoading(false); // Desactivar carga al finalizar (éxito o error)
       }
     };
 
     fetchRecentExams();
-  }, [user]); // Dependencia: Volver a cargar si cambia el usuario
+  }, [user]); // Dependencia 'user'
 
-  // --- Derivar estados o listas a partir de los estados principales (optimizados con useMemo) ---
-
-  // Lista de exámenes pinneados (para mostrar arriba)
+  // --- Derivar estados o listas a partir de los estados principales ---
+  // Usamos useMemo para optimizar la derivación de las listas pinneados/no pinneados
   const pinnedExamList = useMemo(() => {
+    // Filtrar los exámenes recientes que están en el estado `pinnedExams`
     return recentExams.filter((exam) => pinnedExams[exam.id]);
-  }, [recentExams, pinnedExams]); // Recalcular si cambian los exámenes o el estado de pines
+  }, [recentExams, pinnedExams]); // Recalcular si cambian los exámenes recientes o el estado de pines
 
-  // Lista de exámenes NO pinneados (para mostrar debajo)
   const nonPinnedExamList = useMemo(() => {
+    // Filtrar los exámenes recientes que NO están en el estado `pinnedExams`
     return recentExams.filter((exam) => !pinnedExams[exam.id]);
-  }, [recentExams, pinnedExams]); // Recalcular si cambian los exámenes o el estado de pines
+  }, [recentExams, pinnedExams]); // Recalcular si cambian los exámenes recientes o el estado de pines
 
-  // Lista de exámenes NO pinneados paginados (para mostrar en la sección de abajo)
+  // Aplicar paginación solo a la lista de no pinneados
   const slicedNonPinnedExams = useMemo(() => {
     return nonPinnedExamList.slice(0, visibleCount);
   }, [nonPinnedExamList, visibleCount]); // Recalcular si cambian la lista no pinneada o el contador visible
 
-  // Handler para cargar más exámenes (incrementar visibleCount)
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => prev + 6); // Carga 6 más de la lista de no pinneados
-  }, []); // Sin dependencias
+  }, []); // Sin dependencias, solo actualiza el estado local
 
-  // Comprobación para saber si hay contenido total (pinneados o no) para mostrar secciones de listas
+  // Comprobación para saber si hay contenido total (pinneados o no) para mostrar secciones
   const hasExamsLoadedAndAvailable =
     !isLoading && !error && recentExams.length > 0;
 
-  // Comprobación para deshabilitar el botón de generar:
-  // Deshabilitado si:
-  // 1. No hay exámenes pinneados seleccionados.
-  // 2. Se está generando un examen actualmente.
+  // Comprobación para deshabilitar el botón de generar
   const isGenerateDisabled =
     Object.keys(pinnedExams).length === 0 || isGenerating;
 
@@ -342,45 +261,53 @@ export function ExamBasedOnHistory() {
       className="bg-white rounded-xl shadow-lg overflow-hidden p-6 sm:p-8 mb-8 border border-gray-200"
     >
       <h2 className="text-2xl font-bold text-gray-900 mb-8 border-b pb-4">
-        Generar Examen Basado en Historial
+        Configura tu Examen Personalizado
       </h2>
       <h3 className="text-lg font-medium text-gray-700 mb-4">
-        1. Selecciona uno o más exámenes anteriores para usar como base (fíjalos
-        con el ícono <i className="fas fa-thumbtack text-gray-500"></i>)
+        1. Selecciona exámenes anteriores para basar tu nuevo examen
       </h3>
       {/* Sección para mostrar los exámenes recientes */}
       <div className="mb-7">
+        {" "}
+        {/* Margen inferior para separar de las configuraciones */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Tus exámenes recientes
+          </h2>
+        </div>
         {/* Mensajes de estado global de la carga de exámenes */}
         {isLoading && (
           <p className="text-gray-600 text-center col-span-full">
-            <i className="fas fa-spinner fa-spin mr-2"></i>Cargando exámenes...
+            Cargando exámenes...
           </p>
         )}
-        {/* Mostrar error al cargar exámenes si existe */}
         {!isLoading && error && (
           <p className="text-red-600 col-span-full text-center">{error}</p>
         )}
-        {/* Contenido si NO está cargando, NO hay error y SÍ hay exámenes disponibles */}
+        {/* Contenido si NO está cargando, NO hay error y SÍ hay exámenes */}
         {hasExamsLoadedAndAvailable && (
           <>
             {" "}
-            {/* Fragmento para agrupar las secciones pinneados/no pinneados */}
-            {/* Sección de Exámenes Fijados (usados como base) */}
+            {/* Usamos un fragmento para agrupar las secciones pinneados/no pinneados */}
+            {/* Sección de Exámenes Fijados */}
             {pinnedExamList.length > 0 && (
               <div className="mb-8">
+                {" "}
+                {/* Añadir margen inferior */}
                 <h3 className="text-lg font-semibold text-gray-700 mb-4">
-                  Exámenes Base Seleccionados ({pinnedExamList.length})
+                  Exámenes Seleccionados para el analisis (
+                  {pinnedExamList.length})
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {pinnedExamList.map((exam, index) => (
                     <PreviewableRecentExamCard
                       key={exam.id}
                       exam={exam}
-                      onDelete={handleDeleteExam} // Pasa el handler de eliminación
-                      isPinneable={true} // Indica que la tarjeta tiene funcionalidad de pin
-                      isThisPinned={true} // Indica que esta tarjeta está actualmente pinneada
-                      onEntireToggle={handlePinExam} // Handler que se llama al hacer clic en la tarjeta (para pinnear/despinnear)
-                      index={index} // El índice no es estrictamente necesario aquí a menos que lo uses para algo visual
+                      onDelete={handleDeleteExam}
+                      index={index} // Índice dentro de la lista de pinneados
+                      isPinneable={false} // La tarjeta es fijable
+                      isThisPinned={true} // La tarjeta está fijada
+                      onEntireToggle={handlePinExam} // Handler para seleccionar (clic en tarjeta)
                     />
                   ))}
                 </div>
@@ -391,12 +318,12 @@ export function ExamBasedOnHistory() {
               </div>
             )}
             {/* Sección de Exámenes Recientes (No Fijados) */}
-            {/* Mostrar esta sección si hay exámenes no pinneados para visualizar (incluso si están paginados) */}
-            {nonPinnedExamList.length > 0 && (
-              <div className={`${pinnedExamList.length > 0 ? "" : "mt-6"}`}>
-                {/* Mostrar encabezado solo si hay pinneados arriba O si NO hay pinneados y esta es la única sección */}
-                {(pinnedExamList.length > 0 ||
-                  nonPinnedExamList.length > 0) && (
+            {slicedNonPinnedExams.length > 0 && (
+              <div className={`${pinnedExamList.length > 0 ? "" : ""} mt-6`}>
+                {" "}
+                {/* Margen superior condicional */}
+                {/* Mostrar encabezado solo si hay pinneados arriba O si esta es la única sección de exámenes */}
+                {(pinnedExamList.length > 0 || pinnedExamList.length === 0) && (
                   <h3 className="text-lg font-semibold text-gray-700 mb-4">
                     {pinnedExamList.length > 0
                       ? "Otros Exámenes Recientes"
@@ -409,50 +336,44 @@ export function ExamBasedOnHistory() {
                     <PreviewableRecentExamCard
                       key={exam.id}
                       exam={exam}
-                      onDelete={handleDeleteExam} // Pasa el handler de eliminación
-                      isPinneable={true} // Indica que la tarjeta tiene funcionalidad de pin
-                      isThisPinned={false} // Indica que esta tarjeta NO está pinneada
-                      onEntireToggle={handlePinExam} // Handler para pinnear/despinnear
-                      index={index} // Índice no estrictamente necesario
+                      onDelete={handleDeleteExam}
+                      index={index} // Índice dentro de la lista paginada de no pinneados
+                      isPinneable={false} // La tarjeta es fijable
+                      onEntireToggle={handlePinExam} // Handler para seleccionar (clic en tarjeta)
                     />
                   ))}
                 </div>
               </div>
             )}
-            {/* Mensaje si hay exámenes totales, pero ninguno pinneado Y ya se mostraron todos los no pinneados */}
-            {!isLoading &&
-              !error &&
-              recentExams.length > 0 && // Hay exámenes en total
-              pinnedExamList.length === 0 && // Ninguno está pinneado
-              visibleCount >= nonPinnedExamList.length && // Ya se cargaron todos los no pinneados disponibles
-              nonPinnedExamList.length > 0 && ( // Y había al menos uno no pinneado (para evitar mensaje duplicado)
-                <p className="text-gray-500 text-center mt-4">
-                  No hay más exámenes recientes sin fijar para mostrar.
-                </p>
-              )}
-            {/* Mensaje "Fija un examen" si hay exámenes totales pero ninguno pinneado Y no hay no-pinneados visibles (ej: recién cargado) */}
+            {/* Mensaje si hay exámenes pero ninguno pinneado y no se muestran no pinneados */}
             {!isLoading &&
               !error &&
               recentExams.length > 0 &&
               pinnedExamList.length === 0 &&
-              slicedNonPinnedExams.length === 0 && ( // Ninguno está pinneado y ninguno no pinneado visible (ej: recién cargado)
+              slicedNonPinnedExams.length === 0 &&
+              visibleCount >= nonPinnedExamList.length && (
                 <p className="text-gray-500 text-center mt-4">
-                  Selecciona exámenes para empezar a usarlos como base para tu
-                  nuevo examen.
+                  No hay más exámenes recientes sin fijar para mostrar.
+                </p>
+              )}
+            {/* Mensaje "Fija un examen" si hay exámenes totales pero ninguno pinneado */}
+            {!isLoading &&
+              !error &&
+              recentExams.length > 0 &&
+              pinnedExamList.length === 0 && (
+                <p className="text-gray-500 text-center mt-4">
+                  Selecciona exámenes para empezar a usarlos como base.
                 </p>
               )}
           </>
         )}
-
         {/* Mensaje si NO está cargando, NO hay error y NO hay exámenes en total */}
         {!isLoading && !error && recentExams.length === 0 && (
           <p className="text-gray-600 col-span-full text-center mt-4">
-            <i className="fas fa-info-circle mr-2"></i>No tienes exámenes
-            recientes para usar como base. Genera un examen primero para empezar
-            a construir tu historial.
+            No tienes exámenes recientes para usar como base. Genera uno
+            primero.
           </p>
         )}
-
         {/* Botón Cargar más */}
         {/* Mostrar si no está cargando, no hay error, y aún quedan no pinneados por mostrar */}
         {!isLoading && !error && visibleCount < nonPinnedExamList.length && (
@@ -460,19 +381,15 @@ export function ExamBasedOnHistory() {
             <button
               onClick={handleLoadMore}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition"
-              disabled={isGenerating} // Deshabilitar si se está generando un examen
             >
               Cargar más ({Math.min(6, nonPinnedExamList.length - visibleCount)}
-              ) {/* Muestra cuántos se cargarán */}
+              )
             </button>
           </div>
         )}
       </div>{" "}
       {/* Fin de la sección de exámenes recientes */}
-      {/* --- Configuraciones Adicionales para el Nuevo Examen --- */}
-      <h3 className="text-lg font-medium text-gray-700 my-4 border-t pt-4">
-        2. Configura las preguntas y tiempo del nuevo examen
-      </h3>
+      {/* Otras configuraciones para el nuevo examen */}
       <QuestionConf
         questionCount={questionCount}
         onQuestionCountChange={handleQuestionCountChange}
@@ -484,29 +401,19 @@ export function ExamBasedOnHistory() {
         setMinute={setMinute}
         second={second}
         setSecond={setSecond}
-      />
-      <h3 className="text-lg font-medium text-gray-700 my-4 border-t pt-4">
-        3. Añade instrucciones adicionales (Opcional)
-      </h3>
+      ></TimerConf>
       <Personalization
         fineTuning={fineTuning}
         onFineTuningChange={handleFineTuningChange}
       />
-      {/* Botón para generar el examen, deshabilitado si la configuración no está completa o está generando */}
-      <h3 className="text-lg font-medium text-gray-700 my-4 border-t pt-4">
-        4. Genera tu nuevo examen
-      </h3>
       <ExamButton
         onGenerateClick={handleGenerateExam}
-        disabled={isGenerateDisabled} // Usa la variable de estado derivada
+        disabled={isGenerateDisabled}
       />
-      {/* Indicador visual mientras se genera el examen */}
       {isGenerating && (
         <div className="mt-4 text-center text-sm text-indigo-600">
-          <i className="fas fa-spinner fa-spin mr-2"></i>{" "}
-          {/* Icono de spinner (requiere FontAwesome) */}
-          Generando tu nuevo examen basado en tu historial... esto puede tardar
-          unos momentos.
+          <i className="fas fa-spinner fa-spin mr-2"></i>
+          Generando tu examen... puede tardar unos minutos.
         </div>
       )}
     </div>
