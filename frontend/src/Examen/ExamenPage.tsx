@@ -208,7 +208,6 @@ export function ExamenPage() {
   // Cargar datos del examen y estado guardado al inicio
   useEffect(() => {
     const fetchExamenData = async () => {
-      console.log(`Intentando cargar datos para examen ID: ${examId}`);
       setIsLoadingData(true);
       setLoadError(null);
       setExamenData(null);
@@ -216,12 +215,10 @@ export function ExamenPage() {
       isSubmittedRef.current = false;
 
       if (!examId) {
-        setLoadError("ID de examen no encontrado en la URL.");
         setIsLoadingData(false);
         return;
       }
       if (!user) {
-        setLoadError("Usuario no autenticado. No se puede cargar el examen.");
         setIsLoadingData(false);
         // Podrías redirigir a login si no está autenticado
         // navigate('/login');
@@ -257,9 +254,6 @@ export function ExamenPage() {
         // let estadoGuardado = null; // Ya cargado arriba
 
         // 1. Intentar cargar desde Supabase primero para el estado más reciente (incluyendo si ya terminó)
-        console.log(
-          `Consultando Supabase para examen ${examId} y usuario ${user.id}`,
-        );
         const { data: supabaseData, error: supabaseError } = await supabase
           .from("examenes")
           .select("*") // Selecciona todas las columnas
@@ -292,19 +286,12 @@ export function ExamenPage() {
         if (data.estado === "terminado") {
           // Si el examen ya terminó en Supabase, forzar el estado isSubmitted
           setIsSubmitted(true); // Esto actualizará isSubmittedRef en su propio useEffect
-          console.log(
-            "Examen ya marcado como terminado en Supabase. Forzando estado 'enviado'.",
-          );
           // Limpiar cualquier estado local si el examen ya terminó en DB
           // Cargar respuestas y tiempo tomado desde Supabase si el estado es terminado
           // Esto actualizará timeLeftRef en su callback del timer si estuviera activo (pero no lo estará)
           // También puedes actualizar explícitamente aquí si es necesario, pero la ref de timeLeft se actualizará
           // en el timer callback con 0 si el tiempo ya expiró.
           // timeLeftRef.current = tiempoRestante; // Opcional pero seguro
-
-          console.log(
-            `Tiempo límite: ${tiempoLimite}, Tiempo tomado guardado: ${tiempoTomado}, Tiempo restante calculado: ${tiempoRestante}`,
-          );
         }
 
         // Validación básica de los datos recibidos
@@ -317,8 +304,6 @@ export function ExamenPage() {
             "Los datos del examen recuperados no contienen preguntas válidas.",
           );
         }
-
-        console.log("Datos del examen cargados:", data);
 
         // Aunque ya actualizaste refs arriba si cargaste de localStorage,
         // los valores de Supabase podrían ser más recientes si NO cargaste de localStorage
@@ -354,7 +339,6 @@ export function ExamenPage() {
           `examen_estado_${examId}`,
           JSON.stringify(estadoActual),
         );
-        console.log("Estado actual guardado en localStorage via auto-save.");
 
         // Calcular tiempo restante solo si el examen NO está terminado/suspendido
         // Este bloque ya maneja setTimeLeft correctamente. La ref timeLeftRef se actualizará
@@ -368,9 +352,6 @@ export function ExamenPage() {
           const tiempoRestante = Math.max(0, tiempoLimite - tiempoTomado);
           setTimeLeft(tiempoRestante);
           // No necesitas actualizar timeLeftRef.current aquí, el timer lo hará.
-          console.log(
-            `Tiempo límite: ${tiempoLimite}, Tiempo tomado (localStorage/Supabase): ${tiempoTomado}, Tiempo restante calculado: ${tiempoRestante}`,
-          );
 
           // Opcional: Marcar el examen como 'en_progreso' si estaba 'pendiente'
           if (data.estado === "pendiente") {
@@ -1047,7 +1028,6 @@ export function ExamenPage() {
   }, [isSubmitted, timeLeft, handleFinalizar]); // Las
 
   const preguntaActual = preguntas[currentQuestionIndex];
-  const today = new Date(examenData?.fecha_inicio || Date.now()); // Usar fecha de inicio del examen si existe
 
   const trySyncPendingState = useCallback(async () => {
     if (!examId || !user?.id) return; // Asegurarse de tener lo necesario

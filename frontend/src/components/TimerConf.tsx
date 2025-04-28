@@ -130,18 +130,6 @@ export function TimerConf({
     );
   };
 
-  // Formatear el tiempo para mostrar en etiquetas del slider
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-
-    if (h > 0) {
-      return `${h}h ${m}m`;
-    } else {
-      return `${m}m`;
-    }
-  };
-
   return (
     <div className="flex flex-col items-center w-full">
       <div className="flex items-center justify-center gap-6 p-4 pb-2 bg-white rounded-xl shadow-lg">

@@ -40,7 +40,7 @@ export function SignUp() {
         </div>
 
         <div className="bg-white rounded-2xl login-container p-8">
-          <form onSubmit={handleSignUp} className="space-y-6">
+          <form onSubmit={() => handleSignUp} className="space-y-6">
             <div>
               <label
                 htmlFor="email"

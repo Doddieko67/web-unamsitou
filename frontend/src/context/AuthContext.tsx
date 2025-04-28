@@ -313,9 +313,6 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
         return false; // Indicar que no hubo actualización efectiva
       }
 
-      console.log(
-        `Examen ${examId} actualizado y marcado como terminado exitosamente.`,
-      );
       return true; // Indicar éxito
     } catch (error) {
       // Capturar cualquier excepción inesperada
@@ -335,7 +332,6 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log(`Evento Supabase: ${event}`, session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false); // Termina la carga después de un cambio
