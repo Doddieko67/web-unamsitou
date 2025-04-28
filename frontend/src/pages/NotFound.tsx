@@ -1,8 +1,9 @@
 export function NotFound() {
   return (
-    <>
-      <h1>Not found</h1>
-      <h3>Try with other direction</h3>
-    </>
+    <div className="flex items-center justify-center h-screen">
+      <h2 className="text-center text-gray-400 text-8xl font-bold">
+        Not found
+      </h2>
+    </div>
   );
 }

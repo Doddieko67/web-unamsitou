@@ -311,7 +311,6 @@ export function ExamQuestions() {
         onGenerateClick={handleGenerate}
         disabled={isGenerateDisabled}
       />
-      nome vez?
       {isLoading /* ... Indicador de carga sin cambios ... */ && (
         <div className="mt-4 text-center text-sm text-indigo-600">
           {" "}

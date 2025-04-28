@@ -12,14 +12,6 @@ const Data = [
     title: "Mis Examenes",
     path: "/examenes",
   },
-  {
-    title: "Mi perfil",
-    path: "/mi-perfil",
-  },
-  {
-    title: "Contacto",
-    path: "/contact",
-  },
 ];
 
 export function NavBar() {
@@ -200,7 +192,7 @@ export function NavBar() {
                             e.preventDefault();
                             handleSignOut();
                           }} // Use the handler that closes dropdown
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-red-500"
+                          className="block px-4 py-2 text-sm hover:bg-gray-100 text-red-500"
                           role="menuitem" // ARIA role
                         >
                           <i className="fas fa-sign-out-alt mr-2"></i> Cerrar

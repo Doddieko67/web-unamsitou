@@ -4,7 +4,7 @@ import { useState } from "react";
 import Swal from "sweetalert2";
 
 export function Login() {
-  const { signInWithGoogle, signInWithEmail, signInWithFacebook } = UserAuth();
+  const { signInWithGoogle, signInWithEmail } = UserAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const handleSignIn = async (e: React.FormEvent) => {
@@ -32,21 +32,6 @@ export function Login() {
         title: "Error",
         icon: "error",
         text: "Error al iniciar sesion con Google",
-      });
-      console.error(error);
-    }
-  };
-
-  const handleFacebookSignIn = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    try {
-      await signInWithFacebook();
-      // La redirección se maneja en el AuthContext
-    } catch (error) {
-      Swal.fire({
-        title: "Error",
-        icon: "error",
-        text: "Error al intentar iniciar sesion con Facebook",
       });
       console.error(error);
     }
@@ -130,20 +115,16 @@ export function Login() {
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="remember"
-                name="remember"
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label
-                htmlFor="remember"
-                className="ml-2 block text-sm text-gray-700"
-              >
-                Recordar mi sesión
-              </label>
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                ¿No tienes una cuenta?{" "}
+                <Link
+                  to="/signup"
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Regístrate ahora
+                </Link>
+              </p>
             </div>
 
             <div>
@@ -190,31 +171,13 @@ export function Login() {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="mt-6">
             <button
               onClick={handleGoogleSignIn}
               className="social-btn w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               <i className="fab fa-google text-red-500 mr-2"></i> Google
             </button>
-            <button
-              onClick={handleFacebookSignIn}
-              className="social-btn w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              <i className="fab fa-facebook text-blue-500 mr-2"></i> Facebook
-            </button>
-          </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              ¿No tienes una cuenta?{" "}
-              <Link
-                to="/signup"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Regístrate ahora
-              </Link>
-            </p>
           </div>
         </div>
       </div>

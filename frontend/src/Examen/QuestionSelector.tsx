@@ -29,7 +29,6 @@ export function QuestionSelector({
   title = "Preguntas",
   pinnedQuestions,
   pinnedMode = false, // Default to false
-  grid = 8, // Default to 8 columns
 }: QuestionSelectorProps) {
   // If we're in pinned mode, we'll create a mapping of filtered indices to original indices
   const pinnedIndices = pinnedMode
