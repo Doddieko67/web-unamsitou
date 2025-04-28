@@ -5,12 +5,12 @@ import { getUserFromRequest } from "./reqAuthMiddleware.js";
 import dotenv from "dotenv";
 import {
   CreateAuthExamUser,
-  SelectAuthExamUser,
   CreateAuthFeedback,
   verifyAuthExamUser,
 } from "./reqSupabase.js";
 import { content_documents, delete_documents, get_ready } from "./local.js";
 import { ok } from "node:assert";
+import { processExamsSelected } from "./analize.js";
 
 dotenv.config(); // Carga variables de entorno desde .env
 
@@ -207,7 +207,7 @@ app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
     );
 
     // Verificar autorización y obtener datos procesados del examen
-    const promptData = await verifyAuthExamUser(res, user_id, examen_id);
+
 
     if (!promptData || promptData.error) {
       // Si verifyAuthExamUser ya manejó el error o devolvió una respuesta
@@ -232,7 +232,7 @@ app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
             estar mal y otra que esta bien. Pero no solo eso, puede ser que
            el usuario seleccione la respuesta al azar dejando al suerte y
           sorprendemente, la responde bien, entonces, tambien explica este.
-          No necesitas decirle que la respuesta es correcta o incorrecta.
+          Recuerda que no necesitas decirle que la respuesta es correcta o incorrecta.
 
     Tu respuesta debe seguir EXACTAMENTE este formato:
     ##PREGUNTA_1##
@@ -315,7 +315,7 @@ app.post("/api/generate-feedback", getUserFromRequest, async (req, res) => {
 app.post("/api/generate-content", getUserFromRequest, async (req, res) => {
   try {
     console.log("aqui?");
-    const { prompt, dificultad, tiempo_limite_segundos } = req.body; // Recibe el input del frontend
+    const { exams_id, prompt, dificultad, tiempo_limite_segundos } = req.body; // Recibe el input del frontend
 
     if (!prompt)
       return res.status(400).json({ error: "Falta el prompt en el body" });
@@ -447,6 +447,158 @@ app.post("/api/generate-content", getUserFromRequest, async (req, res) => {
       examenData.descripcion,
       examenData.dato,
       dificultad,
+      examenData.numero_preguntas,
+      tiempo_limite_segundos,
+    );
+
+    // Envía la respuesta de vuelta al frontend
+  } catch (error) {
+    console.error("Error en /api/generate-content:", error);
+    res.status(500).json({ error: "Error al generar contenido" });
+  }
+});
+
+app.post("/api/generate-content-based-on-history", getUserFromRequest, async (req, res) => {
+  try {
+    console.log("aqui?");
+    const { exams_id, prompt, tiempo_limite_segundos } = req.body; // Recibe el input del frontend
+
+    if (!prompt)
+      return res.status(400).json({ error: "Falta el prompt en el body" });
+
+    const user_id = req.user.id;
+
+    const examenesProcesados = await processExamsSelected(user_id, exams_id);
+
+    if (!examenesProcesados || examenesProcesados.error) {
+      // Si verifyAuthExamUser ya manejó el error o devolvió una respuesta
+      return;
+    }
+
+    const model = "gemini-2.5-pro-exp-03-25";
+    // Llama a la API de Google desde el backend
+
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: [prompt, examenesProcesados],
+      config: {
+        systemInstruction: `El usuario escogio los examenes y quiere que hagas
+        un nuevo examen para mejorar y aprender de los errores que cometió en los examenes anteriores.
+        Creas el titulo adecuado del examen abarcando los temas de los examenes procesados, la
+        dificultad de acuerdo basandote en el contenido de los examenes procesados.
+        Devuelve basandote en la siguiente estructura JSON
+        (nota, en la dificultad, acepta solo "easy","medium","hard","mixed"):
+        {
+        "dato": [
+          {
+            "id": 1,
+            "pregunta": "El valor a en la siguiente ecuación: (a + 2)/3 + (a - 2)/5 = 12/15",
+            "opciones": [
+              "a = 2",
+              "a = 3",
+              "a = 1",
+              "a = 4"
+            ],
+            "correcta": 2
+          },
+          {
+            "id": 2,
+            "pregunta": "Las raíces de la ecuación 3x² - 2x - 1 = 0",
+            "opciones": [
+              "x₁ = 1, x₂ = 1/3",
+              "x₁ = -1, x₂ = 1/3",
+              "x₁ = 1, x₂ = -1/3",
+              "x₁ = -1, x₂ = -1/3"
+            ],
+            "correcta": 2
+          },
+          {
+            "id": 3,
+            "pregunta": "Expresa en °C el intervalo de la temperatura 60° ≤ F ≤ 80° si se sabe que la relación es °C = 5/9(F - 32)",
+            "opciones": [
+              "140/9 ≤ °C ≤ 80/3",
+              "9/140 ≤ °C ≤ 80/3",
+              "60/9 ≤ °C ≤ 5/80",
+              "9/60 ≤ °C ≤ 3/80"
+            ],
+            "correcta": 0
+          },
+          {
+            "pregunta": "En la feria\nKhalil Gibran\nDesde la campiña llegó a la feria una niña muy bonita. En su rostro había un lirio y una rosa. Había ocaso en su cabello,\ny el amanecer sonreía en sus labios.\nNi bien la hermosa extranjera apareció ante sus ojos, los jóvenes se asomaron y la rodearon. Uno deseaba bailar\ncon ella, y otro día cortar una torta en su honor. Yo todos deseaban besar su mejilla. Después de todo, ¿no se trataba acaso\nde una bella feria?\nMas la niña se sorprendió y molestó, y pensó mal de los jóvenes. Los reprendió, y encima golpeó en la cara a uno o\ndos de ellos. Luego huyó.\nEn el camino a casa, aquella tarde, decía en su corazón: \"Estoy disgustada. ¡Qué groseros y mal educados son\nestos hombres! Sobrepasan toda paciencia\".\nY pasó un año, durante el cual la hermosa niña pensó mucho en ferias y hombres. Entonces regresó a la feria con\nel lirio y la rosa en el rostro, el ocaso en su cabello y la sonrisa del amanecer en sus labios.\nPero ahora los jóvenes viéndola, le dieron la espalda. Y permaneció todo el día ignorada y sola.\nY, al atardecer, mientras marchaba camino a su casa, lloraba en su corazón: \"Estoy disgustada. ¿Qué groseros y\nmal educados son estos hombres! Sobrepasan toda paciencia\"."
+          },
+          {
+            "id": 4,
+            "pregunta": "Por su modo discursivo, ¿cómo se clasifica el texto anterior?",
+            "opciones": [
+              "Narrativo",
+              "Diálogo",
+              "Argumentativo",
+              "Literario",
+              "Descriptivo"
+            ],
+            "correcta": 0
+          },
+          {
+            "id": 5,
+            "pregunta": "¿Cómo se clasifica la parte en negritas?",
+            "opciones": [
+              "Narrativo",
+              "Diálogo",
+              "Argumentativo",
+              "Literario",
+              "Descriptivo"
+            ],
+            "correcta": 4
+          }
+        ],
+          "titulo": "Álgebra y Razonamiento Matemático",
+          "numero_preguntas": 5,
+          "descripcion": "Ecuaciones lineales, ecuaciones cuadráticas, conversión de temperaturas.",
+          "dificultad": "easy"
+        }`,
+      },
+    });
+
+    let responseText = response.text;
+    responseText = responseText.replace("```json", "").replace("```", "");
+    let examenData;
+    try {
+      examenData = JSON.parse(responseText); // Intenta analizar la respuesta como JSON
+    } catch (error) {
+      console.error("Error al analizar la respuesta JSON de Gemini:", error);
+      console.error("Respuesta de Gemini:", responseText); // Muestra la respuesta sin analizar
+      return res.status(500).json({
+        error:
+          "Error al procesar la respuesta de Gemini. La respuesta no es un JSON válido.",
+      });
+    }
+
+    // Valida que el objeto JSON tenga las propiedades necesarias
+    if (
+      !examenData ||
+      typeof examenData !== "object" ||
+      !examenData.titulo ||
+      !examenData.descripcion ||
+      !examenData.dato ||
+      !examenData.numero_preguntas
+    ) {
+      console.error(
+        "Respuesta de Gemini no tiene la estructura esperada:",
+        examenData,
+      );
+      return res.status(500).json({
+        error:
+          "La respuesta de Gemini no tiene la estructura JSON esperada (falta titulo, dato, o numero_preguntas).",
+      });
+    }
+
+    CreateAuthExamUser(
+      res,
+      user_id,
+      examenData.titulo,
+      examenData.descripcion,
+      examenData.dato,
+      examenData.dificultad,
       examenData.numero_preguntas,
       tiempo_limite_segundos,
     );

@@ -10,6 +10,7 @@ import { useNavigate } from "react-router";
 import Swal from "sweetalert2";
 import { PreviewableSeccionExamen } from "./PreviewableSeccionExamen";
 import { AnimatePresence, motion } from "motion/react"; // Usar framer-motion en lugar de motion/react
+import { Link } from "react-router";
 
 // --- Interfaces y Datos (igual que antes) ---
 
@@ -510,6 +511,9 @@ export function ExamenPage() {
   // Ahora handleFinalizar solo cambia el estado `isSubmitted` y limpia localStorage.
   // Las acciones pesadas (Supabase, navegación) se mueven a un useEffect separado.
 
+  useEffect(() => {
+    userAnswersRef.current = userAnswers;
+  }, [userAnswers]);
   const handleFinalizar = useCallback(async () => {
     // Mostrar SweetAlert de confirmación
 
@@ -1243,19 +1247,25 @@ export function ExamenPage() {
                     <h1 className="text-2xl font-bold text-gray-800 mb-1">
                       {examenData.titulo}
                     </h1>
-                    <p className="text-gray-600 mb-2">
-                      Empezaste el {today.getFullYear()}/{today.getMonth()}/
-                      {today.getDay()} a la hora {today.getHours()}:
-                      {today.getMinutes()}
+                    <p className="text-gray-600 text-[12px] mb-2">
+                      {examenData.descripcion}
                     </p>
-                    <div className="mt-4 md:mt-0 bg-indigo-50 text-indigo-800 px-4 py-2 rounded-lg">
+                    <div className="mt-4 md:mt-0 bg-indigo-50 text-indigo-800 px-4 text-sm py-2 rounded-lg">
                       <i className="fas fa-info-circle mr-2"></i>
                       <span>
-                        {preguntas[preguntas.length - 1].id} preguntas •{" "}
                         {formatTime(examenData.tiempo_limite_segundos)} •
                         Dificultad: {examenData.dificultad}
                       </span>
                     </div>
+                    {isSubmitted && (
+                      <Link
+                        to="/examenes"
+                        className="mt-2 p-1 py-2 w-full font-bold rounded-lg text-red-600 bg-red-100 shadow-red-100 border-red-300 border-2 hover:shadow-red-400 hover:shadow-lg transition-all"
+                      >
+                        <i className="mr-3 fas fa-door-open"></i>
+                        Salir
+                      </Link>
+                    )}
                   </div>
                 </div>
               )}

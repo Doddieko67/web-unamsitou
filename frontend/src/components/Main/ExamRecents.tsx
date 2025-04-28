@@ -1,126 +1,21 @@
-import { useEffect, useState } from "react"; // Import useEffect and useState
+// src/components/ExamRecents.tsx
+import { useCallback, useEffect, useState, useMemo } from "react"; // <-- Añadir useMemo
 import { UserAuth } from "../../context/AuthContext"; // Ensure this path is correct
-import { supabase } from "../../supabase.config";
-import { Link } from "react-router";
-// Assuming your Supabase client is imported like this
-// import { supabase } from '../../utils/supabaseClient'; // <-- Adjust this path
+import { supabase } from "../../supabase.config"; // Ensure this path is correct
 
-// Define the interfaces (already provided by the user)
-interface Pregunta {
-  id: number;
-  pregunta: string;
-  opciones: string[];
-  correcta: number;
-  respuesta?: number;
-  feedback?: string;
-}
+// Importa la interfaz ExamenData (si no está en este archivo)
+import { ExamenData } from "./interfacesExam"; // Ajusta la ruta a tu interfaz
 
-interface ExamenData {
-  id: string; // UUID
-  user_id: string; // UUID
-  titulo: string;
-  dificultad: "easy" | "medium" | "hard" | "mixed"; // Use string literals for difficulty
-  estado: "pendiente" | "en_progreso" | "terminado" | "suspendido";
-  numero_preguntas: number;
-  datos: Pregunta[]; // Assumes the 'datos' JSONB column contains an array of Pregunta
-  fecha_inicio: string | null; // ISO string or similar
-  tiempo_limite_segundos: number;
-  tiempo_tomado_segundos?: number;
-  respuestas_usuario?: { [key: number]: number }; // Maps question ID to user's answer index
-  // You might want to add fecha_terminacion if you have it
-}
+// Importa el nuevo componente de tarjeta
+import { PreviewableRecentExamCard } from "./PreviewableExamRecents"; // Usar este que ya envuelve la tarjeta
 
-// --- Helper Functions (outside the component) ---
+import { useNavigate } from "react-router";
 
-// Helper to get display text and class for difficulty
-const getDifficultyDisplay = (dificultad: ExamenData["dificultad"]) => {
-  switch (dificultad) {
-    case "easy":
-      return { text: "Fácil", class: "easy bg-green-100 text-green-800" };
-    case "medium":
-      return { text: "Medio", class: "medium bg-yellow-100 text-yellow-800" };
-    case "hard":
-      return { text: "Difícil", class: "hard bg-red-100 text-red-800" };
-    case "mixed":
-      return { text: "Mixto", class: "mixed bg-blue-100 text-blue-800" };
-    default:
-      return {
-        text: dificultad,
-        class: "unknown bg-gray-100 text-gray-800",
-      };
-  }
-};
-
-// Helper to calculate score percentage (for 'terminado' exams)
-const calculateScorePercentage = (exam: ExamenData): number => {
-  // Ensure exam.datos is an array and not null/undefined
-  const questions = Array.isArray(exam.datos) ? exam.datos : [];
-
-  if (
-    exam.estado !== "terminado" ||
-    questions.length === 0 ||
-    !exam.respuestas_usuario
-  ) {
-    return 0; // Cannot calculate score for non-terminated or incomplete exams
-  }
-
-  let correctCount = 0;
-  questions.forEach((pregunta) => {
-    // Use exam.respuestas_usuario object to get the answer
-    const userAnswer = exam.respuestas_usuario?.[pregunta.id];
-    // Ensure correcta is a number for comparison
-    if (userAnswer !== undefined && userAnswer === pregunta.correcta) {
-      correctCount++;
-    }
-  });
-
-  return Math.round((correctCount / questions.length) * 100);
-};
-
-// Helper to get progress bar color based on percentage
-const getProgressBarColor = (percentage: number): string => {
-  if (percentage >= 70) return "bg-green-500";
-  if (percentage >= 40) return "bg-yellow-500";
-  return "bg-red-500";
-};
-
-// Helper to format date (basic "X days ago" or date string)
-const formatDateDisplay = (dateString: string | null | undefined): string => {
-  if (!dateString) return "Sin fecha";
-  try {
-    const date = new Date(dateString);
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      return "Fecha inválida";
-    }
-
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime(); // Time difference in milliseconds
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); // Difference in full days
-
-    if (diffDays < 0) return "En el futuro"; // For dates in the future
-
-    if (diffDays === 0) {
-      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-      if (diffHours === 0) {
-        const diffMinutes = Math.floor(diffTime / (1000 * 60));
-        if (diffMinutes === 0) return "Ahora mismo";
-        return `Hace ${diffMinutes} minutos`;
-      }
-      return `Hace ${diffHours} horas`;
-    }
-    if (diffDays === 1) return "Ayer";
-    if (diffDays < 7) return `Hace ${diffDays} días`;
-    if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`;
-    if (diffDays < 365) return `Hace ${Math.floor(diffDays / 30)} meses`;
-
-    // Fallback to locale date string for much older dates
-    return date.toLocaleDateString();
-  } catch (e) {
-    console.error("Error formatting date:", dateString, e);
-    return dateString; // Return original if invalid format
-  }
-};
+// --- Helper Functions (puedes dejarlas aquí o moverlas a un archivo separado e importarlas) ---
+// Es recomendable moverlas a un archivo de utils y exportarlas para usarlas en RecentExamCard
+// Si las mueves, elimina estas definiciones de aquí.
+// Por simplicidad para este ejemplo, asumiré que están en un archivo separado importado en RecentExamCard.
+// (Mantener el comentario como recordatorio)
 
 // --- React Component ---
 export function ExamRecents() {
@@ -128,8 +23,67 @@ export function ExamRecents() {
   const [recentExams, setRecentExams] = useState<ExamenData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Estado para los IDs de exámenes pinneados
+  // Idealmente, este estado podría persistir en localStorage o en la DB del usuario.
+  // Por ahora, se mantiene solo en memoria.
+  const [pinnedExams, setPinnedExams] = useState<{ [examId: string]: boolean }>(
+    {},
+  );
 
-  // Nuevo estado para controlar cuántas tarjetas se muestran
+  const navigate = useNavigate();
+
+  const handlePinExam = useCallback((examId: string) => {
+    setPinnedExams((prevPinned) => {
+      const newPinned = { ...prevPinned };
+      // Toggle logic
+      if (newPinned[examId]) {
+        delete newPinned[examId]; // Unpin
+      } else {
+        newPinned[examId] = true; // Pin
+      }
+      // TODO: Consider persisting this state (e.g., localStorage, user metadata in DB)
+      // so pins aren't lost on refresh.
+      return newPinned;
+    });
+  }, []);
+
+  const handleDeleteExam = useCallback(async (examId: string) => {
+    setIsLoading(true); // O manejar el estado de carga solo para la eliminación si quieres
+    try {
+      // Primero, quita el pin si está pinneado para evitar inconsistencias
+      setPinnedExams((prevPinned) => {
+        const newPinned = { ...prevPinned };
+        delete newPinned[examId];
+        return newPinned;
+      });
+
+      const { error: examError } = await supabase
+        .from("examenes")
+        .delete()
+        .eq("id", examId);
+
+      if (examError) {
+        console.error("Error deleting exam:", examError);
+        // Podrías revertir el estado si la eliminación falla
+      } else {
+        // Si la eliminación en la DB fue exitosa, actualiza el estado local
+        setRecentExams((prevExams) =>
+          prevExams.filter((exam) => exam.id !== examId),
+        );
+      }
+    } catch (error) {
+      console.error("Error deleting exam:", error);
+      // Podrías mostrar un mensaje de error al usuario
+    } finally {
+      // Si manejas la carga global, restablece aquí
+      // setIsLoading(false);
+    }
+    // Podríamos dejar isLoading true hasta que se recarguen los datos, o solo para la eliminación
+    // Para simplificar, asumiremos que la UI se actualiza rápidamente al filtrar.
+    setIsLoading(false); // Reset loading state after deletion process
+  }, []); // Dependencies might include user if you need to fetch data again
+
+  // Estado para la paginación de los NO pinneados
   const [visibleCount, setVisibleCount] = useState(6);
 
   useEffect(() => {
@@ -154,7 +108,16 @@ export function ExamRecents() {
           setError(`Error: ${error.message}`);
           setRecentExams([]);
         } else {
-          setRecentExams(data as ExamenData[]);
+          const formattedData = data.map((item) => ({
+            ...item,
+            // Asegúrate de que 'datos' sea un array.
+            // Si los datos en Supabase pueden ser null o no array, valida:
+            datos: Array.isArray(item.datos) ? item.datos : [],
+            // Aquí podrías inicializar el estado 'pinnedExams' al cargar si
+            // estuviera guardado en los datos del usuario o en otro lugar.
+            // Por ahora, 'pinnedExams' empieza vacío y el usuario fija desde 0 cada vez.
+          }));
+          setRecentExams(formattedData as ExamenData[]); // Cast after validation
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
@@ -165,137 +128,157 @@ export function ExamRecents() {
     };
 
     fetchRecentExams();
-  }, [user]);
+  }, [user]); // Dependencia 'user' asegura que se cargan cuando el usuario cambia/se autentica
 
-  // Handler para cargar 6 tarjetas más
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 6);
-  };
+  // --- Derivar estados o listas a partir de los estados principales ---
+  // Usamos useMemo para evitar recalcular estas listas en cada render
+  // si recentExams o pinnedExams no han cambiado.
+  const pinnedExamList = useMemo(() => {
+    return recentExams.filter((exam) => pinnedExams[exam.id]);
+  }, [recentExams, pinnedExams]);
 
-  // Slice de los exámenes según visibleCount
-  const examsToShow = recentExams.slice(0, visibleCount);
+  const nonPinnedExamList = useMemo(() => {
+    return recentExams.filter((exam) => !pinnedExams[exam.id]);
+  }, [recentExams, pinnedExams]);
+
+  // Aplicar paginación solo a la lista de no pinneados
+  const slicedNonPinnedExams = useMemo(() => {
+    return nonPinnedExamList.slice(0, visibleCount);
+  }, [nonPinnedExamList, visibleCount]);
+
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((prev) => prev + 6); // Carga 6 más de la lista de no pinneados
+  }, []);
+
+  const handleEntireCard = useCallback(
+    (examId: string) => {
+      navigate(`/examen/${examId}`); // Navega a la página de detalles del examen
+    },
+    [navigate],
+  ); // Dependencia 'navigate'
+
+  // Comprobación para saber si hay contenido total (pinneados o no)
+  const hasExams = recentExams.length > 0;
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden p-6 mb-8">
+    <div className="bg-white rounded-xl shadow-md p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-gray-800">
           Tus exámenes recientes
         </h2>
-        {recentExams.length > 0 && (
-          <a
-            href="#" // Link a la página completa de exámenes
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-          >
-            Ver todo
-          </a>
-        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading && (
-          <p className="text-gray-600 text-center col-span-full">
-            Cargando exámenes...
-          </p>
-        )}
+      {/* Mensajes de estado global */}
+      {isLoading && (
+        <p className="text-gray-600 text-center">Cargando exámenes...</p>
+      )}
 
-        {!isLoading && error && (
-          <p className="text-red-600 col-span-full text-center">{error}</p>
-        )}
+      {!isLoading && error && (
+        <p className="text-red-600 text-center">{error}</p>
+      )}
 
-        {!isLoading && !error && examsToShow.length === 0 && (
-          <p className="text-gray-600 col-span-full text-center">
-            No tienes exámenes recientes.
-          </p>
-        )}
+      {!isLoading && !error && !hasExams && (
+        <p className="text-gray-600 text-center">
+          No tienes exámenes recientes. Crea uno para empezar.
+        </p>
+      )}
 
-        {!isLoading &&
-          !error &&
-          examsToShow.map((exam) => {
-            const difficultyInfo = getDifficultyDisplay(exam.dificultad);
-            const scorePercentage = calculateScorePercentage(exam);
-            const progressBarColor = getProgressBarColor(scorePercentage);
-            const dateDisplay = formatDateDisplay(exam.fecha_inicio);
-
-            let progressContent;
-            if (exam.estado === "terminado") {
-              progressContent = (
-                <div className="flex items-center">
-                  <span className="text-sm font-medium text-gray-700 mr-2">
-                    {scorePercentage}%
-                  </span>
-                  <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className={`${progressBarColor} h-1.5 rounded-full`}
-                      style={{ width: `${scorePercentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            } else if (exam.estado === "en_progreso") {
-              progressContent = (
-                <span className="text-sm font-medium text-yellow-600">
-                  En Progreso
-                </span>
-              );
-            } else {
-              progressContent = (
-                <span className="text-sm font-medium text-gray-500">
-                  {exam.estado.charAt(0).toUpperCase() + exam.estado.slice(1)}
-                </span>
-              );
-            }
-
-            return (
-              <div>
-                <div
-                  key={exam.id}
-                  className="exam-card bg-white border border-gray-200 rounded-lg p-5 hover:border-indigo-300 transition duration-200 ease-in-out"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <span
-                      className={`difficulty-badge text-xs font-semibold px-2.5 py-0.5 rounded ${difficultyInfo.class}`}
-                    >
-                      {difficultyInfo.text}
-                    </span>
-                    <span className="text-xs text-gray-500">{dateDisplay}</span>
-                  </div>
-
-                  <h3 className="font-medium text-gray-800 mb-2">
-                    {exam.titulo}
-                  </h3>
-
-                  <p className="text-sm text-gray-600 mb-4">
-                    {exam.numero_preguntas} preguntas
-                    {exam.tiempo_tomado_segundos
-                      ? ` | Te tomo: ${Math.ceil(
-                          exam.tiempo_tomado_segundos / 60,
-                        )} min`
-                      : " | Te tomo: 0 min"}
-                  </p>
-
-                  <div className="flex justify-between items-center">
-                    {progressContent}
-                    <Link
-                      className="text-md font-medium text-indigo-600 hover:text-indigo-500"
-                      to={`/examen/${exam.id}`}
-                    >
-                      Ver detalles
-                    </Link>
-                  </div>
-                </div>
+      {/* Contenido si hay exámenes cargados */}
+      {!isLoading && !error && hasExams && (
+        <>
+          {" "}
+          {/* Usamos un fragmento para agrupar las secciones */}
+          {/* Sección de Exámenes Fijados */}
+          {pinnedExamList.length > 0 && (
+            <div className="mb-8">
+              {" "}
+              {/* Añadir margen inferior si hay pinneados */}
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                Exámenes Fijados ({pinnedExamList.length})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pinnedExamList.map((exam, index) => (
+                  <PreviewableRecentExamCard
+                    key={exam.id}
+                    exam={exam}
+                    onDelete={handleDeleteExam}
+                    // El índice aquí es dentro de la lista de pinneados.
+                    // Ajusta la lógica de posicionamiento de la preview si es necesario.
+                    index={index}
+                    onPinToggle={handlePinExam}
+                    isPinneable={true}
+                    isThisPinned={true}
+                    onEntireToggle={handleEntireCard}
+                  />
+                ))}
               </div>
-            );
-          })}
-      </div>
+              {/* Separador visual si también hay exámenes no pinneados */}
+              {slicedNonPinnedExams.length > 0 && (
+                <div className="border-t border-gray-200 mt-6 pt-6"></div>
+              )}
+            </div>
+          )}
+          {/* Sección de Exámenes Recientes (No Fijados) */}
+          {slicedNonPinnedExams.length > 0 && (
+            <div className={`${pinnedExamList.length > 0 ? "" : ""} mt-6`}>
+              {" "}
+              {/* Añadir margen superior si no había pinneados */}
+              {/* Mostrar encabezado solo si hay pinneados arriba O si esta es la única sección */}
+              {(pinnedExamList.length > 0 || pinnedExamList.length === 0) && (
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                  {pinnedExamList.length > 0
+                    ? "Otros Exámenes Recientes"
+                    : "Exámenes Recientes"}{" "}
+                  ({nonPinnedExamList.length})
+                </h3>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {slicedNonPinnedExams.map((exam, index) => (
+                  <PreviewableRecentExamCard
+                    key={exam.id}
+                    exam={exam}
+                    onDelete={handleDeleteExam}
+                    // El índice aquí es dentro de la lista paginada de no pinneados.
+                    index={index}
+                    onPinToggle={handlePinExam}
+                    isPinneable={true}
+                    onEntireToggle={handleEntireCard}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Mensaje si hay exámenes pero ninguno pinneado y no se muestran no pinneados */}
+          {/* Esto se podría refinar, quizás solo si hay exámenes totales pero la lista de pinneados está vacía */}
+          {!isLoading &&
+            !error &&
+            hasExams &&
+            pinnedExamList.length === 0 &&
+            slicedNonPinnedExams.length === 0 &&
+            visibleCount >= nonPinnedExamList.length && (
+              <p className="text-gray-500 text-center mt-4">
+                No hay exámenes que coincidan con tu filtro actual (si aplicas
+                alguno) o no hay más exámenes recientes sin fijar.
+              </p>
+            )}
+          {/* Mensaje "Fija una pregunta" si hay exámenes pero ninguno pinneado */}
+          {!isLoading && !error && hasExams && pinnedExamList.length === 0 && (
+            <p className="text-gray-500 text-center mt-4">
+              Fija exámenes para verlos en una sección destacada aquí arriba.
+            </p>
+          )}
+        </>
+      )}
 
       {/* Botón Cargar más */}
-      {!isLoading && !error && visibleCount < recentExams.length && (
+      {/* Mostrar si no está cargando, no hay error, y aún quedan no pinneados por mostrar */}
+      {!isLoading && !error && visibleCount < nonPinnedExamList.length && (
         <div className="col-span-full flex justify-center mt-6">
           <button
             onClick={handleLoadMore}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition"
           >
-            Cargar más ({Math.min(6, recentExams.length - visibleCount)})
+            Cargar más ({Math.min(6, nonPinnedExamList.length - visibleCount)})
           </button>
         </div>
       )}

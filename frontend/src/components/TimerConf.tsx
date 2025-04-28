@@ -39,7 +39,7 @@ export function TimerConf({
   const totalSeconds = hour * 3600 + minute * 60 + second;
 
   // Valor máximo para el slider (12 horas en segundos)
-  const maxSliderValue = 12 * 3600;
+  const maxSliderValue = 8 * 3600;
 
   // Función para manejar el cambio en el slider
   const handleSliderChange = (totalSecs: number) => {
@@ -186,8 +186,6 @@ export function TimerConf({
             <span>4h</span>
             <span>6h</span>
             <span>8h</span>
-            <span>10h</span>
-            <span>12h</span>
           </div>
         </div>
       </div>
