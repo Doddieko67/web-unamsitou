@@ -55,7 +55,7 @@ export function QuestionConf({
             value={questionCount}
             // Llama a la función del padre cuando el valor cambia
             onChange={(e) => onQuestionCountChange(Number(e.target.value))}
-            className="slider w-full h-2 bg-indigo-300 rounded-lg appearance-none cursor-pointer range-lg accent-indigo-600" // Usar accent color
+            className="slider w-full h-2 bg-indigo-300 rounded-lg cursor-pointer range-lg slide-2" // Usar accent color
           />
           <div className="flex justify-between text-xs text-indigo-500 mt-1">
             <span>5</span>

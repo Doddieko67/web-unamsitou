@@ -20,7 +20,7 @@ app.use(express.json()); // Para parsear el body de las requests JSON
 // Configura CORS para permitir tu frontend (¡sé específico en producción!)
 app.use(
   cors({
-    origin: "http://localhost:5173", // Cambia esto a la URL de tu frontend
+    origin: "https://aliceblue-octopus-375023.hostingersite.com", // Cambia esto a la URL de tu frontend
   }),
 );
 
@@ -608,6 +608,10 @@ app.post("/api/generate-content-based-on-history", getUserFromRequest, async (re
     console.error("Error en /api/generate-content:", error);
     res.status(500).json({ error: "Error al generar contenido" });
   }
+});
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
 });
 
 const PORT = process.env.PORT || 3001;

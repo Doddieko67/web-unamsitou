@@ -7,6 +7,7 @@ import { UserAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router";
 import Swal from "sweetalert2";
 import { TimerConf } from "./TimerConf";
+import { url_backend } from "../url_backend";
 
 // Tipo para la dificultad (puede ser null si quieres un estado inicial sin selección)
 // type GeneralDifficulty = "mixed" | "easy" | "medium" | "hard";
@@ -125,7 +126,7 @@ export function ExamQuestions() {
     console.log("Preparando JSON para texto...");
 
     try {
-      const response = await fetch("http://localhost:3000/api/upload_files", {
+      const response = await fetch(`${url_backend}/api/upload_files`, {
         method: "POST",
         headers: {
           authorization: `Bearer ${session && session.access_token}`,
@@ -229,7 +230,7 @@ export function ExamQuestions() {
         <p className="text-sm text-gray-500 mb-4">o</p>
         <label
           htmlFor="file-upload"
-          className="cursor-pointer bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2 rounded-md font-medium inline-block hover:from-indigo-700 hover:to-purple-700 transition shadow-sm hover:shadow-md"
+          className="cursor-pointer gradient-bg-purple text-white px-5 py-2 rounded-md font-medium inline-block   transition shadow-sm hover:shadow-md"
         >
           <i className="fas fa-folder-open mr-2"></i> Seleccionar archivos
         </label>
