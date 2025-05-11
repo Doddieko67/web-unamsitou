@@ -8,6 +8,7 @@ import { TimerConf } from "./TimerConf";
 import { PreviewableRecentExamCard } from "./Main/PreviewableExamRecents";
 import { supabase } from "../supabase.config";
 import { ExamenData } from "./Main/interfacesExam";
+import { url_backend } from "../url_backend";
 
 export function ExamBasedOnHistory() {
   const { session } = UserAuth();
@@ -76,7 +77,7 @@ export function ExamBasedOnHistory() {
     try {
       // Llama al backend, enviando el prompt como texto y otros parámetros relevantes
       const response = await fetch(
-        "http://localhost:3000/api/generate-content", // O la ruta adecuada para generación basada en historia
+        `${url_backend}/api/generate-content-based-on-history`, // O la ruta adecuada para generación basada en historia
         {
           method: "POST",
           headers: {

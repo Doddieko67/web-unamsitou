@@ -7,6 +7,7 @@ import { QuestionConf } from "./QuestionConf";
 import { useNavigate } from "react-router";
 import { UserAuth } from "../../context/AuthContext";
 import { TimerConf } from "../TimerConf";
+import { url_backend } from "../../url_backend";
 
 // Importar SweetAlert2
 import Swal from "sweetalert2";
@@ -189,7 +190,7 @@ export function ExamConf() {
       // --- Llama al backend para generar el examen ---
       const response = await fetch(
         // Asegúrate de que la URL es correcta para tu API
-        "http://localhost:3000/api/generate-content",
+        `${url_backend}/api/generate-content`,
         {
           method: "POST",
           headers: {

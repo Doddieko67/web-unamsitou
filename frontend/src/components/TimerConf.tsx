@@ -164,7 +164,7 @@ export function TimerConf({
             max={maxSliderValue}
             value={totalSeconds}
             onChange={(e) => handleSliderChange(parseInt(e.target.value, 10))}
-            className="w-full h-3 bg-gradient-to-r from-indigo-200 to-indigo-500 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+            className="w-full h-3 slide-range rounded-lg cursor-pointer"
           />
 
           {/* Marcas y etiquetas */}

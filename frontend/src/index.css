@@ -4,6 +4,8 @@
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
+    --terciary: oklch(51.1% 0.262 276.966);
+    --cuaternary: oklch(55.8% 0.288 302.321);
     --secondary: #10b981;
     --dark: #1e293b;
     --light: #f8fafc;
@@ -19,6 +21,29 @@ body {
         135deg,
         var(--primary) 0%,
         var(--secondary) 100%
+    );
+}
+
+.slide-range {
+    appearance: none;
+    accent-color: oklch(58.5% 0.233 277.117);
+    background: linear-gradient(
+        90deg,
+        oklch(93% 0.034 272.788) 0%,
+        oklch(58.5% 0.233 277.117) 100%
+    );
+}
+
+.slide-2 {
+    appearance: none;
+    accent-color: oklch(58.5% 0.233 277.117);
+}
+
+.gradient-bg-purple {
+    background: linear-gradient(
+        135deg,
+        var(--terciary) 0%,
+        var(--cuaternary) 100%
     );
 }
 
@@ -302,7 +327,7 @@ textarea {
     appearance: none;
     width: 25px;
     height: 25px;
-    background: #04aa6d;
+    background: #6366f1; /* Green background */
     cursor: pointer;
 }
 

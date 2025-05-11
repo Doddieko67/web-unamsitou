@@ -1,11 +1,12 @@
 import { UserAuth } from "../context/AuthContext";
+import { url_backend } from "../url_backend";
 
 export async function handleGenerate(input: string) {
   const { session } = UserAuth();
   try {
     const token = session?.access_token;
     // Llama a TU backend, no directamente a Google
-    const response = await fetch("http://localhost:3000/api/generate-content", {
+    const response = await fetch(`${url_backend}/api/generate-content`, {
       // Asegúrate que la URL/puerto sea correcto
       method: "POST",
       headers: {

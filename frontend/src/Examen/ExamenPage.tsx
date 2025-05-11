@@ -11,6 +11,7 @@ import Swal from "sweetalert2";
 import { PreviewableSeccionExamen } from "./PreviewableSeccionExamen";
 import { AnimatePresence, motion } from "motion/react"; // Usar framer-motion en lugar de motion/react
 import { Link } from "react-router";
+import { url_backend } from "../url_backend";
 
 // --- Interfaces y Datos (igual que antes) ---
 
@@ -75,6 +76,7 @@ export function ExamenPage() {
   const userAnswersRef = useRef(userAnswers);
   const pinnedQuestionsRef = useRef(pinnedQuestions);
   const currentQuestionIndexRef = useRef(currentQuestionIndex);
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
 
   // --- CAMBIO CLAVE 2: Referencia para isSubmitted para usarla dentro del intervalo ---
   const isSubmittedRef = useRef(isSubmitted);
@@ -283,9 +285,13 @@ export function ExamenPage() {
         const tiempoRestante = Math.max(0, tiempoLimite - tiempoTomado);
         setTimeLeft(tiempoRestante);
 
-        if (data.estado === "terminado") {
+        if (data.estado !== "terminado") {
+          setIsSubmitted(false);
+          isSubmittedRef.current = false;
+        } else if (data.estado === "terminado") {
           // Si el examen ya terminó en Supabase, forzar el estado isSubmitted
           setIsSubmitted(true); // Esto actualizará isSubmittedRef en su propio useEffect
+          isSubmittedRef.current = true;
           // Limpiar cualquier estado local si el examen ya terminó en DB
           // Cargar respuestas y tiempo tomado desde Supabase si el estado es terminado
           // Esto actualizará timeLeftRef en su callback del timer si estuviera activo (pero no lo estará)
@@ -689,30 +695,28 @@ export function ExamenPage() {
       setIsGenerating(false);
       return;
     }
-    if (isGenerating) {
+    if (isGenerating && !isLoadingFeedback) {
       console.log(
         "✅ Feedback es true. Ejecutando acciones de feedback (Guardar en DB y proporcionar feedback al usuario).",
       );
+      setIsLoadingFeedback(true);
 
       const performFeedbackActions = async () => {
         try {
           // Llama al backend, enviando el prompt como texto
           // (Puedes usar la misma ruta o una diferente si prefieres)
-          const response = await fetch(
-            "http://localhost:3000/api/generate-feedback",
-            {
-              // O '/api/generate-exam-simple'
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json", // Todavía enviamos JSON, pero con una estructura simple
-                authorization: `Bearer ${session && session.access_token}`,
-              },
-              // Envía un objeto JSON con una clave 'prompt' que contiene el texto construido
-              body: JSON.stringify({
-                examen_id: examenData.id,
-              }),
+          const response = await fetch(`${url_backend}/api/generate-feedback`, {
+            // O '/api/generate-exam-simple'
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json", // Todavía enviamos JSON, pero con una estructura simple
+              authorization: `Bearer ${session && session.access_token}`,
             },
-          );
+            // Envía un objeto JSON con una clave 'prompt' que contiene el texto construido
+            body: JSON.stringify({
+              examen_id: examenData.id,
+            }),
+          });
 
           if (!response.ok) {
             /* ... manejo de error ... */ throw new Error(
@@ -738,6 +742,7 @@ export function ExamenPage() {
           alert(`Error: ${error}`);
         } finally {
           setIsGenerating(false);
+          setIsLoadingFeedback(false);
         }
       };
 
@@ -746,7 +751,14 @@ export function ExamenPage() {
     }
     // Dependencias: Reaccionar a isSubmitted. Usar los últimos valores de estado (tiempoTomadoSegundos, userAnswers)
     // y otras variables necesarias para Supabase/navegación (examId, user, navigate).
-  }, [setIsGenerating, isGenerating, session, user, examenData]);
+  }, [
+    setIsGenerating,
+    isGenerating,
+    session,
+    user,
+    examenData,
+    isLoadingFeedback,
+  ]);
 
   const handleSuspender = useCallback(() => {
     setSuspender(true);
@@ -1180,7 +1192,7 @@ export function ExamenPage() {
                           if (!confirmar) return; // Si el usuario cancela, salir
                           handleSuspender();
                         }}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
+                        className="w-full gradient-bg-purple text-white px-4 py-3 rounded-lg opacity-70 font-semibold text-sm sm:text-base hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Suspender y Enviar Examen"
                         disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
                       >
@@ -1193,14 +1205,17 @@ export function ExamenPage() {
                       {feedback && Object.keys(feedback).length < 1 && (
                         <button
                           onClick={handleFeedback}
-                          className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center"
+                          className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Retroalimentar Examen"
+                          disabled={isLoadingFeedback}
                         >
-                          <i className="fa-solid fa-wheat-awn-circle-exclamation mr-2"></i>{" "}
-                          {isGenerating ? (
+                          {isLoadingFeedback ? (
                             <i className="fa-solid fa-spinner fa-spin animate-ping"></i>
                           ) : (
-                            <span>Retroalimentar todo</span>
+                            <>
+                              <i className="fa-solid fa-wheat-awn-circle-exclamation mr-2"></i>{" "}
+                              <span>Retroalimentar todo</span>
+                            </>
                           )}
                         </button>
                       )}
@@ -1303,7 +1318,7 @@ export function ExamenPage() {
                           if (!confirmar) return; // Si el usuario cancela, salir
                           handleSuspender();
                         }}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
+                        className="w-full gradient-bg-purple text-white px-4 py-3 rounded-lg opacity-70 font-semibold text-sm sm:text-base hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Suspender y Enviar Examen"
                         disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
                       >
@@ -1316,14 +1331,17 @@ export function ExamenPage() {
                       {feedback && Object.keys(feedback).length < 1 && (
                         <button
                           onClick={handleFeedback}
-                          className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center"
+                          className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Retroalimentar Examen"
+                          disabled={isLoadingFeedback}
                         >
-                          <i className="fa-solid fa-wheat-awn-circle-exclamation mr-2"></i>{" "}
-                          {isGenerating ? (
+                          {isLoadingFeedback ? (
                             <i className="fa-solid fa-spinner fa-spin animate-ping"></i>
                           ) : (
-                            <span>Retroalimentar todo</span>
+                            <>
+                              <i className="fa-solid fa-wheat-awn-circle-exclamation mr-2"></i>{" "}
+                              <span>Retroalimentar todo</span>
+                            </>
                           )}
                         </button>
                       )}
