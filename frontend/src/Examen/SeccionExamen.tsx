@@ -1,4 +1,5 @@
 import Swal from "sweetalert2";
+import "katex/dist/katex.min.css";
 
 interface Pregunta {
   id?: number;
@@ -56,7 +57,7 @@ export function SeccionExamen({
   onScrollToPreview = null,
   id = "",
 }: SeccionExamenProps) {
-  const letras = ["A", "B", "C", "D"];
+  const letras = ["A", "B", "C", "D", "E", "F"];
 
   // --- Clases para las Opciones ---
   const getOptionClassName = (opcionIndex: number): string => {
@@ -189,8 +190,6 @@ export function SeccionExamen({
               <p
                 className={`text-gray-700 text-base sm:text-lg ${mostrarLista === false && "line-clamp-3"}`}
               >
-                {" "}
-                {/* line-clamp por si acaso */}
                 {pregunta.pregunta}
               </p>
             </div>
@@ -226,7 +225,7 @@ export function SeccionExamen({
               <div className="space-y-3 w-full">
                 {pregunta.opciones?.map((opcion, opcionIndex) => (
                   <div
-                    key={opcionIndex}
+                    key={opcion}
                     className={`${getOptionClassName(opcionIndex)}`}
                     onClick={() =>
                       canSelectOption &&
