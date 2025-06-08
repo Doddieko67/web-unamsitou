@@ -8,7 +8,7 @@ export function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSignUp = async (e: React.MouseEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signUpNewUser(email, password);
@@ -17,7 +17,6 @@ export function SignUp() {
         title: "Correo enviado",
         text: "Se ha enviado un correo de confirmación correctamente, revise su bandeja de entrada",
       });
-      // La redirección se maneja en el AuthContext
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -27,7 +26,6 @@ export function SignUp() {
       console.error(error);
     }
   };
-
   return (
     <>
       <div className="relative w-full max-w-md mx-auto">
@@ -40,7 +38,7 @@ export function SignUp() {
         </div>
 
         <div className="bg-white rounded-2xl login-container p-8">
-          <form onSubmit={() => handleSignUp} className="space-y-6">
+          <form onSubmit={handleSignUp} className="space-y-6">
             <div>
               <label
                 htmlFor="email"
