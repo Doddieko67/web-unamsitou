@@ -1,0 +1,51 @@
+    Area, M., & Adell, J. (2021). Tecnologías Digitales y Cambio Educativo. Una aproximación crítica. Narcea Ediciones.
+
+    Bautista, G., Borges, F., & Forés, A. (2006). Didáctica universitaria en Entornos Virtuales de Enseñanza-Aprendizaje. Narcea Ediciones.
+
+    Cabero, J., & Martínez, A. (2019). Las tecnologías de la información y comunicación y la formación inicial docente. Modelos y competencias digitales. Profesorado. Revista de Currículum y Formación de Profesorado, 23(3), 247-268.
+
+    Cabrera, M. E. (2020). Desafíos de la evaluación en línea: orientaciones para la docencia en la educación superior. Revista Digital de Investigación en Docencia Universitaria, 14(2).
+
+    Castañeda, L., & Adell, J. (Eds.). (2013). Entornos Personales de Aprendizaje: claves para el ecosistema educativo en red. Marfil.
+
+    Cejas, M. F. M., Navío, A. V., & Barroso, J. M. (2016). Las competencias del docente universitario en el Espacio Europeo de Educación Superior. RUSC. Universities and Knowledge Society Journal, 13(1), 1-14.
+
+    Coll, C. (2008). Psicología y currículum: Una aproximación psicopedagógica a la elaboración del currículum escolar. Paidós.
+
+    Cornejo, J. (2021). Inteligencia artificial en la educación: Retos y oportunidades en América Latina. BID.
+
+    Díaz-Barriga, F., & Hernández, G. (2010). Estrategias docentes para un aprendizaje significativo: Una interpretación constructivista (3a ed.). McGraw-Hill.
+
+    Duart, J. M., & Sangrà, A. (Eds.). (2000). Aprender en la virtualidad. Gedisa.
+
+    Espuny, C., Gisbert, M., & Coiduras, J. (2010). La dinamización de entornos virtuales de aprendizaje. Revista de Medios y Educación, (37), 133-143.
+
+    Fernández, J. M. (2022). Desarrollo de aplicaciones web con React y Node.js. RA-MA Editorial.
+
+    García-Aretio, L. (2021). COVID-19 y educación a distancia digital: preconfinamiento, confinamiento y posconfinamiento. RIED. Revista Iberoamericana de Educación a Distancia, 24(1), 9-32.
+
+    García-Peñalvo, F. J. (2020). El ecosistema EdTech: Superando los límites de la formación. Education in the Knowledge Society, 21.
+
+    Gisbert, M., & Johnson, E. (2015). La docencia en la universidad: una aproximación desde la tecnología educativa. Editorial UOC.
+
+    González, J., & Wagenaar, R. (Eds.). (2008). Tuning Educational Structures in Europe II. Universidad de Deusto.
+
+    López-García, J. C. (2018). Evaluación del y para el aprendizaje en la Educación Superior. Narcea Ediciones.
+
+    Marques, P. (2013). Impacto de las TIC en la educación: funciones y limitaciones. Trillas.
+
+    Pozo, J. I. (2014). Psicología del aprendizaje humano: adquisición de conocimiento y cambio personal. Ediciones Morata.
+
+    Prendes, M. P., & Castañeda, L. (2018). Tecnología y pedagogía en las aulas. Un desarrollo curricular de la competencia digital. Letra 25.
+
+    Rama, C. (2021). La nueva educación híbrida. Colección Educación Superior en América Latina.
+
+    Salinas, J. (2004). Innovación docente y uso de las TIC en la enseñanza universitaria. RUSC. Universities and Knowledge Society Journal, 1(1).
+
+    Sancho, J. M., & Hernández, F. (2018). Tecnologías para transformar la educación. Ediciones Morata.
+
+    Sangrà, A., Vlachopoulos, D., & Cabrera, N. (2012). Building an inclusive definition of e-learning: An approach to the conceptual framework. The International Review of Research in Open and Distributed Learning, 13(2), 145-159.
+
+    Silva, J. (2017). Un modelo pedagógico virtual centrado en las actividades de aprendizaje. Revista de Educación a Distancia (RED), (53).
+
+    Zabalza, M. Á. (2017). Competencias docentes del profesorado universitario: calidad y desarrollo profesional. Narcea Ediciones.
