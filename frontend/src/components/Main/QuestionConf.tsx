@@ -65,9 +65,9 @@ export function QuestionConf({
       <div 
         className="p-4 rounded-2xl border-2 transition-all duration-300"
         style={{
-          backgroundColor: !presetOptions.includes(questionCount) ? 'var(--theme-info)' : 'var(--theme-info-light)',
+          backgroundColor: 'var(--theme-info-light)',
           borderColor: 'var(--theme-info)',
-          color: !presetOptions.includes(questionCount) ? 'white' : 'var(--theme-info-dark)'
+          color: 'var(--theme-info-dark)'
         }}
       >
         <div className="text-center space-y-3">
@@ -78,10 +78,11 @@ export function QuestionConf({
           <div className="flex items-center justify-center space-x-4">
             <button
               onClick={handleDecrement}
-              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               style={{
-                backgroundColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.2)' : 'var(--theme-info)',
-                color: !presetOptions.includes(questionCount) ? 'white' : 'white'
+                backgroundColor: 'var(--theme-info)',
+                color: 'white',
+                border: 'none'
               }}
               disabled={questionCount <= 5}
             >
@@ -89,11 +90,11 @@ export function QuestionConf({
             </button>
             
             <div 
-              className="px-6 py-3 rounded-xl border-2 min-w-[100px] flex items-center justify-center"
+              className="px-6 py-3 rounded-xl border-2 min-w-[100px] flex items-center justify-center transition-all duration-300"
               style={{
-                backgroundColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.2)' : 'white',
-                borderColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.3)' : 'var(--theme-info)',
-                color: !presetOptions.includes(questionCount) ? 'white' : 'var(--theme-info-dark)'
+                backgroundColor: 'var(--theme-bg-primary)',
+                borderColor: 'var(--theme-info)',
+                color: 'var(--theme-info-dark)'
               }}
             >
               <input
@@ -102,19 +103,21 @@ export function QuestionConf({
                 max="128"
                 value={questionCount}
                 onChange={(e) => handleCustomChange(Number(e.target.value))}
-                className="text-center text-2xl font-bold bg-transparent border-none outline-none w-full"
+                className="text-center text-2xl font-bold bg-transparent border-none outline-none w-full transition-all duration-300 focus:scale-105 number-input-no-arrows"
                 style={{
-                  color: !presetOptions.includes(questionCount) ? 'white' : 'var(--theme-info-dark)'
+                  color: 'var(--theme-info-dark)'
                 }}
+                placeholder="--"
               />
             </div>
             
             <button
               onClick={handleIncrement}
-              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               style={{
-                backgroundColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.2)' : 'var(--theme-info)',
-                color: !presetOptions.includes(questionCount) ? 'white' : 'white'
+                backgroundColor: 'var(--theme-info)',
+                color: 'white',
+                border: 'none'
               }}
               disabled={questionCount >= 128}
             >
@@ -127,6 +130,18 @@ export function QuestionConf({
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .number-input-no-arrows::-webkit-outer-spin-button,
+        .number-input-no-arrows::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        
+        .number-input-no-arrows[type=number] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
     </div>
   );
 }

@@ -593,7 +593,7 @@ textarea {
         "header header header header header header header header header header header header"
         "personalization personalization personalization personalization personalization personalization questions questions questions questions questions questions"
         "difficulty difficulty difficulty difficulty difficulty difficulty timer timer timer timer timer timer"
-        "subjects subjects subjects subjects subjects subjects generate generate generate generate generate generate";
+        "ai-config ai-config ai-config ai-config ai-config ai-config generate generate generate generate generate generate";
 }
 
 /* Mobile Grid Layout (< 640px) */
@@ -609,7 +609,7 @@ textarea {
             "questions"
             "difficulty"
             "timer"
-            "subjects"
+            "ai-config"
             "generate";
     }
 }
@@ -621,9 +621,10 @@ textarea {
         
         grid-template-areas:
             "header header header header header header header header"
-            "personalization personalization personalization personalization questions questions questions questions"
-            "difficulty difficulty difficulty difficulty timer timer timer timer"
-            "subjects subjects subjects subjects generate generate generate generate";
+            "personalization personalization personalization personalization personalization personalization personalization personalization"
+            "questions questions questions questions difficulty difficulty difficulty difficulty"
+            "timer timer timer timer ai-config ai-config ai-config ai-config"
+            "generate generate generate generate generate generate generate generate";
     }
 }
 
@@ -634,7 +635,7 @@ textarea {
             "header header header header header header header header header header header header"
             "personalization personalization personalization personalization personalization personalization questions questions questions questions questions questions"
             "difficulty difficulty difficulty difficulty difficulty difficulty timer timer timer timer timer timer"
-            "subjects subjects subjects subjects subjects subjects generate generate generate generate generate generate";
+            "ai-config ai-config ai-config ai-config ai-config ai-config generate generate generate generate generate generate";
     }
 }
 
@@ -645,7 +646,7 @@ textarea {
             "header header header header header header header header header header header header"
             "personalization personalization personalization personalization personalization personalization questions questions questions questions questions questions"
             "difficulty difficulty difficulty difficulty difficulty difficulty timer timer timer timer timer timer"
-            "subjects subjects subjects subjects subjects subjects generate generate generate generate generate generate";
+            "ai-config ai-config ai-config ai-config ai-config ai-config generate generate generate generate generate generate";
     }
 }
 
@@ -657,6 +658,7 @@ textarea {
 .grid-timer { grid-area: timer; }
 .grid-personalization { grid-area: personalization; }
 .grid-generate { grid-area: generate; }
+.grid-ai-config { grid-area: ai-config; }
 
 /* Header Card Styles */
 .exam-header-card {

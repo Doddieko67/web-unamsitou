@@ -30,6 +30,11 @@ export const ExamConf = memo(function ExamConf() {
   const [hour, setHour] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_HOUR);
   const [minute, setMinute] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_MINUTE);
   const [second, setSecond] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_SECOND);
+  
+  // Estados para configuración de IA
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash');
+  const [apiKey, setApiKey] = useState<string>('');
+  const [isApiValid, setIsApiValid] = useState<boolean>(false);
 
   // --- Handlers ---
 
@@ -45,14 +50,25 @@ export const ExamConf = memo(function ExamConf() {
     setFineTuning(text);
   }, []);
 
+  const handleModelChange = useCallback((model: string) => {
+    setSelectedModel(model);
+  }, []);
+
+  const handleApiKeyChange = useCallback((key: string) => {
+    setApiKey(key);
+    // Verificación básica de API key (formato de Google API)
+    const isValidFormat = key.length > 20 && key.startsWith('AIza');
+    setIsApiValid(isValidFormat);
+  }, []);
+
   // Handler principal para generar el examen
   const handleGenerateExam = async () => {
     // --- Validación Inicial con Swal ---
-    if (!fineTuning.trim() || selectedDifficulty === null) {
+    if (!fineTuning.trim() || selectedDifficulty === null || !isApiValid) {
       Swal.fire({
         icon: "warning",
         title: "Configuración Incompleta",
-        text: "Por favor, especifica el tema del examen en Personalización y selecciona un nivel de dificultad.",
+        text: "Por favor, completa el tema del examen, selecciona la dificultad y configura una API key válida.",
         confirmButtonColor: "#3085d6", // Color azul estándar de Swal
       });
       return; // Detiene la ejecución si la validación falla
@@ -152,8 +168,9 @@ export const ExamConf = memo(function ExamConf() {
   const isGenerateDisabled = useMemo(() => 
     !fineTuning.trim() ||
     selectedDifficulty === null ||
+    !isApiValid ||
     isGenerating,
-    [fineTuning, selectedDifficulty, isGenerating]
+    [fineTuning, selectedDifficulty, isApiValid, isGenerating]
   );
 
   return (
@@ -421,104 +438,266 @@ export const ExamConf = memo(function ExamConf() {
         </div>
       </div>
 
-      {/* Generate Button Grid Area */}
-      <div className="grid-generate">
+      {/* AI Configuration Grid Area */}
+      <div className="grid-ai-config">
         <div 
-          className="generate-section"
+          className="config-card"
           style={{
-            borderColor: isGenerateDisabled ? 'var(--theme-border-primary)' : 'var(--primary)',
-            backgroundColor: isGenerateDisabled ? 'var(--theme-bg-secondary)' : 'var(--theme-primary-light)'
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
           }}
         >
-          <div className="generate-content">
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-info-light)' }}
+            >
+              <i 
+                className="fas fa-robot text-lg"
+                style={{ color: 'var(--theme-info)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                🤖 Configuración de IA
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Modelo y API de Gemini
+              </p>
+            </div>
+          </div>
+          
+          <div className="card-content">
+            <div className="space-y-6">
+              {/* Model Selection */}
+              <div>
+                <label 
+                  className="block text-sm font-medium mb-3"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >
+                  Modelo de IA
+                </label>
+                <div className="grid grid-cols-1 gap-3">
+                  {['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'].map((model) => (
+                    <button
+                      key={model}
+                      onClick={() => handleModelChange(model)}
+                      className={`p-3 rounded-xl border-2 text-left transition-all duration-300 ${
+                        selectedModel === model ? 'ring-2 ring-offset-2' : ''
+                      }`}
+                      style={{
+                        backgroundColor: selectedModel === model ? 'var(--primary)' : 'var(--theme-bg-secondary)',
+                        borderColor: 'var(--primary)',
+                        color: selectedModel === model ? 'white' : 'var(--theme-text-primary)',
+                        '--tw-ring-color': 'var(--primary)'
+                      } as any}
+                    >
+                      <div className="font-semibold text-sm">{model}</div>
+                      <div className="text-xs opacity-80 mt-1">
+                        {model.includes('flash') ? 'Rápido y eficiente' : 
+                         model.includes('pro') ? 'Mayor capacidad' : 'Modelo estándar'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* API Key Input */}
+              <div>
+                <label 
+                  className="block text-sm font-medium mb-3"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >
+                  API Key de Google
+                </label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
+                      placeholder="AIza..."
+                      className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 pr-12"
+                      style={{
+                        backgroundColor: 'var(--theme-bg-secondary)',
+                        borderColor: isApiValid ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                        color: 'var(--theme-text-primary)'
+                      }}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                      {apiKey && (
+                        <i 
+                          className={`fas ${isApiValid ? 'fa-check-circle' : 'fa-exclamation-circle'}`}
+                          style={{ 
+                            color: isApiValid ? 'var(--theme-success)' : 'var(--theme-error)' 
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p 
+                      className="text-xs"
+                      style={{ color: 'var(--theme-text-secondary)' }}
+                    >
+                      Obtén tu API key en Google AI Studio
+                    </p>
+                    <a
+                      href="https://youtu.be/RVGbLSVFtIk?si=svQg0FVLtHrFYcap&t=21"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105"
+                      style={{
+                        backgroundColor: 'var(--theme-info-light)',
+                        color: 'var(--theme-info-dark)',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <i className="fab fa-youtube"></i>
+                      <span>Ver tutorial</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Generate Button Grid Area */}
+      <div className="grid-generate">
+        <div className="flex items-center justify-center h-full">
+          <div 
+            className="w-full max-w-md mx-auto"
+            style={{
+              padding: '2rem',
+              borderRadius: '1.5rem',
+              border: '2px dashed',
+              borderColor: isGenerateDisabled ? 'var(--theme-border-primary)' : 'var(--primary)',
+              backgroundColor: isGenerateDisabled ? 'var(--theme-bg-secondary)' : 'var(--theme-bg-primary)',
+              transition: 'all 0.3s ease'
+            }}
+          >
             {isGenerating ? (
-              <div className="generating-state">
+              <div className="space-y-4 text-center">
                 <div 
-                  className="generating-indicator"
+                  className="inline-flex items-center space-x-3 px-6 py-4 rounded-2xl border-2"
                   style={{
                     backgroundColor: 'var(--theme-info-light)',
                     borderColor: 'var(--theme-info)',
                     color: 'var(--theme-info-dark)'
                   }}
                 >
-                  <div className="generating-spinner">
-                    <div className="spinner"></div>
-                  </div>
-                  <span className="generating-text">Generando tu examen con IA...</span>
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span className="font-semibold">Generando examen con IA...</span>
                 </div>
                 <p 
-                  className="generating-subtitle"
+                  className="text-sm"
                   style={{ color: 'var(--theme-text-secondary)' }}
                 >
-                  Esto puede tardar unos momentos. La IA está creando preguntas personalizadas.
+                  Esto puede tardar unos momentos
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 text-center">
                 {/* Statistics Summary */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div 
-                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
-                    style={{
-                      backgroundColor: fineTuning.trim().length > 0 ? 'var(--theme-success-light)' : 'var(--theme-bg-secondary)',
-                      borderColor: fineTuning.trim().length > 0 ? 'var(--theme-success)' : 'var(--theme-border-primary)',
-                      color: fineTuning.trim().length > 0 ? 'var(--theme-success-dark)' : 'var(--theme-text-secondary)'
-                    }}
+                <div className="space-y-4">
+                  <h4 
+                    className="text-lg font-bold"
+                    style={{ color: 'var(--theme-text-primary)' }}
                   >
-                    <div className="text-lg font-bold mb-1">
-                      {fineTuning.trim().length > 0 ? '✓' : '✗'}
+                    📊 Resumen de Configuración
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: fineTuning.trim().length > 0 ? 'var(--theme-success-light)' : 'var(--theme-bg-secondary)',
+                        borderColor: fineTuning.trim().length > 0 ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                        color: fineTuning.trim().length > 0 ? 'var(--theme-success-dark)' : 'var(--theme-text-secondary)'
+                      }}
+                    >
+                      <div className="text-lg font-bold">
+                        {fineTuning.trim().length > 0 ? '✓' : '✗'}
+                      </div>
+                      <div className="text-xs opacity-80">Tema</div>
                     </div>
-                    <div className="text-xs opacity-80">Tema</div>
+                    
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: selectedDifficulty ? 'var(--theme-warning-light)' : 'var(--theme-bg-secondary)',
+                        borderColor: selectedDifficulty ? 'var(--theme-warning)' : 'var(--theme-border-primary)',
+                        color: selectedDifficulty ? 'var(--theme-warning-dark)' : 'var(--theme-text-secondary)'
+                      }}
+                    >
+                      <div className="text-xs font-bold">
+                        {selectedDifficulty ? selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1) : 'No sel.'}
+                      </div>
+                      <div className="text-xs opacity-80">Dificultad</div>
+                    </div>
                   </div>
                   
-                  <div 
-                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
-                    style={{
-                      backgroundColor: questionCount > 0 ? 'var(--theme-info-light)' : 'var(--theme-bg-secondary)',
-                      borderColor: questionCount > 0 ? 'var(--theme-info)' : 'var(--theme-border-primary)',
-                      color: questionCount > 0 ? 'var(--theme-info-dark)' : 'var(--theme-text-secondary)'
-                    }}
-                  >
-                    <div className="text-2xl font-bold mb-1">{questionCount}</div>
-                    <div className="text-xs opacity-80">Preguntas</div>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: isApiValid ? 'var(--theme-success-light)' : 'var(--theme-bg-secondary)',
+                        borderColor: isApiValid ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                        color: isApiValid ? 'var(--theme-success-dark)' : 'var(--theme-text-secondary)'
+                      }}
+                    >
+                      <div className="text-lg font-bold">
+                        {isApiValid ? '✓' : '✗'}
+                      </div>
+                      <div className="text-xs opacity-80">API</div>
+                    </div>
+                    
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: 'var(--theme-info-light)',
+                        borderColor: 'var(--theme-info)',
+                        color: 'var(--theme-info-dark)'
+                      }}
+                    >
+                      <div className="text-lg font-bold">{questionCount}</div>
+                      <div className="text-xs opacity-80">Preguntas</div>
+                    </div>
                   </div>
                   
-                  <div 
-                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
-                    style={{
-                      backgroundColor: selectedDifficulty ? 'var(--theme-warning-light)' : 'var(--theme-bg-secondary)',
-                      borderColor: selectedDifficulty ? 'var(--theme-warning)' : 'var(--theme-border-primary)',
-                      color: selectedDifficulty ? 'var(--theme-warning-dark)' : 'var(--theme-text-secondary)'
-                    }}
-                  >
-                    <div className="text-sm font-bold mb-1">
-                      {selectedDifficulty ? selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1) : 'No sel.'}
+                  <div className="grid grid-cols-1 gap-3 mt-3">
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: 'var(--theme-error-light)',
+                        borderColor: 'var(--theme-error)',
+                        color: 'var(--theme-error-dark)'
+                      }}
+                    >
+                      <div className="text-xs font-bold">
+                        {hour > 0 ? `${hour}h` : ''} {minute > 0 ? `${minute}m` : ''} {second > 0 ? `${second}s` : ''}
+                      </div>
+                      <div className="text-xs opacity-80">Tiempo</div>
                     </div>
-                    <div className="text-xs opacity-80">Dificultad</div>
-                  </div>
-                  
-                  <div 
-                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
-                    style={{
-                      backgroundColor: (hour + minute + second) > 0 ? 'var(--theme-error-light)' : 'var(--theme-bg-secondary)',
-                      borderColor: (hour + minute + second) > 0 ? 'var(--theme-error)' : 'var(--theme-border-primary)',
-                      color: (hour + minute + second) > 0 ? 'var(--theme-error-dark)' : 'var(--theme-text-secondary)'
-                    }}
-                  >
-                    <div className="text-sm font-bold mb-1">
-                      {hour > 0 ? `${hour}h ` : ''}{minute > 0 ? `${minute}m` : (hour === 0 && second > 0) ? '0m' : (hour === 0 && minute === 0 && second === 0) ? 'No def.' : ''}
-                    </div>
-                    <div className="text-xs opacity-80">Tiempo</div>
                   </div>
                 </div>
                 
                 {/* Generate Button */}
-                <div className="text-center">
+                <div className="space-y-3">
                   <button
                     onClick={handleGenerateExam}
                     disabled={isGenerateDisabled}
-                    className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center justify-center space-x-3 mx-auto ${
-                      isGenerateDisabled ? 'cursor-not-allowed' : 'hover:scale-105'
+                    className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center justify-center space-x-3 ${
+                      isGenerateDisabled ? 'cursor-not-allowed' : 'hover:scale-105 hover:shadow-lg'
                     }`}
                     style={{
                       backgroundColor: isGenerateDisabled ? 'var(--theme-text-tertiary)' : 'var(--primary)',
@@ -533,10 +712,10 @@ export const ExamConf = memo(function ExamConf() {
                   
                   {isGenerateDisabled && (
                     <p 
-                      className="text-sm mt-3 opacity-80"
+                      className="text-xs opacity-80"
                       style={{ color: 'var(--theme-text-secondary)' }}
                     >
-                      Completa la configuración para generar el examen
+                      Completa el tema y selecciona la dificultad
                     </p>
                   )}
                 </div>
