@@ -38,7 +38,6 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
   const answeredCount = Object.keys(userAnswers).length;
   const unansweredCount = questions.length - answeredCount;
   const pinnedCount = Object.keys(pinnedQuestions).length;
-  const feedbackCount = Object.keys(feedback).length;
 
   const getCardClass = (index: number) => {
     const isAnswered = userAnswers[index] !== undefined;
@@ -275,7 +274,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+      <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-2xl font-bold text-gray-900">
             {answeredCount}
@@ -293,12 +292,6 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
             {pinnedCount}
           </div>
           <div className="text-sm text-gray-600">Fijadas</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-yellow-600">
-            {feedbackCount}
-          </div>
-          <div className="text-sm text-gray-600">Con feedback</div>
         </div>
       </div>
     </div>
