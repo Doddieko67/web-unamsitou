@@ -261,46 +261,63 @@ export const ExamContainer: React.FC = () => {
         {/* Header with Exam Info - Compact Design */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-3 max-w-2xl">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-clipboard-list text-white text-lg"></i>
-                  </div>
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <i className="fas fa-clipboard-list text-white text-lg"></i>
                 </div>
-                <div className="flex-1">
-                  <h1 className="text-lg font-bold text-gray-900">
-                    {examState.exam.titulo}
-                  </h1>
-                  {examState.exam.descripcion && (
-                    <p className="text-sm text-gray-600 mt-0.5 leading-tight">
-                      {examState.exam.descripcion}
-                    </p>
-                  )}
-                  <div className="flex items-center space-x-3 mt-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
-                      <i className="fas fa-signal mr-1"></i>
-                      {examState.exam.dificultad}
-                    </span>
-                    <span className="inline-flex items-center text-xs text-gray-600">
-                      <i className="fas fa-list-ol mr-1"></i>
-                      {examState.exam.numero_preguntas} preguntas
-                    </span>
-                  </div>
-                </div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  {examState.exam.titulo}
+                </h1>
               </div>
               
-              {/* Timer Display */}
-              <div className="flex-shrink-0">
-                <ExamTimerDisplay
-                  timeLeft={timer.timeLeft}
-                  timeSpent={timer.timeSpent}
-                  isRunning={timer.isRunning}
-                  isSubmitted={examState.isSubmitted}
-                  formatTime={formatTime}
-                  onPause={timer.pause}
-                  onResume={timer.start}
-                />
+              {examState.exam.descripcion && (
+                <p className="text-sm text-gray-600 mb-3 max-w-md">
+                  {examState.exam.descripcion}
+                </p>
+              )}
+              
+              <div className="flex items-center justify-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+                    <i className="fas fa-signal mr-1"></i>
+                    {examState.exam.dificultad}
+                  </span>
+                  <span className="inline-flex items-center text-xs text-gray-600">
+                    <i className="fas fa-list-ol mr-1"></i>
+                    {examState.exam.numero_preguntas} preguntas
+                  </span>
+                </div>
+                
+                {/* Timer Display - Simplified */}
+                <div className="flex items-center space-x-2">
+                  <div className={`w-2 h-2 rounded-full ${
+                    examState.isSubmitted
+                      ? 'bg-gray-400'
+                      : timer.isRunning
+                      ? 'bg-green-400 animate-pulse'
+                      : 'bg-yellow-400'
+                  }`} />
+                  <span className={`text-sm font-semibold ${
+                    timer.timeLeft !== undefined && timer.timeLeft <= 300 && !examState.isSubmitted
+                      ? 'text-red-600'
+                      : timer.timeLeft !== undefined && timer.timeLeft <= 900 && !examState.isSubmitted  
+                      ? 'text-orange-600'
+                      : 'text-green-600'
+                  }`}>
+                    <i className="fas fa-clock mr-1"></i>
+                    {formatTime(timer.timeLeft)}
+                  </span>
+                  {!examState.isSubmitted && (
+                    <button
+                      onClick={timer.isRunning ? timer.pause : timer.start}
+                      className="text-xs text-gray-500 hover:text-gray-700 ml-1"
+                      title={timer.isRunning ? 'Pausar' : 'Reanudar'}
+                    >
+                      <i className={`fas fa-${timer.isRunning ? 'pause' : 'play'}`}></i>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
