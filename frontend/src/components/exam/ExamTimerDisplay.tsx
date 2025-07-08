@@ -24,96 +24,121 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
   onResume,
 }) => {
   const getTimerColor = () => {
-    if (isSubmitted) return 'text-gray-500';
+    if (isSubmitted) return 'text-gray-600';
     if (timeLeft === undefined) return 'text-blue-600';
     if (timeLeft <= 300) return 'text-red-600'; // Last 5 minutes
     if (timeLeft <= 900) return 'text-orange-600'; // Last 15 minutes
-    return 'text-green-600';
+    return 'text-emerald-600';
   };
 
-  const getTimerBgColor = () => {
-    if (isSubmitted) return 'bg-gray-100';
-    if (timeLeft === undefined) return 'bg-blue-50';
-    if (timeLeft <= 300) return 'bg-red-50';
-    if (timeLeft <= 900) return 'bg-orange-50';
-    return 'bg-green-50';
+  const getTimerGradient = () => {
+    if (isSubmitted) return 'from-gray-100 to-gray-200';
+    if (timeLeft === undefined) return 'from-blue-100 to-cyan-100';
+    if (timeLeft <= 300) return 'from-red-100 to-pink-100'; // Last 5 minutes
+    if (timeLeft <= 900) return 'from-orange-100 to-yellow-100'; // Last 15 minutes
+    return 'from-emerald-100 to-green-100';
+  };
+
+  const getIconColor = () => {
+    if (isSubmitted) return 'text-gray-400';
+    if (timeLeft === undefined) return 'text-blue-500';
+    if (timeLeft <= 300) return 'text-red-500';
+    if (timeLeft <= 900) return 'text-orange-500';
+    return 'text-emerald-500';
   };
 
   return (
-    <div className={`p-4 rounded-lg border-2 ${getTimerBgColor()}`}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-700">
-          Tiempo de Examen
-        </h3>
+    <div className={`p-4 rounded-2xl bg-gradient-to-br ${getTimerGradient()} border-2 border-white shadow-xl hover:shadow-2xl transition-all duration-300`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <div className={`w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center`}>
+            <i className={`fas fa-stopwatch ${getIconColor()} text-sm`}></i>
+          </div>
+          <h3 className="text-sm font-bold text-gray-800">
+            ⏰ Tiempo de Examen
+          </h3>
+        </div>
         {!isSubmitted && (
-          <div className="flex items-center space-x-2">
-            {isRunning ? (
-              <button
-                onClick={onPause}
-                className="text-xs text-gray-500 hover:text-gray-700"
-                title="Pausar timer"
-              >
-                <i className="fas fa-pause"></i>
-              </button>
-            ) : (
-              <button
-                onClick={onResume}
-                className="text-xs text-gray-500 hover:text-gray-700"
-                title="Reanudar timer"
-              >
-                <i className="fas fa-play"></i>
-              </button>
-            )}
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={isRunning ? onPause : onResume}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 ${
+                isRunning 
+                  ? 'bg-yellow-400 hover:bg-yellow-500 text-yellow-900' 
+                  : 'bg-green-400 hover:bg-green-500 text-green-900'
+              } shadow-lg`}
+              title={isRunning ? 'Pausar timer' : 'Reanudar timer'}
+            >
+              <i className={`fas fa-${isRunning ? 'pause' : 'play'} text-xs`}></i>
+            </button>
           </div>
         )}
       </div>
 
-      <div className="space-y-2">
-        {/* Time Left */}
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Tiempo restante:</span>
-          <span className={`text-lg font-bold ${getTimerColor()}`}>
+      <div className="space-y-3">
+        {/* Time Left - Main Display */}
+        <div className="text-center">
+          <div className="flex items-center justify-center space-x-2 mb-1">
+            <span className="text-xs font-medium text-gray-600">⏳ Tiempo restante</span>
+            <div
+              className={`w-3 h-3 rounded-full ${
+                isSubmitted
+                  ? 'bg-gray-400'
+                  : isRunning
+                  ? 'bg-green-400 animate-pulse'
+                  : 'bg-yellow-400 animate-bounce'
+              } shadow-sm`}
+            />
+          </div>
+          <div className={`text-2xl font-black ${getTimerColor()} tracking-wider drop-shadow-lg`}>
             {formatTime(timeLeft)}
-          </span>
+          </div>
         </div>
 
-        {/* Time Spent */}
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Tiempo transcurrido:</span>
-          <span className="text-sm font-semibold text-gray-700">
+        {/* Time Spent - Secondary Display */}
+        <div className="flex justify-between items-center bg-white bg-opacity-60 rounded-lg px-3 py-2">
+          <span className="text-xs font-medium text-gray-600 flex items-center">
+            <i className="fas fa-hourglass-half mr-1 text-gray-500"></i>
+            Transcurrido
+          </span>
+          <span className="text-sm font-bold text-gray-800">
             {formatTime(timeSpent)}
           </span>
         </div>
 
-        {/* Status indicator */}
-        <div className="flex items-center space-x-2 pt-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              isSubmitted
-                ? 'bg-gray-400'
-                : isRunning
-                ? 'bg-green-400 animate-pulse'
-                : 'bg-yellow-400'
-            }`}
-          />
-          <span className="text-xs text-gray-500">
+        {/* Status indicator with emoji */}
+        <div className="flex items-center justify-center space-x-2 bg-white bg-opacity-60 rounded-lg px-3 py-1">
+          <span className="text-sm">
             {isSubmitted
-              ? 'Examen finalizado'
+              ? '🏁'
               : isRunning
-              ? 'En progreso'
+              ? '🚀'
+              : '⏸️'}
+          </span>
+          <span className="text-xs font-medium text-gray-700">
+            {isSubmitted
+              ? 'Finalizado'
+              : isRunning
+              ? 'En marcha'
               : 'Pausado'}
           </span>
         </div>
 
-        {/* Warning for low time */}
+        {/* Warning for low time - Fun style */}
         {timeLeft !== undefined && timeLeft <= 300 && !isSubmitted && (
-          <div className="mt-3 p-2 bg-red-100 border border-red-300 rounded-md">
-            <div className="flex items-center">
-              <i className="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-              <span className="text-xs text-red-700 font-medium">
-                ¡Quedan menos de 5 minutos!
+          <div className="mt-3 p-2 bg-gradient-to-r from-red-400 to-red-500 rounded-lg animate-pulse">
+            <div className="flex items-center justify-center text-white">
+              <span className="text-sm font-bold animate-bounce">
+                🚨 ¡Solo {Math.floor(timeLeft / 60)} minutos! 🚨
               </span>
             </div>
+          </div>
+        )}
+        
+        {/* Encouragement for good time */}
+        {timeLeft !== undefined && timeLeft > 1800 && !isSubmitted && (
+          <div className="mt-2 text-center">
+            <span className="text-xs text-gray-600">🌟 ¡Tienes tiempo suficiente! 🌟</span>
           </div>
         )}
       </div>
