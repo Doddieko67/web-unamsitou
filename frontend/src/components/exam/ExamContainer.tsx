@@ -333,19 +333,19 @@ export const ExamContainer: React.FC = () => {
               <div className="bg-white rounded-lg shadow-md">
                 <div className="flex items-stretch">
                   
-                  {/* Left Navigation Button - EXPANDED for easier clicking */}
-                  <div className="flex items-center justify-center w-24 bg-gray-50 rounded-l-lg border-r">
+                  {/* Left Navigation Button - FULL HEIGHT for easier clicking */}
+                  <div className="w-24 bg-gray-50 rounded-l-lg border-r">
                     {navigation.canGoPrevious ? (
                       <button
                         onClick={navigation.goToPrevious}
-                        className="w-16 h-16 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
+                        className="w-full h-full flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-l-lg transition-all duration-200 hover:bg-blue-300 active:bg-blue-400"
                         title="Pregunta anterior (←)"
                       >
-                        <i className="fas fa-chevron-left text-xl"></i>
+                        <i className="fas fa-chevron-left text-2xl"></i>
                       </button>
                     ) : (
-                      <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-gray-400 rounded-xl">
-                        <i className="fas fa-chevron-left text-xl"></i>
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-l-lg">
+                        <i className="fas fa-chevron-left text-2xl opacity-50"></i>
                       </div>
                     )}
                   </div>
@@ -376,19 +376,19 @@ export const ExamContainer: React.FC = () => {
                     />
                   </div>
 
-                  {/* Right Navigation Button - EXPANDED for easier clicking */}
-                  <div className="flex items-center justify-center w-24 bg-gray-50 rounded-r-lg border-l">
+                  {/* Right Navigation Button - FULL HEIGHT for easier clicking */}
+                  <div className="w-24 bg-gray-50 rounded-r-lg border-l">
                     {navigation.canGoNext ? (
                       <button
                         onClick={navigation.goToNext}
-                        className="w-16 h-16 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
+                        className="w-full h-full flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-r-lg transition-all duration-200 hover:bg-blue-300 active:bg-blue-400"
                         title="Siguiente pregunta (→)"
                       >
-                        <i className="fas fa-chevron-right text-xl"></i>
+                        <i className="fas fa-chevron-right text-2xl"></i>
                       </button>
                     ) : (
-                      <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-gray-400 rounded-xl">
-                        <i className="fas fa-chevron-right text-xl"></i>
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-r-lg">
+                        <i className="fas fa-chevron-right text-2xl opacity-50"></i>
                       </div>
                     )}
                   </div>
