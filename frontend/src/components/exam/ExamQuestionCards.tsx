@@ -154,6 +154,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
                   key={originalIndex}
                   className={getCardClass(originalIndex)}
                   onClick={() => handleQuestionClick(originalIndex)}
+                  data-question-index={originalIndex}
                 >
                   {/* Question Number and Pin Button */}
                   <div className="flex items-center justify-between mb-2">
@@ -222,6 +223,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
               key={index}
               className={getCardClass(index)}
               onClick={() => handleQuestionClick(index)}
+              data-question-index={index}
             >
               {/* Question Number and Pin Button */}
               <div className="flex items-center justify-between mb-2">

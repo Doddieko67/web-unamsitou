@@ -24,6 +24,7 @@ interface ExamQuestionCardProps {
   canGoPrevious?: boolean;
   canGoNext?: boolean;
   showFeedback?: boolean;
+  onScrollToOverview?: () => void;
 }
 
 /**
@@ -45,6 +46,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
   canGoPrevious = false,
   canGoNext = false,
   showFeedback = true,
+  onScrollToOverview,
 }) => {
   const getAnswerButtonClass = (optionIndex: number) => {
     const baseClass = "w-full text-left p-4 border-2 rounded-lg transition-all duration-200 hover:shadow-md";
@@ -97,9 +99,14 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+            <button
+              onClick={onScrollToOverview}
+              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer"
+              title="Ver en Vista General de Preguntas"
+            >
+              <i className="fas fa-external-link-alt mr-2 text-xs"></i>
               Pregunta {questionIndex + 1} de {totalQuestions}
-            </span>
+            </button>
             <button
               onClick={onTogglePin}
               className={`p-1 rounded-full transition-colors ${
