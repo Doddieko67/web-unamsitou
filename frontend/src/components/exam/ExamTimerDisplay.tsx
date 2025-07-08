@@ -48,7 +48,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
   };
 
   return (
-    <div className={`p-4 rounded-2xl bg-gradient-to-br ${getTimerGradient()} transition-all duration-300`}>
+    <div className={`px-6 py-4 rounded-2xl bg-gradient-to-br ${getTimerGradient()} transition-all duration-300 min-w-[280px]`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           <div className={`w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center`}>
