@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { ExamButton } from "./ExamButton";
+import { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { Personalization } from "./Main/Personalization";
 import { QuestionConf } from "./Main/QuestionConf";
 import { useNavigate } from "react-router";
@@ -10,8 +9,9 @@ import { supabase } from "../supabase.config";
 import { ExamenData } from "./Main/interfacesExam";
 import Swal from "sweetalert2";
 import { url_backend } from "../url_backend";
+import { DEFAULT_EXAM_CONFIG } from "../constants/examConstants";
 
-export function ExamBasedOnHistory() {
+export const ExamBasedOnHistory = memo(function ExamBasedOnHistory() {
   const { session } = useAuthStore();
   const navigate = useNavigate();
   const { user } = useAuthStore(); // Obtener el usuario
@@ -19,12 +19,17 @@ export function ExamBasedOnHistory() {
   // --- Estados para la generación del examen ---
   // Estado para los IDs de exámenes SELECCIONADOS para generar el nuevo examen
   const [, setselectedExams] = useState<string[]>([]);
-  const [questionCount, setQuestionCount] = useState<number>(10);
-  const [fineTuning, setFineTuning] = useState<string>("");
+  const [questionCount, setQuestionCount] = useState<number>(DEFAULT_EXAM_CONFIG.QUESTION_COUNT);
+  const [fineTuning, setFineTuning] = useState<string>(DEFAULT_EXAM_CONFIG.FINE_TUNING);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [hour, setHour] = useState<number>(3);
-  const [minute, setMinute] = useState<number>(0);
-  const [second, setSecond] = useState<number>(0);
+  const [hour, setHour] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_HOUR);
+  const [minute, setMinute] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_MINUTE);
+  const [second, setSecond] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_SECOND);
+
+  // Estados para configuración de IA
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash');
+  const [apiKey, setApiKey] = useState<string>('');
+  const [isApiValid, setIsApiValid] = useState<boolean>(false);
 
   // --- Estados para la lista de exámenes recientes (y su visualización/filtrado) ---
   const [recentExams, setRecentExams] = useState<ExamenData[]>([]);
@@ -46,14 +51,35 @@ export function ExamBasedOnHistory() {
     setFineTuning(text);
   }, []);
 
+  const handleModelChange = useCallback((model: string) => {
+    setSelectedModel(model);
+  }, []);
+
+  const handleApiKeyChange = useCallback((key: string) => {
+    setApiKey(key);
+    // Verificación básica de API key (formato de Google API)
+    const isValidFormat = key.length > 20 && key.startsWith('AIza');
+    setIsApiValid(isValidFormat);
+  }, []);
+
   const handleGenerateExam = async () => {
-    // Validación inicial (igual que antes)
+    // Validación inicial
     if (Object.keys(pinnedExams).length === 0) {
-      // Usar selectedExams
       Swal.fire({
         icon: 'warning',
-        title: 'Selección incompleta',
-        text: 'Por favor, selecciona al menos un examen anterior.',
+        title: 'Selección Incompleta',
+        text: 'Por favor, selecciona al menos un examen anterior como base.',
+        confirmButtonColor: '#3085d6',
+      });
+      return;
+    }
+
+    if (!isApiValid) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'API Key Requerida',
+        text: 'Por favor, configura una API key válida de Google.',
+        confirmButtonColor: '#3085d6',
       });
       return;
     }
@@ -254,171 +280,634 @@ export function ExamBasedOnHistory() {
   const hasExamsLoadedAndAvailable =
     !isLoading && !error && recentExams.length > 0;
 
-  // Comprobación para deshabilitar el botón de generar
-  const isGenerateDisabled =
-    Object.keys(pinnedExams).length === 0 || isGenerating;
+  // Comprobación para deshabilitar el botón de generar (memoizado)
+  const isGenerateDisabled = useMemo(() =>
+    Object.keys(pinnedExams).length === 0 ||
+    !isApiValid ||
+    isGenerating,
+    [pinnedExams, isApiValid, isGenerating]
+  );
 
   return (
-    <div
-      id="new-exam-section"
-      className="bg-white rounded-xl shadow-lg overflow-hidden p-6 sm:p-8 mb-8 border border-gray-200"
-    >
-      <h2 className="text-2xl font-bold text-gray-900 mb-8 border-b pb-4">
-        Configura tu Examen Personalizado
-      </h2>
-      <h3 className="text-lg font-medium text-gray-700 mb-4">
-        1. Selecciona exámenes anteriores para basar tu nuevo examen
-      </h3>
-      {/* Sección para mostrar los exámenes recientes */}
-      <div className="mb-7">
-        {" "}
-        {/* Margen inferior para separar de las configuraciones */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Tus exámenes recientes
-          </h2>
-        </div>
-        {/* Mensajes de estado global de la carga de exámenes */}
-        {isLoading && (
-          <p className="text-gray-600 text-center col-span-full">
-            Cargando exámenes...
-          </p>
-        )}
-        {!isLoading && error && (
-          <p className="text-red-600 col-span-full text-center">{error}</p>
-        )}
-        {/* Contenido si NO está cargando, NO hay error y SÍ hay exámenes */}
-        {hasExamsLoadedAndAvailable && (
-          <>
-            {" "}
-            {/* Usamos un fragmento para agrupar las secciones pinneados/no pinneados */}
-            {/* Sección de Exámenes Fijados */}
-            {pinnedExamList.length > 0 && (
-              <div className="mb-8">
-                {" "}
-                {/* Añadir margen inferior */}
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">
-                  Exámenes Seleccionados para el analisis (
-                  {pinnedExamList.length})
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {pinnedExamList.map((exam, index) => (
-                    <PreviewableRecentExamCard
-                      key={exam.id}
-                      exam={exam}
-                      onDelete={handleDeleteExam}
-                      index={index} // Índice dentro de la lista de pinneados
-                      isPinneable={false} // La tarjeta es fijable
-                      isThisPinned={true} // La tarjeta está fijada
-                      onEntireToggle={handlePinExam} // Handler para seleccionar (clic en tarjeta)
-                    />
-                  ))}
-                </div>
-                {/* Separador visual si también hay exámenes no pinneados visibles */}
-                {slicedNonPinnedExams.length > 0 && (
-                  <div className="border-t border-gray-200 mt-6 pt-6"></div>
-                )}
-              </div>
-            )}
-            {/* Sección de Exámenes Recientes (No Fijados) */}
-            {slicedNonPinnedExams.length > 0 && (
-              <div className={`${pinnedExamList.length > 0 ? "" : ""} mt-6`}>
-                {" "}
-                {/* Margen superior condicional */}
-                {/* Mostrar encabezado solo si hay pinneados arriba O si esta es la única sección de exámenes */}
-                {(pinnedExamList.length > 0 || pinnedExamList.length === 0) && (
-                  <h3 className="text-lg font-semibold text-gray-700 mb-4">
-                    {pinnedExamList.length > 0
-                      ? "Otros Exámenes Recientes"
-                      : "Exámenes Recientes"}{" "}
-                    ({nonPinnedExamList.length})
-                  </h3>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {slicedNonPinnedExams.map((exam, index) => (
-                    <PreviewableRecentExamCard
-                      key={exam.id}
-                      exam={exam}
-                      onDelete={handleDeleteExam}
-                      index={index} // Índice dentro de la lista paginada de no pinneados
-                      isPinneable={false} // La tarjeta es fijable
-                      onEntireToggle={handlePinExam} // Handler para seleccionar (clic en tarjeta)
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Mensaje si hay exámenes pero ninguno pinneado y no se muestran no pinneados */}
-            {!isLoading &&
-              !error &&
-              recentExams.length > 0 &&
-              pinnedExamList.length === 0 &&
-              slicedNonPinnedExams.length === 0 &&
-              visibleCount >= nonPinnedExamList.length && (
-                <p className="text-gray-500 text-center mt-4">
-                  No hay más exámenes recientes sin fijar para mostrar.
-                </p>
-              )}
-            {/* Mensaje "Fija un examen" si hay exámenes totales pero ninguno pinneado */}
-            {!isLoading &&
-              !error &&
-              recentExams.length > 0 &&
-              pinnedExamList.length === 0 && (
-                <p className="text-gray-500 text-center mt-4">
-                  Selecciona exámenes para empezar a usarlos como base.
-                </p>
-              )}
-          </>
-        )}
-        {/* Mensaje si NO está cargando, NO hay error y NO hay exámenes en total */}
-        {!isLoading && !error && recentExams.length === 0 && (
-          <p className="text-gray-600 col-span-full text-center mt-4">
-            No tienes exámenes recientes para usar como base. Genera uno
-            primero.
-          </p>
-        )}
-        {/* Botón Cargar más */}
-        {/* Mostrar si no está cargando, no hay error, y aún quedan no pinneados por mostrar */}
-        {!isLoading && !error && visibleCount < nonPinnedExamList.length && (
-          <div className="col-span-full flex justify-center mt-6">
-            <button
-              onClick={handleLoadMore}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition"
+    <div id="history-exam-section" className="exam-config-grid">
+      {/* Header Grid Area */}
+      <div className="grid-header">
+        <div 
+          className="exam-header-card"
+          style={{
+            background: 'linear-gradient(135deg, var(--theme-bg-primary) 0%, var(--theme-bg-accent) 50%, var(--theme-bg-primary) 100%)',
+            borderColor: 'var(--theme-border-primary)'
+          }}
+        >
+          <div className="header-content">
+            <div 
+              className="header-icon"
+              style={{ backgroundColor: 'var(--terciary)' }}
             >
-              Cargar más ({Math.min(6, nonPinnedExamList.length - visibleCount)}
-              )
-            </button>
+              <i className="fas fa-history text-2xl text-white"></i>
+            </div>
+            <div className="header-text">
+              <h1 
+                className="header-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                Generar desde Historial
+              </h1>
+              <p 
+                className="header-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Crea nuevos exámenes basados en exámenes anteriores
+              </p>
+            </div>
           </div>
-        )}
-      </div>{" "}
-      {/* Fin de la sección de exámenes recientes */}
-      {/* Otras configuraciones para el nuevo examen */}
-      <QuestionConf
-        questionCount={questionCount}
-        onQuestionCountChange={handleQuestionCountChange}
-      />
-      <TimerConf
-        hour={hour}
-        setHour={setHour}
-        minute={minute}
-        setMinute={setMinute}
-        second={second}
-        setSecond={setSecond}
-      ></TimerConf>
-      <Personalization
-        fineTuning={fineTuning}
-        onFineTuningChange={handleFineTuningChange}
-      />
-      <ExamButton
-        onGenerateClick={handleGenerateExam}
-        disabled={isGenerateDisabled}
-      />
-      {isGenerating && (
-        <div className="mt-4 text-center text-sm text-indigo-600">
-          <i className="fas fa-spinner fa-spin mr-2"></i>
-          Generando tu examen... puede tardar unos minutos.
         </div>
-      )}
+      </div>
+      {/* History Selection Grid Area */}
+      <div className="col-span-full grid-personalization">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-info-light)' }}
+            >
+              <i 
+                className="fas fa-archive text-lg"
+                style={{ color: 'var(--theme-info)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                📚 Seleccionar Exámenes Base
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                {isLoading ? 'Cargando...' : `${recentExams.length} examen${recentExams.length !== 1 ? 'es' : ''} disponible${recentExams.length !== 1 ? 's' : ''}`}
+              </p>
+            </div>
+          </div>
+          
+          <div className="card-content">
+            {/* Loading State */}
+            {isLoading && (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-4" style={{ color: 'var(--primary)' }}></div>
+                <p style={{ color: 'var(--theme-text-secondary)' }}>Cargando exámenes...</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {!isLoading && error && (
+              <div className="text-center py-8">
+                <i className="fas fa-exclamation-circle text-4xl mb-4" style={{ color: 'var(--theme-error)' }}></i>
+                <p style={{ color: 'var(--theme-error)' }}>{error}</p>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!isLoading && !error && recentExams.length === 0 && (
+              <div className="text-center py-8">
+                <i className="fas fa-inbox text-4xl mb-4" style={{ color: 'var(--theme-text-secondary)' }}></i>
+                <p style={{ color: 'var(--theme-text-secondary)' }}>
+                  No tienes exámenes recientes. Genera uno primero.
+                </p>
+              </div>
+            )}
+
+            {/* Content */}
+            {hasExamsLoadedAndAvailable && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column: Available Exams */}
+                <div>
+                  <h4 
+                    className="font-semibold mb-4"
+                    style={{ color: 'var(--theme-text-primary)' }}
+                  >
+                    📋 Otros Disponibles ({nonPinnedExamList.length})
+                  </h4>
+                  
+                  {slicedNonPinnedExams.length > 0 ? (
+                    <>
+                      <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                        {slicedNonPinnedExams.map((exam, index) => (
+                          <PreviewableRecentExamCard
+                            key={exam.id}
+                            exam={exam}
+                            onDelete={handleDeleteExam}
+                            index={index}
+                            isPinneable={false}
+                            onEntireToggle={handlePinExam}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Load More Button */}
+                      {visibleCount < nonPinnedExamList.length && (
+                        <div className="text-center mt-4">
+                          <button
+                            onClick={handleLoadMore}
+                            className="px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+                            style={{
+                              backgroundColor: 'var(--theme-info-light)',
+                              color: 'var(--theme-info-dark)',
+                              border: `1px solid var(--theme-info)`
+                            }}
+                          >
+                            Cargar más ({Math.min(6, nonPinnedExamList.length - visibleCount)})
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div 
+                      className="text-center py-8 rounded-xl border-2 border-dashed"
+                      style={{
+                        borderColor: 'var(--theme-border-secondary)',
+                        backgroundColor: 'var(--theme-bg-secondary)'
+                      }}
+                    >
+                      <i className="fas fa-inbox text-2xl mb-2" style={{ color: 'var(--theme-text-secondary)' }}></i>
+                      <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>
+                        Todos los exámenes están seleccionados
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Selected Exams */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 
+                      className="font-semibold"
+                      style={{ color: 'var(--theme-text-primary)' }}
+                    >
+                      ✅ Seleccionados ({pinnedExamList.length})
+                    </h4>
+                    {pinnedExamList.length > 0 && (
+                      <div 
+                        className="px-3 py-1 rounded-lg text-xs font-medium"
+                        style={{
+                          backgroundColor: 'var(--theme-success-light)',
+                          color: 'var(--theme-success-dark)'
+                        }}
+                      >
+                        Listos para usar
+                      </div>
+                    )}
+                  </div>
+                  
+                  {pinnedExamList.length > 0 ? (
+                    <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
+                      {pinnedExamList.map((exam, index) => (
+                        <PreviewableRecentExamCard
+                          key={exam.id}
+                          exam={exam}
+                          onDelete={handleDeleteExam}
+                          index={index}
+                          isPinneable={false}
+                          isThisPinned={true}
+                          onEntireToggle={handlePinExam}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div 
+                      className="text-center py-8 rounded-xl border-2 border-dashed"
+                      style={{
+                        borderColor: 'var(--theme-border-secondary)',
+                        backgroundColor: 'var(--theme-bg-secondary)'
+                      }}
+                    >
+                      <i className="fas fa-hand-point-up text-2xl mb-2" style={{ color: 'var(--theme-text-secondary)' }}></i>
+                      <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>
+                        Haz clic en los exámenes para seleccionarlos como base
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* Questions Grid Area */}
+      <div className="grid-questions">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-success-light)' }}
+            >
+              <i 
+                className="fas fa-question-circle text-lg"
+                style={{ color: 'var(--theme-success)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                🔢 Preguntas
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Cantidad para el nuevo examen
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <QuestionConf
+              questionCount={questionCount}
+              onQuestionCountChange={handleQuestionCountChange}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Timer Grid Area */}
+      <div className="grid-timer">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-error-light)' }}
+            >
+              <i 
+                className="fas fa-clock text-lg"
+                style={{ color: 'var(--theme-error)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                ⏱️ Tiempo
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Duración límite del examen
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <TimerConf
+              hour={hour}
+              setHour={setHour}
+              minute={minute}
+              setMinute={setMinute}
+              second={second}
+              setSecond={setSecond}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Personalization Grid Area */}
+      <div className="grid-difficulty">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-warning-light)' }}
+            >
+              <i 
+                className="fas fa-paintbrush text-lg"
+                style={{ color: 'var(--theme-warning)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                🎨 Personalización
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Ajustes adicionales del examen
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <Personalization
+              fineTuning={fineTuning}
+              onFineTuningChange={handleFineTuningChange}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* AI Configuration Grid Area */}
+      <div className="grid-ai-config">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-info-light)' }}
+            >
+              <i 
+                className="fas fa-robot text-lg"
+                style={{ color: 'var(--theme-info)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                🤖 Configuración de IA
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Modelo y API de Gemini
+              </p>
+            </div>
+          </div>
+          
+          <div className="card-content">
+            <div className="space-y-6">
+              {/* Model Selection */}
+              <div>
+                <label 
+                  className="block text-sm font-medium mb-3"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >
+                  Modelo de IA
+                </label>
+                <div className="grid grid-cols-1 gap-3">
+                  {['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'].map((model) => (
+                    <button
+                      key={model}
+                      onClick={() => handleModelChange(model)}
+                      className={`p-3 rounded-xl border-2 text-left transition-all duration-300 ${
+                        selectedModel === model ? 'ring-2 ring-offset-2' : ''
+                      }`}
+                      style={{
+                        backgroundColor: selectedModel === model ? 'var(--primary)' : 'var(--theme-bg-secondary)',
+                        borderColor: 'var(--primary)',
+                        color: selectedModel === model ? 'white' : 'var(--theme-text-primary)',
+                        '--tw-ring-color': 'var(--primary)'
+                      } as any}
+                    >
+                      <div className="font-semibold text-sm">{model}</div>
+                      <div className="text-xs opacity-80 mt-1">
+                        {model.includes('flash') ? 'Rápido y eficiente' : 
+                         model.includes('pro') ? 'Mayor capacidad' : 'Modelo estándar'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* API Key Input */}
+              <div>
+                <label 
+                  className="block text-sm font-medium mb-3"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >
+                  API Key de Google
+                </label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
+                      placeholder="AIza..."
+                      className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 pr-12"
+                      style={{
+                        backgroundColor: 'var(--theme-bg-secondary)',
+                        borderColor: isApiValid ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                        color: 'var(--theme-text-primary)'
+                      }}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                      {apiKey && (
+                        <i 
+                          className={`fas ${isApiValid ? 'fa-check-circle' : 'fa-exclamation-circle'}`}
+                          style={{ 
+                            color: isApiValid ? 'var(--theme-success)' : 'var(--theme-error)' 
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p 
+                      className="text-xs"
+                      style={{ color: 'var(--theme-text-secondary)' }}
+                    >
+                      Obtén tu API key en Google AI Studio
+                    </p>
+                    <a
+                      href="https://youtu.be/RVGbLSVFtIk?si=svQg0FVLtHrFYcap&t=21"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105"
+                      style={{
+                        backgroundColor: 'var(--theme-info-light)',
+                        color: 'var(--theme-info-dark)',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <i className="fab fa-youtube"></i>
+                      <span>Ver tutorial</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Generate Button Grid Area */}
+      <div className="grid-generate">
+        <div className="flex items-center justify-center h-full">
+          <div 
+            className="w-full max-w-md mx-auto"
+            style={{
+              padding: '2rem',
+              borderRadius: '1.5rem',
+              border: '2px dashed',
+              borderColor: isGenerateDisabled ? 'var(--theme-border-primary)' : 'var(--primary)',
+              backgroundColor: isGenerateDisabled ? 'var(--theme-bg-secondary)' : 'var(--theme-bg-primary)',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {isGenerating ? (
+              <div className="space-y-4 text-center">
+                <div 
+                  className="inline-flex items-center space-x-3 px-6 py-4 rounded-2xl border-2"
+                  style={{
+                    backgroundColor: 'var(--theme-info-light)',
+                    borderColor: 'var(--theme-info)',
+                    color: 'var(--theme-info-dark)'
+                  }}
+                >
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span className="font-semibold">Generando examen...</span>
+                </div>
+                <p 
+                  className="text-sm"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >
+                  Analizando exámenes base con IA
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6 text-center">
+                {/* Statistics Summary */}
+                <div className="space-y-4">
+                  <h4 
+                    className="text-lg font-bold"
+                    style={{ color: 'var(--theme-text-primary)' }}
+                  >
+                    📊 Resumen de Configuración
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: Object.keys(pinnedExams).length > 0 ? 'var(--theme-success-light)' : 'var(--theme-bg-secondary)',
+                        borderColor: Object.keys(pinnedExams).length > 0 ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                        color: Object.keys(pinnedExams).length > 0 ? 'var(--theme-success-dark)' : 'var(--theme-text-secondary)'
+                      }}
+                    >
+                      <div className="text-lg font-bold">
+                        {Object.keys(pinnedExams).length || '0'}
+                      </div>
+                      <div className="text-xs opacity-80">Base</div>
+                    </div>
+                    
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: 'var(--theme-info-light)',
+                        borderColor: 'var(--theme-info)',
+                        color: 'var(--theme-info-dark)'
+                      }}
+                    >
+                      <div className="text-lg font-bold">{questionCount}</div>
+                      <div className="text-xs opacity-80">Preguntas</div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: isApiValid ? 'var(--theme-success-light)' : 'var(--theme-bg-secondary)',
+                        borderColor: isApiValid ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                        color: isApiValid ? 'var(--theme-success-dark)' : 'var(--theme-text-secondary)'
+                      }}
+                    >
+                      <div className="text-lg font-bold">
+                        {isApiValid ? '✓' : '✗'}
+                      </div>
+                      <div className="text-xs opacity-80">API</div>
+                    </div>
+                    
+                    <div 
+                      className="p-3 rounded-xl border text-center transition-all duration-300"
+                      style={{
+                        backgroundColor: 'var(--theme-error-light)',
+                        borderColor: 'var(--theme-error)',
+                        color: 'var(--theme-error-dark)'
+                      }}
+                    >
+                      <div className="text-xs font-bold">
+                        {hour > 0 ? `${hour}h` : ''} {minute > 0 ? `${minute}m` : ''} {second > 0 ? `${second}s` : ''}
+                      </div>
+                      <div className="text-xs opacity-80">Tiempo</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Generate Button */}
+                <div className="space-y-3">
+                  <button
+                    onClick={handleGenerateExam}
+                    disabled={isGenerateDisabled}
+                    className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center justify-center space-x-3 ${
+                      isGenerateDisabled ? 'cursor-not-allowed' : 'hover:scale-105 hover:shadow-lg'
+                    }`}
+                    style={{
+                      backgroundColor: isGenerateDisabled ? 'var(--theme-text-tertiary)' : 'var(--terciary)',
+                      color: 'white',
+                      opacity: isGenerateDisabled ? 0.5 : 1,
+                      boxShadow: isGenerateDisabled ? 'none' : 'var(--theme-shadow-lg)'
+                    }}
+                  >
+                    <i className="fas fa-history text-xl"></i>
+                    <span>Generar desde Historial</span>
+                  </button>
+                  
+                  {isGenerateDisabled && (
+                    <p 
+                      className="text-xs opacity-80"
+                      style={{ color: 'var(--theme-text-secondary)' }}
+                    >
+                      Selecciona exámenes base y configura la API
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+});
