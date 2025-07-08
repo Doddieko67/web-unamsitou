@@ -1,0 +1,135 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {chapter}{\numberline {1}Introducción}{4}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Tecnologías}{4}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}Stack Tecnológico Detallado}{4}{subsection.1.1.1}%
+\contentsline {subsubsection}{Frontend}{4}{subsubsection*.2}%
+\contentsline {subsubsection}{Backend}{4}{subsubsection*.3}%
+\contentsline {subsubsection}{Base de Datos y Servicios}{5}{subsubsection*.4}%
+\contentsline {subsubsection}{Cliente Móvil (Wrapper)}{5}{subsubsection*.5}%
+\contentsline {chapter}{\numberline {2}Arquitectura del Sistema}{6}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Patrón Arquitectónico}{6}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Capas de la Arquitectura}{6}{subsection.2.1.1}%
+\contentsline {subsubsection}{Capa de Presentación (Frontend)}{6}{subsubsection*.6}%
+\contentsline {subsubsection}{Cliente Móvil (Wrapper con Flutter)}{7}{subsubsection*.7}%
+\contentsline {subsubsection}{Capa de Lógica de Negocio (Backend)}{7}{subsubsection*.8}%
+\contentsline {subsubsection}{Capa de Datos}{7}{subsubsection*.9}%
+\contentsline {subsection}{\numberline {2.1.2}Estructura de Directorios}{7}{subsection.2.1.2}%
+\contentsline {subsubsection}{Frontend}{7}{subsubsection*.10}%
+\contentsline {subsubsection}{Backend}{8}{subsubsection*.11}%
+\contentsline {section}{\numberline {2.2}Gestión de Estado}{8}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Context API de React}{8}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Providers Principales}{8}{subsection.2.2.2}%
+\contentsline {subsubsection}{AuthProvider}{8}{subsubsection*.12}%
+\contentsline {section}{\numberline {2.3}Componentes Principales}{9}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Integración con Gemini AI}{9}{subsection.2.3.1}%
+\contentsline {subsubsection}{Configuración del Modelo}{9}{subsubsection*.13}%
+\contentsline {subsubsection}{Funcionalidades de IA}{9}{subsubsection*.14}%
+\contentsline {subsection}{\numberline {2.3.2}Sistema de Autenticación}{9}{subsection.2.3.2}%
+\contentsline {subsubsection}{Flujo de Autenticación}{9}{subsubsection*.15}%
+\contentsline {subsubsection}{Middleware de Seguridad}{10}{subsubsection*.16}%
+\contentsline {chapter}{\numberline {3}Pantallas y Funcionalidades}{11}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Dashboard Principal}{11}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Componentes del Dashboard}{11}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Métricas Mostradas}{11}{subsection.3.1.2}%
+\contentsline {section}{\numberline {3.2}Sistema de Examenes}{12}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Categorías Disponibles}{12}{subsection.3.2.1}%
+\contentsline {subsubsection}{Por Tipo de Contenido}{12}{subsubsection*.17}%
+\contentsline {subsubsection}{Por Nivel de Dificultad}{12}{subsubsection*.18}%
+\contentsline {subsection}{\numberline {3.2.2}Estructura de Examenes}{12}{subsection.3.2.2}%
+\contentsline {subsubsection}{Configuración de Examen}{12}{subsubsection*.19}%
+\contentsline {subsubsection}{Formato de Preguntas}{12}{subsubsection*.20}%
+\contentsline {section}{\numberline {3.3}Sistema de Retroalimentación}{13}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Funcionalidades Avanzadas}{13}{subsection.3.3.1}%
+\contentsline {subsubsection}{Análisis de Respuestas}{13}{subsubsection*.21}%
+\contentsline {subsubsection}{Reportes Personalizados}{13}{subsubsection*.22}%
+\contentsline {subsection}{\numberline {3.3.2}Generación de Feedback con IA}{13}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Gestión de Exámenes}{14}{subsection.3.3.3}%
+\contentsline {subsubsection}{Lista de Exámenes Recientes}{14}{subsubsection*.23}%
+\contentsline {subsubsection}{Interfaz de Examen en Ejecución}{14}{subsubsection*.24}%
+\contentsline {subsubsection}{Progreso y Seguimiento}{15}{subsubsection*.25}%
+\contentsline {subsubsection}{Finalización del Examen}{15}{subsubsection*.26}%
+\contentsline {chapter}{\numberline {4}Configuración y Desarrollo}{19}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Requisitos del Sistema}{19}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Entorno de Desarrollo}{19}{subsection.4.1.1}%
+\contentsline {subsubsection}{Requisitos Mínimos}{19}{subsubsection*.27}%
+\contentsline {subsubsection}{Herramientas Adicionales}{19}{subsubsection*.28}%
+\contentsline {subsection}{\numberline {4.1.2}Variables de Entorno}{19}{subsection.4.1.2}%
+\contentsline {subsubsection}{Frontend (.env)}{19}{subsubsection*.29}%
+\contentsline {subsubsection}{Backend (.env)}{20}{subsubsection*.30}%
+\contentsline {section}{\numberline {4.2}Dependencias del Proyecto}{20}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Dependencias de Producción}{20}{subsection.4.2.1}%
+\contentsline {subsubsection}{Frontend}{20}{subsubsection*.31}%
+\contentsline {subsubsection}{Backend}{20}{subsubsection*.32}%
+\contentsline {subsection}{\numberline {4.2.2}Dependencias de Desarrollo}{20}{subsection.4.2.2}%
+\contentsline {section}{\numberline {4.3}Proceso de Build}{21}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Comandos de Desarrollo}{21}{subsection.4.3.1}%
+\contentsline {subsubsection}{Instalación}{21}{subsubsection*.33}%
+\contentsline {subsubsection}{Ejecución en Desarrollo}{21}{subsubsection*.34}%
+\contentsline {subsection}{\numberline {4.3.2}Build de Producción}{21}{subsection.4.3.2}%
+\contentsline {subsubsection}{Frontend}{21}{subsubsection*.35}%
+\contentsline {subsubsection}{Backend}{22}{subsubsection*.36}%
+\contentsline {chapter}{\numberline {5}Backend y Base de Datos}{23}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Supabase como Backend}{23}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Componentes de Supabase}{23}{subsection.5.1.1}%
+\contentsline {subsubsection}{Base de Datos PostgreSQL}{23}{subsubsection*.37}%
+\contentsline {subsubsection}{Autenticación}{23}{subsubsection*.38}%
+\contentsline {subsubsection}{API REST Automática}{23}{subsubsection*.39}%
+\contentsline {subsection}{\numberline {5.1.2}Estructura de la Base de Datos}{24}{subsection.5.1.2}%
+\contentsline {subsubsection}{Tabla: users}{24}{subsubsection*.40}%
+\contentsline {subsubsection}{Tabla: exams}{24}{subsubsection*.41}%
+\contentsline {subsubsection}{Tabla: exam\_results}{24}{subsubsection*.42}%
+\contentsline {subsubsection}{Tabla: feedback}{24}{subsubsection*.43}%
+\contentsline {subsection}{\numberline {5.1.3}Políticas de Seguridad}{25}{subsection.5.1.3}%
+\contentsline {subsubsection}{Row Level Security (RLS)}{25}{subsubsection*.44}%
+\contentsline {section}{\numberline {5.2}Integración con Google Gemini}{25}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Configuración del Modelo}{25}{subsection.5.2.1}%
+\contentsline {subsubsection}{Inicialización del Cliente}{25}{subsubsection*.45}%
+\contentsline {subsection}{\numberline {5.2.2}Funcionalidades de IA}{26}{subsection.5.2.2}%
+\contentsline {subsubsection}{Generación de Preguntas}{26}{subsubsection*.46}%
+\contentsline {subsubsection}{Análisis de Resultados}{26}{subsubsection*.47}%
+\contentsline {chapter}{\numberline {6}API Endpoints y Comunicación}{28}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Endpoints de Autenticación}{28}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Registro de Usuario}{28}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Inicio de Sesión}{28}{subsection.6.1.2}%
+\contentsline {section}{\numberline {6.2}Endpoints de Examenes}{29}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Generar Examen desde Archivo}{29}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Generar Examen desde Texto}{29}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}Obtener Examenes del Usuario}{29}{subsection.6.2.3}%
+\contentsline {section}{\numberline {6.3}Endpoints de Resultados}{30}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Enviar Respuestas de Examen}{30}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}Generar Retroalimentación}{30}{subsection.6.3.2}%
+\contentsline {chapter}{\numberline {7}Costos y Viabilidad Económica}{32}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Análisis Detallado de Costos}{32}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}Estructura de Costos}{32}{subsection.7.1.1}%
+\contentsline {subsubsection}{Costos de Desarrollo}{32}{subsubsection*.48}%
+\contentsline {subsubsection}{Costos de Infraestructura}{32}{subsubsection*.49}%
+\contentsline {subsubsection}{Costos de Escalamiento}{32}{subsubsection*.50}%
+\contentsline {subsection}{\numberline {7.1.2}Ventajas del Modelo de Costos}{33}{subsection.7.1.2}%
+\contentsline {subsection}{\numberline {7.1.3}Comparación con Alternativas}{33}{subsection.7.1.3}%
+\contentsline {section}{\numberline {7.2}Modelo de Negocio}{33}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Opciones de Monetización}{33}{subsection.7.2.1}%
+\contentsline {subsection}{\numberline {7.2.2}Proyección de Ingresos}{33}{subsection.7.2.2}%
+\contentsline {chapter}{\numberline {8}Seguridad y Optimización}{34}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Medidas de Seguridad}{34}{section.8.1}%
+\contentsline {subsection}{\numberline {8.1.1}Autenticación y Autorización}{34}{subsection.8.1.1}%
+\contentsline {subsection}{\numberline {8.1.2}Protección de Datos}{34}{subsection.8.1.2}%
+\contentsline {section}{\numberline {8.2}Optimización de Rendimiento}{34}{section.8.2}%
+\contentsline {subsection}{\numberline {8.2.1}Frontend}{34}{subsection.8.2.1}%
+\contentsline {subsection}{\numberline {8.2.2}Backend}{35}{subsection.8.2.2}%
+\contentsline {chapter}{\numberline {9}Despliegue, Monitoreo y Mantenimiento}{36}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Proceso de Despliegue}{36}{section.9.1}%
+\contentsline {subsection}{\numberline {9.1.1}Frontend (Hostinger)}{36}{subsection.9.1.1}%
+\contentsline {subsection}{\numberline {9.1.2}Backend (Servidor VPS)}{36}{subsection.9.1.2}%
+\contentsline {chapter}{\numberline {10}Exposición Móvil con Flutter WebView}{37}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Estrategia y Justificación}{37}{section.10.1}%
+\contentsline {section}{\numberline {10.2}Implementación Técnica}{37}{section.10.2}%
+\contentsline {section}{\numberline {10.3}Ventajas y Limitaciones de la Estrategia}{39}{section.10.3}%
+\contentsline {subsubsection}{Ventajas}{39}{subsubsection*.51}%
+\contentsline {subsubsection}{Limitaciones}{39}{subsubsection*.52}%
+\contentsline {chapter}{\numberline {11}Conclusión}{40}{chapter.11}%
+\contentsline {section}{\numberline {11.1}Resumen del Sistema}{40}{section.11.1}%
+\contentsline {subsection}{\numberline {11.1.1}Características Principales}{40}{subsection.11.1.1}%
+\contentsline {subsection}{\numberline {11.1.2}Beneficios Técnicos}{40}{subsection.11.1.2}%
+\contentsline {section}{\numberline {11.2}Trabajo Futuro}{40}{section.11.2}%
+\contentsline {subsection}{\numberline {11.2.1}Mejoras Planificadas}{41}{subsection.11.2.1}%
+\contentsline {subsection}{\numberline {11.2.2}Escalabilidad}{41}{subsection.11.2.2}%

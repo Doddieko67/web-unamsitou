@@ -1,0 +1,78 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {chapter}{\numberline {1}Introducción}{6}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Propósito del Sistema}{6}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Alcance}{6}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Audiencia}{6}{section.1.3}%
+\contentsline {chapter}{\numberline {2}Arquitectura del Sistema}{7}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Arquitectura General}{7}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Patrón Arquitectónico}{7}{section.2.2}%
+\contentsline {chapter}{\numberline {3}Tecnologías Utilizadas}{8}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Frontend}{8}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Backend}{8}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Base de Datos}{9}{section.3.3}%
+\contentsline {chapter}{\numberline {4}Instalación y Configuración}{10}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Requisitos Previos}{10}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Instalación Frontend}{10}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Instalación Backend}{10}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Variables de Entorno}{10}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Frontend (.env)}{10}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Backend (.env)}{11}{subsection.4.4.2}%
+\contentsline {chapter}{\numberline {5}Estructura del Proyecto}{12}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Frontend}{12}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Backend}{12}{section.5.2}%
+\contentsline {chapter}{\numberline {6}Componentes Principales}{13}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Frontend Components}{13}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}AuthContext}{13}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}ExamenPage}{13}{subsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.1.3}Navbar}{13}{subsection.6.1.3}%
+\contentsline {section}{\numberline {6.2}Backend Modules}{14}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Authentication Middleware}{14}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Supabase Integration}{14}{subsection.6.2.2}%
+\contentsline {chapter}{\numberline {7}API Endpoints}{15}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Generación de Exámenes}{15}{section.7.1}%
+\contentsline {subsection}{\numberline {7.1.1}POST /api/upload\_files}{15}{subsection.7.1.1}%
+\contentsline {subsection}{\numberline {7.1.2}POST /api/generate-content}{15}{subsection.7.1.2}%
+\contentsline {subsection}{\numberline {7.1.3}POST /api/generate-content-based-on-history}{16}{subsection.7.1.3}%
+\contentsline {section}{\numberline {7.2}Retroalimentación}{16}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}POST /api/generate-feedback}{16}{subsection.7.2.1}%
+\contentsline {chapter}{\numberline {8}Base de Datos}{17}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Estructura de Tablas}{17}{section.8.1}%
+\contentsline {subsection}{\numberline {8.1.1}Tabla: users}{17}{subsection.8.1.1}%
+\contentsline {subsection}{\numberline {8.1.2}Tabla: exams}{17}{subsection.8.1.2}%
+\contentsline {subsection}{\numberline {8.1.3}Tabla: exam\_results}{17}{subsection.8.1.3}%
+\contentsline {subsection}{\numberline {8.1.4}Tabla: feedback}{17}{subsection.8.1.4}%
+\contentsline {chapter}{\numberline {9}Integración con IA}{19}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Google Gemini AI}{19}{section.9.1}%
+\contentsline {subsection}{\numberline {9.1.1}Modelos Utilizados}{19}{subsection.9.1.1}%
+\contentsline {subsection}{\numberline {9.1.2}Prompt Engineering}{19}{subsection.9.1.2}%
+\contentsline {subsection}{\numberline {9.1.3}Procesamiento de Archivos}{19}{subsection.9.1.3}%
+\contentsline {chapter}{\numberline {10}Funcionalidades del Sistema}{20}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Gestión de Usuarios}{20}{section.10.1}%
+\contentsline {section}{\numberline {10.2}Generación de Exámenes}{20}{section.10.2}%
+\contentsline {section}{\numberline {10.3}Realización de Exámenes}{20}{section.10.3}%
+\contentsline {section}{\numberline {10.4}Retroalimentación}{20}{section.10.4}%
+\contentsline {section}{\numberline {10.5}Historial y Estadísticas}{21}{section.10.5}%
+\contentsline {chapter}{\numberline {11}Configuración de Entorno}{22}{chapter.11}%
+\contentsline {section}{\numberline {11.1}Desarrollo}{22}{section.11.1}%
+\contentsline {subsection}{\numberline {11.1.1}Frontend}{22}{subsection.11.1.1}%
+\contentsline {subsection}{\numberline {11.1.2}Backend}{22}{subsection.11.1.2}%
+\contentsline {section}{\numberline {11.2}Producción}{22}{section.11.2}%
+\contentsline {subsection}{\numberline {11.2.1}Build Frontend}{22}{subsection.11.2.1}%
+\contentsline {subsection}{\numberline {11.2.2}Variables de Entorno de Producción}{23}{subsection.11.2.2}%
+\contentsline {chapter}{\numberline {12}Despliegue}{24}{chapter.12}%
+\contentsline {section}{\numberline {12.1}Frontend (Hostinger)}{24}{section.12.1}%
+\contentsline {section}{\numberline {12.2}Backend}{24}{section.12.2}%
+\contentsline {section}{\numberline {12.3}Base de Datos}{24}{section.12.3}%
+\contentsline {chapter}{\numberline {13}Mantenimiento}{25}{chapter.13}%
+\contentsline {section}{\numberline {13.1}Logs}{25}{section.13.1}%
+\contentsline {section}{\numberline {13.2}Base de Datos}{25}{section.13.2}%
+\contentsline {section}{\numberline {13.3}Actualizaciones}{25}{section.13.3}%
+\contentsline {chapter}{\numberline {14}Solución de Problemas}{26}{chapter.14}%
+\contentsline {section}{\numberline {14.1}Errores Comunes}{26}{section.14.1}%
+\contentsline {subsection}{\numberline {14.1.1}Error de API Key de Gemini}{26}{subsection.14.1.1}%
+\contentsline {subsection}{\numberline {14.1.2}Error de CORS}{26}{subsection.14.1.2}%
+\contentsline {subsection}{\numberline {14.1.3}Error de Autenticación Supabase}{26}{subsection.14.1.3}%
+\contentsline {section}{\numberline {14.2}Monitoreo}{26}{section.14.2}%
+\contentsline {subsection}{\numberline {14.2.1}Métricas Importantes}{26}{subsection.14.2.1}%
+\contentsline {subsection}{\numberline {14.2.2}Herramientas Recomendadas}{27}{subsection.14.2.2}%
+\contentsline {chapter}{\numberline {15}Conclusión}{28}{chapter.15}%

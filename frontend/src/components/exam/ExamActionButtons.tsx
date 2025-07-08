@@ -3,8 +3,9 @@ import Swal from 'sweetalert2';
 
 interface ExamActionButtonsProps {
   isSubmitted: boolean;
-  onSubmit: () => Promise<void>;
-  onSuspend: () => Promise<void>;
+  onSubmit: (timeSpent: number) => Promise<void>;
+  onSuspend: (timeSpent: number) => Promise<void>;
+  timeSpent: number;
   onGenerateFeedback?: () => void;
   canSubmit?: boolean;
   isLoading?: boolean;
@@ -19,6 +20,7 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
   isSubmitted,
   onSubmit,
   onSuspend,
+  timeSpent,
   onGenerateFeedback,
   canSubmit = true,
   isLoading = false,
@@ -38,7 +40,7 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
 
     if (result.isConfirmed) {
       try {
-        await onSubmit();
+        await onSubmit(timeSpent);
       } catch (error) {
         Swal.fire({
           title: 'Error',
@@ -63,7 +65,7 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
 
     if (result.isConfirmed) {
       try {
-        await onSuspend();
+        await onSuspend(timeSpent);
       } catch (error) {
         Swal.fire({
           title: 'Error',
