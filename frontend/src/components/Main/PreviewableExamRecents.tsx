@@ -167,16 +167,55 @@ export function PreviewableRecentExamCard({
 
       {/* Div para la vista previa. Inicialmente invisible y escalada */}
       <div className={finalPreviewClassName} aria-hidden="true">
-        {/* Contenido de la vista previa */}
-        <div className="h-auto w-full bg-white shadow-xl rounded-lg border border-gray-200 p-4">
+        {/* Contenido de la vista previa - Theme Aware */}
+        <div 
+          className="h-auto w-full shadow-xl rounded-lg border p-4 transition-colors duration-300"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-secondary)',
+            boxShadow: 'var(--theme-shadow-xl)'
+          }}
+        >
           {/* Contenido de la Preview */}
-          {/* Esto podría ser otra instancia de RecentExamCard con opciones específicas,
-              o simplemente una versión simplificada como la descripción */}
-          <h4 className="font-semibold text-gray-800 mb-2">{exam.titulo}</h4>
-          <p className="text-sm text-gray-600">
+          <h4 
+            className="font-semibold mb-2"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >
+            {exam.titulo}
+          </h4>
+          <p 
+            className="text-sm"
+            style={{ color: 'var(--theme-text-secondary)' }}
+          >
             {exam.descripcion || "Sin descripción disponible."}
           </p>
-          {/* Puedes añadir más detalles aquí si son útiles en la preview */}
+          {/* Preview adicional con metadata del examen */}
+          <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--theme-border-primary)' }}>
+            <div className="flex items-center justify-between text-xs">
+              <span 
+                className="flex items-center space-x-1"
+                style={{ color: 'var(--theme-text-muted)' }}
+              >
+                <i className="fas fa-question-circle" style={{ color: 'var(--primary)' }}></i>
+                <span>{exam.numero_preguntas} preguntas</span>
+              </span>
+              <span 
+                className="px-2 py-1 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: exam.dificultad === 'easy' ? 'var(--theme-success-light)' :
+                                  exam.dificultad === 'medium' ? 'var(--theme-warning-light)' :
+                                  exam.dificultad === 'hard' ? 'var(--theme-error-light)' : 'var(--theme-info-light)',
+                  color: exam.dificultad === 'easy' ? 'var(--theme-success-dark)' :
+                         exam.dificultad === 'medium' ? 'var(--theme-warning-dark)' :
+                         exam.dificultad === 'hard' ? 'var(--theme-error-dark)' : 'var(--theme-info-dark)'
+                }}
+              >
+                {exam.dificultad === 'easy' ? '🟢 Fácil' :
+                 exam.dificultad === 'medium' ? '🟡 Medio' :
+                 exam.dificultad === 'hard' ? '🔴 Difícil' : '🌈 Mixto'}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
