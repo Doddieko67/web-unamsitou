@@ -200,15 +200,6 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
                   </div>
                 )}
 
-                {/* Feedback Preview */}
-                {hasFeedback && isSubmitted && (
-                  <div className="text-xs">
-                    <span className="text-yellow-600 font-medium">
-                      <i className="fas fa-lightbulb mr-1"></i>
-                      Tiene retroalimentación
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           );

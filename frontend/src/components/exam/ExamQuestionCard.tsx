@@ -92,7 +92,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+    <div className="bg-white rounded-xl p-6 space-y-6">
       {/* Question Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
@@ -195,21 +195,21 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
 
       {/* Answer Status */}
       {isSubmitted && (
-        <div className="mt-4 p-3 rounded-lg border">
+        <div className="mt-4">
           {selectedAnswer !== undefined ? (
             selectedAnswer === question.correcta ? (
-              <div className="flex items-center space-x-2 text-green-700 bg-green-50 border-green-200">
+              <div className="flex items-center space-x-2 text-green-800 bg-green-100 border border-green-200 p-3 rounded-lg">
                 <i className="fas fa-check-circle"></i>
                 <span className="text-sm font-medium">Respuesta correcta</span>
               </div>
             ) : (
-              <div className="flex items-center space-x-2 text-red-700 bg-red-50 border-red-200">
+              <div className="flex items-center space-x-2 text-red-800 bg-red-100 border border-red-200 p-3 rounded-lg">
                 <i className="fas fa-times-circle"></i>
                 <span className="text-sm font-medium">Respuesta incorrecta</span>
               </div>
             )
           ) : (
-            <div className="flex items-center space-x-2 text-gray-600 bg-gray-50 border-gray-200">
+            <div className="flex items-center space-x-2 text-gray-700 bg-gray-100 border border-gray-200 p-3 rounded-lg">
               <i className="fas fa-question-circle"></i>
               <span className="text-sm font-medium">Sin respuesta</span>
             </div>
