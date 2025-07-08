@@ -5,55 +5,17 @@ import { ExamenData } from "./interfacesExam";
 import { PreviewableRecentExamCard } from "./PreviewableExamRecents";
 import { useNavigate } from "react-router";
 import Swal from "sweetalert2";
+import {
+  filterExams,
+  sortExams,
+  type SortOption,
+  type SortDirection,
+  type FilterDifficulty,
+  type FilterStatus,
+} from "../../utils/examHelpers";
 
-type SortOption = 'date' | 'title' | 'difficulty' | 'status' | 'duration';
-type SortDirection = 'asc' | 'desc';
-type FilterDifficulty = 'all' | 'easy' | 'medium' | 'hard' | 'mixed';
-type FilterStatus = 'all' | 'pendiente' | 'en_progreso' | 'terminado' | 'suspendido';
-
-// Helper functions for filtering and sorting
-const filterExams = (exams: ExamenData[], searchTerm: string, difficultyFilter: FilterDifficulty, statusFilter: FilterStatus): ExamenData[] => {
-  return exams.filter(exam => {
-    const matchesSearch = exam.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         exam.descripcion?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDifficulty = difficultyFilter === 'all' || exam.dificultad === difficultyFilter;
-    const matchesStatus = statusFilter === 'all' || exam.estado === statusFilter;
-    
-    return matchesSearch && matchesDifficulty && matchesStatus;
-  });
-};
-
-const sortExams = (exams: ExamenData[], sortBy: SortOption, direction: SortDirection): ExamenData[] => {
-  return [...exams].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortBy) {
-      case 'date':
-        comparison = new Date(a.fecha_inicio || 0).getTime() - new Date(b.fecha_inicio || 0).getTime();
-        break;
-      case 'title':
-        comparison = a.titulo.localeCompare(b.titulo);
-        break;
-      case 'difficulty':
-        const difficultyOrder = { easy: 1, medium: 2, hard: 3, mixed: 4 };
-        comparison = difficultyOrder[a.dificultad] - difficultyOrder[b.dificultad];
-        break;
-      case 'status':
-        comparison = a.estado.localeCompare(b.estado);
-        break;
-      case 'duration':
-        comparison = (a.tiempo_tomado_segundos || 0) - (b.tiempo_tomado_segundos || 0);
-        break;
-      default:
-        comparison = 0;
-    }
-    
-    return direction === 'asc' ? comparison : -comparison;
-  });
-};
-
-// Sistema dinámico de colores para filtros
-const getFilterColorStyles = (type: 'difficulty' | 'status', value: string, isSelected: boolean) => {
+// Sistema dinámico de colores para filtros - versión local
+const getLocalFilterColorStyles = (type: 'difficulty' | 'status', value: string, isSelected: boolean) => {
   const colorMaps = {
     difficulty: {
       all: { bg: 'var(--theme-bg-accent)', text: 'var(--theme-text-secondary)', border: 'var(--theme-border-primary)' },

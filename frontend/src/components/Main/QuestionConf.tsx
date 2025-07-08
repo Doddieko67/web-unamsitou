@@ -1,88 +1,131 @@
 interface QuestionConfProps {
   questionCount: number;
   onQuestionCountChange: (count: number) => void;
-  // Podrías pasar selectedSubjects si quieres lógica condicional aquí
-  // selectedSubjects: string[];
 }
 
 export function QuestionConf({
   questionCount,
   onQuestionCountChange,
 }: QuestionConfProps) {
+  // Opciones predefinidas comunes
+  const presetOptions = [5, 10, 15, 20, 25, 30];
+  
+  const handlePresetClick = (count: number) => {
+    onQuestionCountChange(count);
+  };
+
   const handleIncrement = () => {
-    // Primero, verifica que no excedas el máximo permitido
     if (questionCount < 128) {
-      onQuestionCountChange(questionCount + 1); // Incrementa el valor
+      onQuestionCountChange(questionCount + 1);
     }
   };
 
   const handleDecrement = () => {
-    // Primero, verifica que no bajes el mínimo permitido
     if (questionCount > 5) {
-      onQuestionCountChange(questionCount - 1); // Decrementa el valor
+      onQuestionCountChange(questionCount - 1);
+    }
+  };
+
+  const handleCustomChange = (value: number) => {
+    if (!isNaN(value) && value >= 5 && value <= 128) {
+      onQuestionCountChange(value);
     }
   };
 
   return (
-    <div className="mb-8">
-      <h3 className="text-lg font-medium text-gray-700 mb-4">
-        2. Configura las preguntas
-      </h3>
+    <div className="space-y-6">
+      {/* Preset Options Grid */}
+      <div className="grid grid-cols-3 gap-3">
+        {presetOptions.map((count) => {
+          const isSelected = questionCount === count;
+          return (
+            <button
+              key={count}
+              onClick={() => handlePresetClick(count)}
+              className={`p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
+                isSelected ? 'ring-2 ring-offset-2' : ''
+              }`}
+              style={{
+                backgroundColor: isSelected ? 'var(--theme-success)' : 'var(--theme-success-light)',
+                borderColor: 'var(--theme-success)',
+                color: isSelected ? 'white' : 'var(--theme-success-dark)',
+                '--tw-ring-color': 'var(--theme-success)'
+              } as any}
+            >
+              <div className="text-center">
+                <div className="text-2xl font-bold mb-1">{count}</div>
+                <div className="text-xs opacity-80">preguntas</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Contenedor para configuración por materia (funcionalidad pendiente) */}
-      {/* <div
-        className="bg-gray-50 rounded-lg p-4 mb-4"
-        id="questions-config-container"
+      {/* Custom Input Section */}
+      <div 
+        className="p-4 rounded-2xl border-2 transition-all duration-300"
+        style={{
+          backgroundColor: !presetOptions.includes(questionCount) ? 'var(--theme-info)' : 'var(--theme-info-light)',
+          borderColor: 'var(--theme-info)',
+          color: !presetOptions.includes(questionCount) ? 'white' : 'var(--theme-info-dark)'
+        }}
       >
-        <p className="text-gray-500 text-sm">
-          Aquí podrías ajustar preguntas por materia seleccionada.
-        </p>
-      </div> */}
-
-      <div className="flex items-center bg-indigo-50 p-4 rounded-lg">
-        <label
-          htmlFor="total-questions-slider"
-          className="block text-sm font-medium text-indigo-700 mr-4 whitespace-nowrap"
-        >
-          Total de preguntas:
-        </label>
-        <div className="flex-1 mx-4">
-          <input
-            type="range"
-            min="5"
-            max="128"
-            step="1" // Es buena idea añadir step
-            value={questionCount}
-            // Llama a la función del padre cuando el valor cambia
-            onChange={(e) => onQuestionCountChange(Number(e.target.value))}
-            className="slider w-full h-2 bg-indigo-300 rounded-lg cursor-pointer range-lg slide-2" // Usar accent color
-          />
-          <div className="flex justify-between text-xs text-indigo-500 mt-1">
-            <span>5</span>
-            <span>128</span>
+        <div className="text-center space-y-3">
+          <div className="text-sm font-medium opacity-90">
+            Cantidad personalizada
+          </div>
+          
+          <div className="flex items-center justify-center space-x-4">
+            <button
+              onClick={handleDecrement}
+              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+              style={{
+                backgroundColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.2)' : 'var(--theme-info)',
+                color: !presetOptions.includes(questionCount) ? 'white' : 'white'
+              }}
+              disabled={questionCount <= 5}
+            >
+              <i className="fas fa-minus"></i>
+            </button>
+            
+            <div 
+              className="px-6 py-3 rounded-xl border-2 min-w-[100px] flex items-center justify-center"
+              style={{
+                backgroundColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.2)' : 'white',
+                borderColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.3)' : 'var(--theme-info)',
+                color: !presetOptions.includes(questionCount) ? 'white' : 'var(--theme-info-dark)'
+              }}
+            >
+              <input
+                type="number"
+                min="5"
+                max="128"
+                value={questionCount}
+                onChange={(e) => handleCustomChange(Number(e.target.value))}
+                className="text-center text-2xl font-bold bg-transparent border-none outline-none w-full"
+                style={{
+                  color: !presetOptions.includes(questionCount) ? 'white' : 'var(--theme-info-dark)'
+                }}
+              />
+            </div>
+            
+            <button
+              onClick={handleIncrement}
+              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+              style={{
+                backgroundColor: !presetOptions.includes(questionCount) ? 'rgba(255,255,255,0.2)' : 'var(--theme-info)',
+                color: !presetOptions.includes(questionCount) ? 'white' : 'white'
+              }}
+              disabled={questionCount >= 128}
+            >
+              <i className="fas fa-plus"></i>
+            </button>
+          </div>
+          
+          <div className="text-xs opacity-80">
+            Rango: 5 - 128 preguntas
           </div>
         </div>
-        <button onClick={handleDecrement}>
-          <i className="fas fa-minus ml-4 mr-1 text-indigo-700 fa-lg px-3 py-4 rounded bg-indigo-100"></i>
-        </button>
-        <input
-          type="text"
-          className="text-indigo-700 font-bold border-indigo-400 focus:border-indigo-300 focus:outline focus:outline-indigo-400 text-lg w-12 text-center bg-indigo-100 px-2 py-1 rounded"
-          value={questionCount}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            if (!isNaN(value) && 0 < value && value < 128) {
-              // isNaN(value) es true si value NO es un número
-              onQuestionCountChange(value);
-            } else {
-              // Si no es un número, reseteamos el valor al anterior o a un valor por defecto (ej: 0)
-              onQuestionCountChange(0); // O cualquier valor predeterminado
-            }
-          }}
-        ></input>
-        <button onClick={handleIncrement}>
-          <i className="fas fa-plus ml-1 text-indigo-700 fa-lg px-3 py-4 rounded bg-indigo-100"></i>
-        </button>
       </div>
     </div>
   );

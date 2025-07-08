@@ -1,170 +1,37 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import { ExamButton } from "../ExamButton";
 import { DifficultExam } from "./DifficultExam";
-import { Materias } from "./Materias";
+// import { Materias } from "./Materias"; // Ya no necesario
 import { Personalization } from "./Personalization";
 import { QuestionConf } from "./QuestionConf";
 import { useNavigate } from "react-router";
 import { useAuthStore } from "../../stores/authStore";
 import { TimerConf } from "../TimerConf";
 import { url_backend } from "../../url_backend";
+import { DEFAULT_EXAM_CONFIG } from "../../constants/examConstants";
 
 // Importar SweetAlert2
 import Swal from "sweetalert2";
 
 // Tipos
-interface Subject {
-  name: string;
-  icon: string;
-  description: string;
-  colorClasses: { bg: string; text: string; iconBg: string };
-  colorTheme?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'indigo';
-}
 type Difficulty = "easy" | "medium" | "hard" | "mixed";
 
-// Sistema de color mapping dinámico para dark/light mode
-const getSubjectColorStyles = (colorTheme: string = 'blue') => {
-  const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-    blue: {
-      bg: 'var(--theme-info-light)',
-      text: 'var(--theme-info-dark)',
-      border: 'var(--theme-info)'
-    },
-    green: {
-      bg: 'var(--theme-success-light)',
-      text: 'var(--theme-success-dark)', 
-      border: 'var(--theme-success)'
-    },
-    purple: {
-      bg: '#f3e8ff', // purple-100 equivalent
-      text: '#6b21a8', // purple-800 equivalent
-      border: '#a855f7' // purple-500 equivalent
-    },
-    orange: {
-      bg: 'var(--theme-warning-light)',
-      text: 'var(--theme-warning-dark)',
-      border: 'var(--theme-warning)'
-    },
-    red: {
-      bg: 'var(--theme-error-light)',
-      text: 'var(--theme-error-dark)',
-      border: 'var(--theme-error)'
-    },
-    indigo: {
-      bg: '#e0e7ff', // indigo-100
-      text: '#3730a3', // indigo-800
-      border: '#6366f1' // indigo-500
-    }
-  };
-  
-  return colorMap[colorTheme] || colorMap.blue;
-};
-
-// Lista inicial de materias (podría venir de otro lugar)
-const initialAvailableSubjects: Subject[] = [
-  {
-    name: "Matemáticas",
-    icon: "fas fa-square-root-alt",
-    description: "Álgebra, cálculo, geometría",
-    colorTheme: 'blue',
-    colorClasses: {
-      bg: "bg-blue-100", // Legacy support - se reemplazará dinámicamente
-      text: "text-blue-800",
-      iconBg: "bg-blue-100",
-    },
-  },
-  {
-    name: "Biología",
-    icon: "fas fa-dna",
-    description: "Células, genética, ecología",
-    colorTheme: 'green',
-    colorClasses: {
-      bg: "bg-green-100", // Legacy support - se reemplazará dinámicamente
-      text: "text-green-800",
-      iconBg: "bg-green-100",
-    },
-  },
-  {
-    name: "Literatura",
-    icon: "fas fa-book-open",
-    description: "Obras clásicas, análisis",
-    colorTheme: 'purple',
-    colorClasses: {
-      bg: "bg-purple-100", // Legacy support - se reemplazará dinámicamente
-      text: "text-purple-800",
-      iconBg: "bg-purple-100",
-    },
-  },
-  // ... puedes añadir más materias iniciales aquí
-];
-
-export function ExamConf() {
+export const ExamConf = memo(function ExamConf() {
   const { session } = useAuthStore(); // Usar el store de Zustand
   const navigate = useNavigate();
 
   // --- Estados ---
-  // Estado para TODAS las materias disponibles (iniciales + personalizadas)
-  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>(
-    initialAvailableSubjects,
-  );
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const [questionCount, setQuestionCount] = useState<number>(10);
+  // Solo necesitamos el contenido de personalización ahora
+  const [questionCount, setQuestionCount] = useState<number>(DEFAULT_EXAM_CONFIG.QUESTION_COUNT);
   const [selectedDifficulty, setSelectedDifficulty] =
     useState<Difficulty | null>(null);
-  const [fineTuning, setFineTuning] = useState<string>("");
+  const [fineTuning, setFineTuning] = useState<string>(DEFAULT_EXAM_CONFIG.FINE_TUNING);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [hour, setHour] = useState<number>(0); // Inicializar en 0 horas
-  const [minute, setMinute] = useState<number>(30); // Inicializar en 30 minutos (ejemplo)
-  const [second, setSecond] = useState<number>(0); // Inicializar en 0 segundos
+  const [hour, setHour] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_HOUR);
+  const [minute, setMinute] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_MINUTE);
+  const [second, setSecond] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_SECOND);
 
   // --- Handlers ---
-
-  // Maneja la selección/deselección de materias
-  const handleSubjectToggle = useCallback((subjectName: string) => {
-    setSelectedSubjects(
-      (prev) =>
-        prev.includes(subjectName)
-          ? prev.filter((s) => s !== subjectName) // Deseleccionar si ya está
-          : [...prev, subjectName], // Seleccionar si no está
-    );
-  }, []); // Dependencias vacías porque no usa estados externos
-
-  // Maneja la adición de una materia personalizada
-  const handleAddCustomSubject = useCallback((newSubject: Subject) => {
-    // Añadir la nueva materia a la lista de disponibles
-    setAvailableSubjects((prev) => {
-      // Evitar duplicados por nombre (ignorando mayúsculas/minúsculas)
-      if (
-        prev.some((s) => s.name.toLowerCase() === newSubject.name.toLowerCase())
-      ) {
-        // Podrías mostrar un Swal aquí también si quieres
-        Swal.fire({
-          icon: "info",
-          title: "Materia Existente",
-          text: `La materia "${newSubject.name}" ya está en la lista.`,
-          toast: true, // Mostrar como toast
-          position: "top-end", // Posición en la esquina superior derecha
-          showConfirmButton: false,
-          timer: 3000, // Ocultar después de 3 segundos
-          timerProgressBar: true,
-        });
-        return prev; // Devuelve el estado anterior sin cambios
-      }
-      // Añadir la nueva materia y mantener el orden inicial al principio si es necesario
-      return [...prev, newSubject]; // Añade al final
-    });
-    // Opcionalmente, seleccionar automáticamente la nueva materia añadida
-    // Retrasamos la selección un poco para asegurar que availableSubjects se haya actualizado si es necesario (aunque useState es síncrono en la mayoría de los casos, a veces es útil para evitar race conditions visuales)
-    setTimeout(() => {
-      setSelectedSubjects((prev) => {
-        // Evitar añadir si ya estaba seleccionada por alguna razón
-        if (!prev.includes(newSubject.name)) {
-          return [...prev, newSubject.name];
-        }
-        return prev;
-      });
-    }, 0); // Ejecutar al final del ciclo de eventos actual
-  }, []); // Dependencias vacías
 
   const handleQuestionCountChange = useCallback((count: number) => {
     setQuestionCount(count);
@@ -181,11 +48,11 @@ export function ExamConf() {
   // Handler principal para generar el examen
   const handleGenerateExam = async () => {
     // --- Validación Inicial con Swal ---
-    if (!selectedSubjects.length || selectedDifficulty === null) {
+    if (!fineTuning.trim() || selectedDifficulty === null) {
       Swal.fire({
         icon: "warning",
         title: "Configuración Incompleta",
-        text: "Por favor, selecciona al menos una materia y un nivel de dificultad para generar el examen.",
+        text: "Por favor, especifica el tema del examen en Personalización y selecciona un nivel de dificultad.",
         confirmButtonColor: "#3085d6", // Color azul estándar de Swal
       });
       return; // Detiene la ejecución si la validación falla
@@ -195,32 +62,11 @@ export function ExamConf() {
 
     try {
       // --- Construir el PROMPT para el backend ---
-      let promptText = `Genera un examen de ${questionCount} preguntas.\n`;
-
-      // Encontrar los objetos Subject completos para las materias seleccionadas
-      const selectedSubjectsDetails = selectedSubjects
-        .map((subjectName) =>
-          // Busca el objeto Subject completo en la lista de disponibles
-          availableSubjects.find((s) => s.name === subjectName),
-        )
-        // Filtra por si acaso alguna materia seleccionada no se encuentra (no debería pasar con la lógica actual)
-        .filter((subject): subject is Subject => subject !== undefined); // Usar un type guard para asegurar que no son undefined
-
-      // Formatear los detalles de cada materia para el prompt
-      const formattedSubjectsForPrompt = selectedSubjectsDetails.map(
-        (subject) =>
-          // Formatea como "Nombre (Descripción)". Puedes ajustar el formato si lo prefieres.
-          `${subject.name} (${subject.description})`,
-      );
-
-      // Unir los strings formateados para el prompt
-      promptText += `Materias a cubrir: ${formattedSubjectsForPrompt.join(
-        ", ",
-      )}.\n`;
-      promptText += `Nivel de dificultad general: ${selectedDifficulty}.\n`;
-      if (fineTuning && fineTuning.trim() !== "") {
-        promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
-      }
+      let promptText = `Genera un examen de ${questionCount} preguntas sobre el siguiente tema:\n`;
+      
+      // Usar fineTuning como el contenido principal del examen
+      promptText += `Tema y contenido: ${fineTuning.trim()}\n`;
+      promptText += `Nivel de dificultad: ${selectedDifficulty}\n`;
 
       // Calcular el tiempo límite total en segundos
       const tiempoLimiteSegundos = hour * 3600 + minute * 60 + second;
@@ -234,13 +80,9 @@ export function ExamConf() {
         prompt: promptText, // Envía el prompt de texto construido
         dificultad: selectedDifficulty, // Envía la dificultad como dato estructurado si el backend lo necesita
         tiempo_limite_segundos: tiempoLimiteSegundos, // Envía el tiempo límite
-        materias_seleccionadas: selectedSubjectsDetails.map((s) => ({
-          // Envía detalles estructurados de las materias
-          name: s.name,
-          description: s.description,
-        })),
+        tema_principal: fineTuning.trim(), // Envía el tema principal desde personalización
         cantidad_preguntas: questionCount, // Envía la cantidad de preguntas
-        instrucciones_adicionales: fineTuning.trim(), // Envía las instrucciones adicionales
+        contenido_detallado: fineTuning.trim(), // Envía el contenido detallado
         // Puedes añadir más datos estructurados si tu backend los espera
       };
 
@@ -306,83 +148,403 @@ export function ExamConf() {
     }
   };
 
-  // Determina si el botón de generar debe estar deshabilitado
-  const isGenerateDisabled =
-    selectedSubjects.length === 0 ||
+  // Determina si el botón de generar debe estar deshabilitado (memoizado)
+  const isGenerateDisabled = useMemo(() => 
+    !fineTuning.trim() ||
     selectedDifficulty === null ||
-    isGenerating;
+    isGenerating,
+    [fineTuning, selectedDifficulty, isGenerating]
+  );
 
   return (
-    <div
-      id="new-exam-section"
-      className="rounded-xl shadow-lg overflow-hidden p-6 sm:p-8 mb-8 border transition-colors duration-300"
-      style={{
-        backgroundColor: 'var(--theme-bg-primary)',
-        borderColor: 'var(--theme-border-primary)',
-        boxShadow: 'var(--theme-shadow-lg)'
-      }}
-    >
-      <h2 
-        className="text-2xl font-bold mb-8 border-b pb-4 transition-colors duration-300"
-        style={{ 
-          color: 'var(--theme-text-primary)',
-          borderColor: 'var(--theme-border-primary)'
-        }}
-      >
-        Configura tu Examen Personalizado
-      </h2>
-
-      {/* Pasar el estado ACTUALIZADO de availableSubjects y el NUEVO handler */}
-      <Materias
-        availableSubjects={availableSubjects} // Pasa la lista completa de materias
-        selectedSubjects={selectedSubjects} // Pasa las materias seleccionadas
-        onSubjectToggle={handleSubjectToggle} // Pasa el handler para (des)seleccionar
-        onAddCustomSubject={handleAddCustomSubject} // Pasa el handler para añadir nueva materia
-        getSubjectColorStyles={getSubjectColorStyles} // Pasa el sistema dinámico de colores
-      />
-
-      <QuestionConf
-        questionCount={questionCount}
-        onQuestionCountChange={handleQuestionCountChange}
-      />
-
-      <DifficultExam
-        selectedDifficulty={selectedDifficulty}
-        onDifficultySelect={handleDifficultySelect}
-      />
-
-      {/* Componente para configurar el temporizador */}
-      <TimerConf
-        hour={hour}
-        setHour={setHour}
-        minute={minute}
-        setMinute={setMinute}
-        second={second}
-        setSecond={setSecond}
-      />
-
-      <Personalization
-        fineTuning={fineTuning}
-        onFineTuningChange={handleFineTuningChange}
-      />
-
-      {/* Botón para generar el examen, deshabilitado si la configuración no está completa o está generando */}
-      <ExamButton
-        onGenerateClick={handleGenerateExam}
-        disabled={isGenerateDisabled}
-      />
-
-      {/* Indicador visual mientras se genera el examen */}
-      {isGenerating && (
+    <div id="new-exam-section" className="exam-config-grid">
+      {/* Header Grid Area */}
+      <div className="grid-header">
         <div 
-          className="mt-4 text-center text-sm transition-colors duration-300"
-          style={{ color: 'var(--theme-info)' }}
+          className="exam-header-card"
+          style={{
+            background: 'linear-gradient(135deg, var(--theme-bg-primary) 0%, var(--theme-bg-accent) 50%, var(--theme-bg-primary) 100%)',
+            borderColor: 'var(--theme-border-primary)'
+          }}
         >
-          <i className="fas fa-spinner fa-spin mr-2"></i>{" "}
-          {/* Icono de spinner (requiere FontAwesome) */}
-          Generando tu examen... esto puede tardar unos momentos.
+          <div className="header-content">
+            <div 
+              className="header-icon"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
+              <i className="fas fa-magic text-2xl text-white"></i>
+            </div>
+            <div className="header-text">
+              <h1 
+                className="header-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                Crear Examen Inteligente
+              </h1>
+              <p 
+                className="header-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Configura tu examen personalizado con IA
+              </p>
+            </div>
+          </div>
+          
         </div>
-      )}
+      </div>
+
+      {/* Subjects Grid Area - TEMPORARILY DISABLED */}
+      {/* 
+      <div className="grid-subjects">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-info-light)' }}
+            >
+              <i 
+                className="fas fa-book text-lg"
+                style={{ color: 'var(--theme-info)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                📚 Materias del Examen
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Configura las materias para tu examen
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <Materias
+              availableSubjects={availableSubjects}
+              selectedSubjects={selectedSubjects}
+              onSubjectToggle={handleSubjectToggle}
+              onAddCustomSubject={handleAddCustomSubject}
+            />
+          </div>
+        </div>
+      </div>
+      */}
+
+      {/* Questions Grid Area */}
+      <div className="grid-questions">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-success-light)' }}
+            >
+              <i 
+                className="fas fa-question-circle text-lg"
+                style={{ color: 'var(--theme-success)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                🔢 Preguntas
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Cantidad y dificultad
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <QuestionConf
+              questionCount={questionCount}
+              onQuestionCountChange={handleQuestionCountChange}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Difficulty Grid Area */}
+      <div className="grid-difficulty">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-warning-light)' }}
+            >
+              <i 
+                className="fas fa-chart-bar text-lg"
+                style={{ color: 'var(--theme-warning)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                📊 Dificultad
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Nivel del examen
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <DifficultExam
+              selectedDifficulty={selectedDifficulty}
+              onDifficultySelect={handleDifficultySelect}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Timer Grid Area */}
+      <div className="grid-timer">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-error-light)' }}
+            >
+              <i 
+                className="fas fa-clock text-lg"
+                style={{ color: 'var(--theme-error)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                ⏱️ Tiempo
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Duración límite
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <TimerConf
+              hour={hour}
+              setHour={setHour}
+              minute={minute}
+              setMinute={setMinute}
+              second={second}
+              setSecond={setSecond}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Personalization Grid Area */}
+      <div className="grid-personalization">
+        <div 
+          className="config-card"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
+          <div className="card-header">
+            <div 
+              className="card-icon"
+              style={{ backgroundColor: 'var(--theme-info-light)' }}
+            >
+              <i 
+                className="fas fa-paintbrush text-lg"
+                style={{ color: 'var(--theme-info)' }}
+              ></i>
+            </div>
+            <div className="card-header-text">
+              <h3 
+                className="card-title"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
+                🎨 Personalización
+              </h3>
+              <p 
+                className="card-subtitle"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                Define el tema y contenido del examen
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <Personalization
+              fineTuning={fineTuning}
+              onFineTuningChange={handleFineTuningChange}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Generate Button Grid Area */}
+      <div className="grid-generate">
+        <div 
+          className="generate-section"
+          style={{
+            borderColor: isGenerateDisabled ? 'var(--theme-border-primary)' : 'var(--primary)',
+            backgroundColor: isGenerateDisabled ? 'var(--theme-bg-secondary)' : 'var(--theme-primary-light)'
+          }}
+        >
+          <div className="generate-content">
+            {isGenerating ? (
+              <div className="generating-state">
+                <div 
+                  className="generating-indicator"
+                  style={{
+                    backgroundColor: 'var(--theme-info-light)',
+                    borderColor: 'var(--theme-info)',
+                    color: 'var(--theme-info-dark)'
+                  }}
+                >
+                  <div className="generating-spinner">
+                    <div className="spinner"></div>
+                  </div>
+                  <span className="generating-text">Generando tu examen con IA...</span>
+                </div>
+                <p 
+                  className="generating-subtitle"
+                  style={{ color: 'var(--theme-text-secondary)' }}
+                >
+                  Esto puede tardar unos momentos. La IA está creando preguntas personalizadas.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Statistics Summary */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div 
+                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
+                    style={{
+                      backgroundColor: fineTuning.trim().length > 0 ? 'var(--theme-success-light)' : 'var(--theme-bg-secondary)',
+                      borderColor: fineTuning.trim().length > 0 ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                      color: fineTuning.trim().length > 0 ? 'var(--theme-success-dark)' : 'var(--theme-text-secondary)'
+                    }}
+                  >
+                    <div className="text-lg font-bold mb-1">
+                      {fineTuning.trim().length > 0 ? '✓' : '✗'}
+                    </div>
+                    <div className="text-xs opacity-80">Tema</div>
+                  </div>
+                  
+                  <div 
+                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
+                    style={{
+                      backgroundColor: questionCount > 0 ? 'var(--theme-info-light)' : 'var(--theme-bg-secondary)',
+                      borderColor: questionCount > 0 ? 'var(--theme-info)' : 'var(--theme-border-primary)',
+                      color: questionCount > 0 ? 'var(--theme-info-dark)' : 'var(--theme-text-secondary)'
+                    }}
+                  >
+                    <div className="text-2xl font-bold mb-1">{questionCount}</div>
+                    <div className="text-xs opacity-80">Preguntas</div>
+                  </div>
+                  
+                  <div 
+                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
+                    style={{
+                      backgroundColor: selectedDifficulty ? 'var(--theme-warning-light)' : 'var(--theme-bg-secondary)',
+                      borderColor: selectedDifficulty ? 'var(--theme-warning)' : 'var(--theme-border-primary)',
+                      color: selectedDifficulty ? 'var(--theme-warning-dark)' : 'var(--theme-text-secondary)'
+                    }}
+                  >
+                    <div className="text-sm font-bold mb-1">
+                      {selectedDifficulty ? selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1) : 'No sel.'}
+                    </div>
+                    <div className="text-xs opacity-80">Dificultad</div>
+                  </div>
+                  
+                  <div 
+                    className="p-4 rounded-2xl border-2 text-center transition-all duration-300"
+                    style={{
+                      backgroundColor: (hour + minute + second) > 0 ? 'var(--theme-error-light)' : 'var(--theme-bg-secondary)',
+                      borderColor: (hour + minute + second) > 0 ? 'var(--theme-error)' : 'var(--theme-border-primary)',
+                      color: (hour + minute + second) > 0 ? 'var(--theme-error-dark)' : 'var(--theme-text-secondary)'
+                    }}
+                  >
+                    <div className="text-sm font-bold mb-1">
+                      {hour > 0 ? `${hour}h ` : ''}{minute > 0 ? `${minute}m` : (hour === 0 && second > 0) ? '0m' : (hour === 0 && minute === 0 && second === 0) ? 'No def.' : ''}
+                    </div>
+                    <div className="text-xs opacity-80">Tiempo</div>
+                  </div>
+                </div>
+                
+                {/* Generate Button */}
+                <div className="text-center">
+                  <button
+                    onClick={handleGenerateExam}
+                    disabled={isGenerateDisabled}
+                    className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center justify-center space-x-3 mx-auto ${
+                      isGenerateDisabled ? 'cursor-not-allowed' : 'hover:scale-105'
+                    }`}
+                    style={{
+                      backgroundColor: isGenerateDisabled ? 'var(--theme-text-tertiary)' : 'var(--primary)',
+                      color: 'white',
+                      opacity: isGenerateDisabled ? 0.5 : 1,
+                      boxShadow: isGenerateDisabled ? 'none' : 'var(--theme-shadow-lg)'
+                    }}
+                  >
+                    <i className="fas fa-magic text-xl"></i>
+                    <span>Generar Examen</span>
+                  </button>
+                  
+                  {isGenerateDisabled && (
+                    <p 
+                      className="text-sm mt-3 opacity-80"
+                      style={{ color: 'var(--theme-text-secondary)' }}
+                    >
+                      Completa la configuración para generar el examen
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+});

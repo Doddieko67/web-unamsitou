@@ -1,4 +1,6 @@
-export function Welcome() {
+import { memo } from "react";
+
+export const Welcome = memo(function Welcome() {
   return (
     <div 
       className="rounded-xl shadow-md overflow-hidden mb-8 transition-colors duration-300"
@@ -41,4 +43,4 @@ export function Welcome() {
       </div>
     </div>
   );
-}
+});
