@@ -16,6 +16,8 @@ import { ExamQuestionCard } from './ExamQuestionCard';
 import { ExamProgressBar } from './ExamProgressBar';
 import { ExamNavigationPanel } from './ExamNavigationPanel';
 import { ExamActionButtons } from './ExamActionButtons';
+import { ExamSearchFilter } from './ExamSearchFilter';
+import { ExamQuestionCards } from './ExamQuestionCards';
 import { QuestionSelector } from '../../Examen/QuestionSelector';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { LoadingSpinner } from '../LoadingSpinner';
@@ -176,13 +178,29 @@ export const ExamContainer: React.FC = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-100">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            
-            {/* Sidebar - Timer and Pinned Questions */}
-            <div className="lg:col-span-1 space-y-6">
+        
+        {/* Header with Exam Info */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {examState.exam.titulo}
+                </h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  {examState.exam.descripcion}
+                </p>
+                <div className="flex items-center space-x-4 mt-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {examState.exam.dificultad}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {examState.exam.numero_preguntas} preguntas
+                  </span>
+                </div>
+              </div>
               
-              {/* Timer */}
+              {/* Timer Display */}
               <ExamTimerDisplay
                 timeLeft={timer.timeLeft}
                 timeSpent={timer.timeSpent}
@@ -192,11 +210,36 @@ export const ExamContainer: React.FC = () => {
                 onPause={timer.pause}
                 onResume={timer.start}
               />
+            </div>
+          </div>
+        </div>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            {/* Left Sidebar - Search and Pinned Questions */}
+            <div className="lg:col-span-1 space-y-6">
+              
+              {/* Search and Filter */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <i className="fas fa-search mr-2"></i>
+                  Buscar Preguntas
+                </h3>
+                <ExamSearchFilter
+                  questions={examState.exam.datos}
+                  userAnswers={examState.userAnswers}
+                  onQuestionSelect={examState.navigateToQuestion}
+                  currentQuestionIndex={examState.currentQuestionIndex}
+                  isSubmitted={examState.isSubmitted}
+                />
+              </div>
 
               {/* Pinned Questions */}
-              {Object.keys(examState.pinnedQuestions).length > 0 ? (
+              {Object.keys(examState.pinnedQuestions).length > 0 && (
                 <div className="bg-white rounded-lg shadow-md p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    <i className="fas fa-thumbtack mr-2"></i>
                     Preguntas Fijadas
                   </h3>
                   <QuestionSelector
@@ -210,16 +253,6 @@ export const ExamContainer: React.FC = () => {
                     pinnedQuestions={examState.pinnedQuestions}
                     pinnedMode={true}
                   />
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                  <i className="fas fa-thumbtack text-gray-300 text-2xl mb-3"></i>
-                  <h3 className="text-lg font-medium text-gray-500 mb-2">
-                    Fija una pregunta
-                  </h3>
-                  <p className="text-sm text-gray-400">
-                    Haz clic en el ícono de fijado para marcar preguntas importantes
-                  </p>
                 </div>
               )}
 
@@ -246,7 +279,7 @@ export const ExamContainer: React.FC = () => {
                 answeredQuestions={answeredCount}
               />
 
-              {/* Question Card */}
+              {/* Current Question */}
               <ExamQuestionCard
                 question={currentQuestion}
                 questionIndex={examState.currentQuestionIndex}
@@ -276,6 +309,23 @@ export const ExamContainer: React.FC = () => {
                 currentIndex={examState.currentQuestionIndex}
                 totalQuestions={examState.exam.datos.length}
               />
+
+              {/* All Questions Overview */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <ExamQuestionCards
+                  questions={examState.exam.datos}
+                  currentQuestionIndex={examState.currentQuestionIndex}
+                  userAnswers={examState.userAnswers}
+                  pinnedQuestions={examState.pinnedQuestions}
+                  feedback={{
+                    ...examState.feedback,
+                    ...feedbackState.feedback,
+                  }}
+                  isSubmitted={examState.isSubmitted}
+                  onQuestionSelect={examState.navigateToQuestion}
+                  onTogglePin={examState.togglePin}
+                />
+              </div>
             </div>
           </div>
         </main>
