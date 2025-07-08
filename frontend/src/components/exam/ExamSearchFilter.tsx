@@ -201,10 +201,16 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
               <button
                 key={originalIndex}
                 onClick={() => onQuestionSelect(originalIndex)}
-                className={`w-full p-3 text-left rounded-lg border transition-all duration-200 ${
+                className={`w-full p-3 text-left rounded-lg border-2 transition-all duration-200 hover:scale-102 hover:shadow-sm ${
                   isCurrent
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200'
+                    : isAnswered
+                    ? isSubmitted
+                      ? isCorrect
+                        ? 'border-green-300 bg-green-50 hover:border-green-400'
+                        : 'border-red-300 bg-red-50 hover:border-red-400'
+                      : 'border-blue-300 bg-blue-50 hover:border-blue-400'
+                    : 'border-gray-300 bg-gray-50 hover:border-gray-400'
                 }`}
               >
                 <div className="flex items-start space-x-3">
