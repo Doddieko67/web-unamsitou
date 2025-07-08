@@ -27,11 +27,11 @@ interface FilterOption {
 }
 
 const filterOptions: FilterOption[] = [
-  { value: 'todas', label: 'Todas', icon: 'fa-list', color: 'text-gray-600' },
-  { value: 'contestadas', label: 'Contestadas', icon: 'fa-check', color: 'text-blue-600' },
-  { value: 'sin_contestar', label: 'Sin contestar', icon: 'fa-question', color: 'text-orange-600' },
-  { value: 'correctas', label: 'Correctas', icon: 'fa-check-circle', color: 'text-green-600' },
-  { value: 'incorrectas', label: 'Incorrectas', icon: 'fa-times-circle', color: 'text-red-600' },
+  { value: 'todas', label: 'Todas', icon: 'fa-list', color: 'var(--theme-text-secondary)' },
+  { value: 'contestadas', label: 'Contestadas', icon: 'fa-check', color: 'var(--primary)' },
+  { value: 'sin_contestar', label: 'Sin contestar', icon: 'fa-question', color: 'var(--theme-warning)' },
+  { value: 'correctas', label: 'Correctas', icon: 'fa-check-circle', color: 'var(--secondary)' },
+  { value: 'incorrectas', label: 'Incorrectas', icon: 'fa-times-circle', color: 'var(--theme-error)' },
 ];
 
 /**
@@ -104,21 +104,38 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
       {/* Search Bar */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <i className="fas fa-search text-gray-400"></i>
+          <i 
+            className="fas fa-search transition-colors duration-300" 
+            style={{ color: 'var(--theme-text-tertiary)' }}
+          ></i>
         </div>
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Buscar preguntas..."
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          className="block w-full pl-10 pr-3 py-2 border rounded-lg leading-5 text-sm transition-all duration-300 focus:outline-none focus:ring-1"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            color: 'var(--theme-text-primary)',
+            '--tw-ring-color': 'var(--primary)',
+            '--tw-ring-opacity': '0.5'
+          } as React.CSSProperties}
         />
         {searchTerm && (
           <button
             onClick={() => setSearchTerm('')}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center transition-colors duration-200"
+            style={{ color: 'var(--theme-text-tertiary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--theme-text-secondary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--theme-text-tertiary)';
+            }}
           >
-            <i className="fas fa-times text-gray-400 hover:text-gray-600"></i>
+            <i className="fas fa-times"></i>
           </button>
         )}
       </div>
@@ -127,15 +144,38 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
       <div className="relative">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full flex items-center justify-between px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300"
+          style={{
+            backgroundColor: 'var(--theme-bg-primary)',
+            borderColor: 'var(--theme-border-primary)',
+            '--tw-ring-color': 'var(--primary)',
+            '--tw-ring-opacity': '0.5'
+          } as React.CSSProperties}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--theme-bg-secondary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--theme-bg-primary)';
+          }}
         >
           <div className="flex items-center space-x-2">
-            <i className={`fas ${selectedFilterOption.icon} ${selectedFilterOption.color}`}></i>
-            <span className="text-gray-700">{selectedFilterOption.label}</span>
+            <i 
+              className={`fas ${selectedFilterOption.icon} transition-colors duration-300`}
+              style={{ color: selectedFilterOption.color }}
+            ></i>
+            <span 
+              className="transition-colors duration-300"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
+              {selectedFilterOption.label}
+            </span>
           </div>
-          <i className={`fas fa-chevron-down transition-transform duration-200 ${
-            isDropdownOpen ? 'rotate-180' : ''
-          }`}></i>
+          <i 
+            className={`fas fa-chevron-down transition-all duration-200 ${
+              isDropdownOpen ? 'rotate-180' : ''
+            }`}
+            style={{ color: 'var(--theme-text-secondary)' }}
+          ></i>
         </button>
 
         <AnimatePresence>
@@ -145,7 +185,12 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg"
+              className="absolute z-10 w-full mt-1 border rounded-lg shadow-lg transition-colors duration-300"
+              style={{
+                backgroundColor: 'var(--theme-bg-primary)',
+                borderColor: 'var(--theme-border-primary)',
+                boxShadow: 'var(--theme-shadow-lg)'
+              }}
             >
               {filterOptions.map((option) => (
                 <button
@@ -154,17 +199,37 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
                     setSelectedFilter(option.value);
                     setIsDropdownOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-2 px-3 py-2 text-sm text-left hover:bg-gray-50 ${
-                    selectedFilter === option.value ? 'bg-blue-50' : ''
-                  }`}
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-left transition-all duration-200"
+                  style={{
+                    backgroundColor: selectedFilter === option.value 
+                      ? 'var(--theme-info-light)' 
+                      : 'transparent',
+                    color: 'var(--theme-text-primary)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedFilter !== option.value) {
+                      e.currentTarget.style.backgroundColor = 'var(--theme-bg-secondary)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = selectedFilter === option.value 
+                      ? 'var(--theme-info-light)' 
+                      : 'transparent';
+                  }}
                   disabled={
                     !isSubmitted && (option.value === 'correctas' || option.value === 'incorrectas')
                   }
                 >
-                  <i className={`fas ${option.icon} ${option.color}`}></i>
-                  <span className="text-gray-700">{option.label}</span>
+                  <i 
+                    className={`fas ${option.icon} transition-colors duration-300`}
+                    style={{ color: option.color }}
+                  ></i>
+                  <span className="transition-colors duration-300">{option.label}</span>
                   {selectedFilter === option.value && (
-                    <i className="fas fa-check text-blue-600 ml-auto"></i>
+                    <i 
+                      className="fas fa-check ml-auto transition-colors duration-300"
+                      style={{ color: 'var(--primary)' }}
+                    ></i>
                   )}
                 </button>
               ))}
@@ -174,14 +239,24 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
       </div>
 
       {/* Results Counter */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div 
+        className="flex items-center justify-between text-sm transition-colors duration-300"
+        style={{ color: 'var(--theme-text-secondary)' }}
+      >
         <span>
           {filteredQuestions.length} de {questions.length} preguntas
         </span>
         {(searchTerm || selectedFilter !== 'todas') && (
           <button
             onClick={handleReset}
-            className="text-blue-600 hover:text-blue-800 font-medium"
+            className="font-medium transition-colors duration-200"
+            style={{ color: 'var(--primary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--primary-dark)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--primary)';
+            }}
           >
             Limpiar filtros
           </button>
@@ -197,60 +272,171 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
                              userAnswers[originalIndex] === question.correcta;
             const isCurrent = originalIndex === currentQuestionIndex;
 
+            const getQuestionCardStyles = () => {
+              const baseStyles = {
+                width: '100%',
+                padding: '0.75rem',
+                textAlign: 'left' as const,
+                borderRadius: '0.5rem',
+                border: '2px solid',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer'
+              };
+
+              if (isCurrent) {
+                return {
+                  ...baseStyles,
+                  borderColor: 'var(--primary)',
+                  backgroundColor: 'var(--theme-info-light)',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 0 4px rgba(99, 102, 241, 0.1)'
+                };
+              }
+              
+              if (isAnswered) {
+                if (isSubmitted) {
+                  if (isCorrect) {
+                    return {
+                      ...baseStyles,
+                      borderColor: 'var(--secondary)',
+                      backgroundColor: 'var(--theme-success-light)'
+                    };
+                  } else {
+                    return {
+                      ...baseStyles,
+                      borderColor: 'var(--theme-error)',
+                      backgroundColor: 'var(--theme-error-light)'
+                    };
+                  }
+                } else {
+                  return {
+                    ...baseStyles,
+                    borderColor: 'var(--primary)',
+                    backgroundColor: 'var(--theme-info-light)'
+                  };
+                }
+              } else {
+                return {
+                  ...baseStyles,
+                  borderColor: 'var(--theme-border-primary)',
+                  backgroundColor: 'var(--theme-bg-secondary)'
+                };
+              }
+            };
+
+            const getHoverStyles = () => {
+              if (isCurrent) return {};
+              
+              if (isAnswered) {
+                if (isSubmitted) {
+                  if (isCorrect) {
+                    return { borderColor: 'var(--secondary)' };
+                  } else {
+                    return { borderColor: 'var(--theme-error)' };
+                  }
+                } else {
+                  return { borderColor: 'var(--primary)' };
+                }
+              } else {
+                return { borderColor: 'var(--theme-border-secondary)' };
+              }
+            };
+
             return (
               <button
                 key={originalIndex}
                 onClick={() => onQuestionSelect(originalIndex)}
-                className={`w-full p-3 text-left rounded-lg border-2 transition-all duration-200 hover:scale-102 hover:shadow-sm ${
-                  isCurrent
-                    ? 'border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200'
-                    : isAnswered
-                    ? isSubmitted
-                      ? isCorrect
-                        ? 'border-green-300 bg-green-50 hover:border-green-400'
-                        : 'border-red-300 bg-red-50 hover:border-red-400'
-                      : 'border-blue-300 bg-blue-50 hover:border-blue-400'
-                    : 'border-gray-300 bg-gray-50 hover:border-gray-400'
-                }`}
+                className="transition-all duration-200 hover:scale-102 hover:shadow-sm"
+                style={getQuestionCardStyles()}
+                onMouseEnter={(e) => {
+                  const hoverStyles = getHoverStyles();
+                  Object.assign(e.currentTarget.style, hoverStyles);
+                }}
+                onMouseLeave={(e) => {
+                  Object.assign(e.currentTarget.style, getQuestionCardStyles());
+                }}
               >
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                      isCurrent
-                        ? 'bg-blue-600 text-white'
-                        : isAnswered
-                        ? isSubmitted
-                          ? isCorrect
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                          : 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <span 
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors duration-300"
+                      style={(() => {
+                        if (isCurrent) {
+                          return {
+                            backgroundColor: 'var(--primary)',
+                            color: 'white'
+                          };
+                        }
+                        if (isAnswered) {
+                          if (isSubmitted) {
+                            if (isCorrect) {
+                              return {
+                                backgroundColor: 'var(--theme-success-light)',
+                                color: 'var(--secondary)'
+                              };
+                            } else {
+                              return {
+                                backgroundColor: 'var(--theme-error-light)',
+                                color: 'var(--theme-error)'
+                              };
+                            }
+                          } else {
+                            return {
+                              backgroundColor: 'var(--theme-info-light)',
+                              color: 'var(--primary)'
+                            };
+                          }
+                        } else {
+                          return {
+                            backgroundColor: 'var(--theme-bg-tertiary)',
+                            color: 'var(--theme-text-secondary)'
+                          };
+                        }
+                      })()}
+                    >
                       {originalIndex + 1}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p 
+                      className="text-sm font-medium truncate transition-colors duration-300"
+                      style={{ color: 'var(--theme-text-primary)' }}
+                    >
                       {question.pregunta.substring(0, 60)}
                       {question.pregunta.length > 60 ? '...' : ''}
                     </p>
                     <div className="flex items-center space-x-2 mt-1">
                       {isAnswered && (
                         <span className="inline-flex items-center space-x-1">
-                          <i className={`fas fa-check text-xs ${
-                            isSubmitted
-                              ? isCorrect
-                                ? 'text-green-600'
-                                : 'text-red-600'
-                              : 'text-blue-600'
-                          }`}></i>
-                          <span className="text-xs text-gray-500">Contestada</span>
+                          <i 
+                            className="fas fa-check text-xs transition-colors duration-300"
+                            style={{
+                              color: isSubmitted
+                                ? isCorrect
+                                  ? 'var(--secondary)'
+                                  : 'var(--theme-error)'
+                                : 'var(--primary)'
+                            }}
+                          ></i>
+                          <span 
+                            className="text-xs transition-colors duration-300"
+                            style={{ color: 'var(--theme-text-secondary)' }}
+                          >
+                            Contestada
+                          </span>
                         </span>
                       )}
                       {!isAnswered && (
                         <span className="inline-flex items-center space-x-1">
-                          <i className="fas fa-question text-xs text-orange-600"></i>
-                          <span className="text-xs text-gray-500">Sin contestar</span>
+                          <i 
+                            className="fas fa-question text-xs transition-colors duration-300"
+                            style={{ color: 'var(--theme-warning)' }}
+                          ></i>
+                          <span 
+                            className="text-xs transition-colors duration-300"
+                            style={{ color: 'var(--theme-text-secondary)' }}
+                          >
+                            Sin contestar
+                          </span>
                         </span>
                       )}
                     </div>
@@ -261,15 +447,33 @@ export const ExamSearchFilter: React.FC<ExamSearchFilterProps> = ({
           })
         ) : (
           <div className="text-center py-8">
-            <i className="fas fa-search text-gray-300 text-3xl mb-3"></i>
-            <p className="text-gray-500 font-medium">No se encontraron preguntas</p>
-            <p className="text-gray-400 text-sm">
+            <i 
+              className="fas fa-search text-3xl mb-3 transition-colors duration-300"
+              style={{ color: 'var(--theme-text-tertiary)' }}
+            ></i>
+            <p 
+              className="font-medium transition-colors duration-300"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >
+              No se encontraron preguntas
+            </p>
+            <p 
+              className="text-sm transition-colors duration-300"
+              style={{ color: 'var(--theme-text-tertiary)' }}
+            >
               Intenta ajustar tu búsqueda o filtros
             </p>
             {(searchTerm || selectedFilter !== 'todas') && (
               <button
                 onClick={handleReset}
-                className="mt-2 text-blue-600 hover:text-blue-800 font-medium text-sm"
+                className="mt-2 font-medium text-sm transition-colors duration-200"
+                style={{ color: 'var(--primary)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--primary-dark)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--primary)';
+                }}
               >
                 Limpiar filtros
               </button>

@@ -50,12 +50,25 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div 
+          className="min-h-screen flex items-center justify-center transition-colors duration-300"
+          style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+        >
           <div className="max-w-md w-full mx-auto p-6">
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+            <div 
+              className="rounded-lg shadow-lg p-8 text-center transition-colors duration-300"
+              style={{ 
+                backgroundColor: 'var(--theme-bg-primary)',
+                boxShadow: 'var(--theme-shadow-lg)'
+              }}
+            >
+              <div 
+                className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center transition-colors duration-300"
+                style={{ backgroundColor: 'var(--theme-error-light)' }}
+              >
                 <svg 
-                  className="w-8 h-8 text-red-600" 
+                  className="w-8 h-8 transition-colors duration-300" 
+                  style={{ color: 'var(--theme-error)' }}
                   fill="none" 
                   strokeLinecap="round" 
                   strokeLinejoin="round" 
@@ -67,20 +80,35 @@ export class ErrorBoundary extends Component<Props, State> {
                 </svg>
               </div>
               
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">
+              <h1 
+                className="text-xl font-semibold mb-2 transition-colors duration-300"
+                style={{ color: 'var(--theme-text-primary)' }}
+              >
                 ¡Oops! Algo salió mal
               </h1>
               
-              <p className="text-gray-600 mb-6">
+              <p 
+                className="mb-6 transition-colors duration-300"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
                 Ha ocurrido un error inesperado. Por favor, intenta recargar la página o ponte en contacto con soporte si el problema persiste.
               </p>
 
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mb-6 text-left">
-                  <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                  <summary 
+                    className="cursor-pointer text-sm transition-colors duration-300 hover:opacity-80"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
                     Ver detalles del error (solo en desarrollo)
                   </summary>
-                  <div className="mt-2 p-3 bg-gray-100 rounded text-xs text-gray-700 font-mono overflow-auto max-h-32">
+                  <div 
+                    className="mt-2 p-3 rounded text-xs font-mono overflow-auto max-h-32 transition-colors duration-300"
+                    style={{ 
+                      backgroundColor: 'var(--theme-bg-secondary)',
+                      color: 'var(--theme-text-secondary)'
+                    }}
+                  >
                     <div className="font-bold mb-1">Error:</div>
                     <div className="mb-2">{this.state.error.message}</div>
                     <div className="font-bold mb-1">Stack:</div>
@@ -92,14 +120,36 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={this.handleReset}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="px-4 py-2 text-white rounded-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  style={{
+                    backgroundColor: 'var(--primary)',
+                    '--tw-ring-color': 'var(--primary)',
+                    '--tw-ring-opacity': '0.5'
+                  } as React.CSSProperties}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--primary)';
+                  }}
                 >
                   Intentar de nuevo
                 </button>
                 
                 <button
                   onClick={this.handleReload}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className="px-4 py-2 text-white rounded-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  style={{
+                    backgroundColor: 'var(--theme-text-secondary)',
+                    '--tw-ring-color': 'var(--theme-text-secondary)',
+                    '--tw-ring-opacity': '0.5'
+                  } as React.CSSProperties}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--theme-text-primary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--theme-text-secondary)';
+                  }}
                 >
                   Recargar página
                 </button>

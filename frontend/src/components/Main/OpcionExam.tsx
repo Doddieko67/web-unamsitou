@@ -35,22 +35,45 @@ export function OpcionExam() {
     },
   ];
 
-  // Clases base comunes para todas las pestañas
-  const commonTabClasses =
-    "whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm";
-  // Clases específicas para la pestaña activa
-  const activeTabClasses = "border-indigo-500 text-indigo-600"; // Ejemplo de clases activas
-  // Clases específicas para pestañas inactivas
-  const inactiveTabClasses =
-    "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300";
+  // Estilos de tabs usando CSS variables
+  const getTabStyles = (isActive: boolean) => {
+    const baseStyles = {
+      whiteSpace: 'nowrap' as const,
+      padding: '1rem 0.25rem',
+      borderBottom: '2px solid',
+      fontWeight: '500',
+      fontSize: '0.875rem',
+      transition: 'all 0.3s ease',
+      cursor: 'pointer'
+    };
+
+    if (isActive) {
+      return {
+        ...baseStyles,
+        borderBottomColor: 'var(--primary)',
+        color: 'var(--primary)'
+      };
+    } else {
+      return {
+        ...baseStyles,
+        borderBottomColor: 'transparent',
+        color: 'var(--theme-text-secondary)'
+      };
+    }
+  };
+
+  const getTabHoverStyles = () => ({
+    color: 'var(--primary)',
+    borderBottomColor: 'var(--theme-border-secondary)'
+  });
 
   return (
     <div>
-      {" "}
       {/* Contenedor principal */}
-      <div className="mb-4 sm:mb-8 border-b border-gray-200">
-        {" "}
-        {/* Ajustado mb para ejemplo */}
+      <div 
+        className="mb-4 sm:mb-8 border-b transition-colors duration-300"
+        style={{ borderBottomColor: 'var(--theme-border-primary)' }}
+      >
         <nav
           className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto"
           aria-label="Tabs"
@@ -59,18 +82,32 @@ export function OpcionExam() {
             <button
               key={tab.id}
               id={tab.id}
-              // 3. Asignar el manejador de clics
               onClick={() => handleTabClick(tab.id)}
-              // 4. Aplicar clases condicionalmente
-              className={`${commonTabClasses} ${
-                activeTab === tab.id ? activeTabClasses : inactiveTabClasses
-              }`}
-              // 5. Añadir atributos ARIA para accesibilidad
+              style={getTabStyles(activeTab === tab.id)}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.id) {
+                  Object.assign(e.currentTarget.style, getTabHoverStyles());
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.id) {
+                  Object.assign(e.currentTarget.style, getTabStyles(false));
+                }
+              }}
               role="tab"
               aria-selected={activeTab === tab.id}
-              aria-controls={`${tab.id}-panel`} // Necesitarás un panel con este ID
+              aria-controls={`${tab.id}-panel`}
             >
-              {tab.icon && <i className={`${tab.icon} mr-2`}></i>}
+              {tab.icon && (
+                <i 
+                  className={`${tab.icon} mr-2 transition-colors duration-300`}
+                  style={{ 
+                    color: activeTab === tab.id 
+                      ? 'var(--primary)' 
+                      : 'var(--theme-text-secondary)' 
+                  }}
+                ></i>
+              )}
               {tab.label}
             </button>
           ))}

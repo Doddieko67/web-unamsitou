@@ -66,10 +66,20 @@ export function TimerConf({
   }) => {
     return (
       <div className="flex flex-col items-center">
-        <div className="flex flex-col items-center bg-indigo-100 rounded-lg p-2 shadow-md">
+        <div 
+          className="flex flex-col items-center rounded-lg p-2 shadow-md transition-colors duration-300"
+          style={{ backgroundColor: 'var(--theme-info-light)' }}
+        >
           <div className="flex flex-row gap-1 mb-1">
             <button
-              className="w-7 h-7 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white rounded-full transition-colors"
+              className="w-7 h-7 flex items-center justify-center text-white rounded-full transition-all duration-200"
+              style={{ backgroundColor: 'var(--primary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary)';
+              }}
               onClick={() => onChange(value + 1)}
               aria-label={`Incrementar ${label}`}
             >
@@ -87,7 +97,14 @@ export function TimerConf({
               </svg>
             </button>
             <button
-              className="w-7 h-7 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white rounded-full transition-colors"
+              className="w-7 h-7 flex items-center justify-center text-white rounded-full transition-all duration-200"
+              style={{ backgroundColor: 'var(--primary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary)';
+              }}
               onClick={() => onChange(value - 1)}
               aria-label={`Decrementar ${label}`}
             >
@@ -107,7 +124,13 @@ export function TimerConf({
           </div>
           <input
             type="text"
-            className="bg-white w-14 h-14 text-center text-2xl font-bold text-indigo-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-inner"
+            className="w-14 h-14 text-center text-2xl font-bold rounded-md focus:outline-none focus:ring-2 shadow-inner transition-colors duration-300"
+            style={{
+              backgroundColor: 'var(--theme-bg-primary)',
+              color: 'var(--primary)',
+              '--tw-ring-color': 'var(--primary)',
+              '--tw-ring-opacity': '0.4'
+            } as React.CSSProperties}
             value={String(value).padStart(2, "0")}
             onChange={(e) => {
               const newValue =
@@ -125,28 +148,49 @@ export function TimerConf({
             max={max}
           />
         </div>
-        <p className="mt-2 text-sm font-medium text-gray-700">{label}</p>
+        <p 
+          className="mt-2 text-sm font-medium transition-colors duration-300"
+          style={{ color: 'var(--theme-text-secondary)' }}
+        >
+          {label}
+        </p>
       </div>
     );
   };
 
   return (
     <div className="flex flex-col items-center w-full">
-      <div className="flex items-center justify-center gap-6 p-4 pb-2 bg-white rounded-xl shadow-lg">
+      <div 
+        className="flex items-center justify-center gap-6 p-4 pb-2 rounded-xl shadow-lg transition-colors duration-300"
+        style={{ 
+          backgroundColor: 'var(--theme-bg-primary)',
+          boxShadow: 'var(--theme-shadow-lg)'
+        }}
+      >
         <TimeUnit
           value={hour}
           onChange={handleHourChange}
           max={99}
           label="Horas"
         />
-        <div className="text-3xl font-bold text-indigo-400 -mt-4">:</div>
+        <div 
+          className="text-3xl font-bold -mt-4 transition-colors duration-300"
+          style={{ color: 'var(--primary)' }}
+        >
+          :
+        </div>
         <TimeUnit
           value={minute}
           onChange={handleMinuteChange}
           max={59}
           label="Minutos"
         />
-        <div className="text-3xl font-bold text-indigo-400 -mt-4">:</div>
+        <div 
+          className="text-3xl font-bold -mt-4 transition-colors duration-300"
+          style={{ color: 'var(--primary)' }}
+        >
+          :
+        </div>
         <TimeUnit
           value={second}
           onChange={handleSecondChange}
@@ -164,11 +208,14 @@ export function TimerConf({
             max={maxSliderValue}
             value={totalSeconds}
             onChange={(e) => handleSliderChange(parseInt(e.target.value, 10))}
-            className="w-full h-3 slide-range rounded-lg cursor-pointer"
+            className="w-full h-3 slide-range rounded-lg cursor-pointer transition-colors duration-300"
           />
 
           {/* Marcas y etiquetas */}
-          <div className="flex justify-between mt-2 px-1 text-xs text-gray-600">
+          <div 
+            className="flex justify-between mt-2 px-1 text-xs transition-colors duration-300"
+            style={{ color: 'var(--theme-text-secondary)' }}
+          >
             <span>5m</span>
             <span>2h</span>
             <span>4h</span>

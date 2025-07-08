@@ -39,7 +39,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
   const unansweredCount = questions.length - answeredCount;
   const pinnedCount = Object.keys(pinnedQuestions).length;
 
-  const getCardClass = (index: number) => {
+  const getCardStyles = (index: number) => {
     const isAnswered = userAnswers[index] !== undefined;
     const isPinned = pinnedQuestions[index];
     const isCurrent = index === currentQuestionIndex;
@@ -47,28 +47,60 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
     const isCorrect = isAnswered && question.correcta !== undefined && 
                      userAnswers[index] === question.correcta;
     
-    let classes = "relative px-4 py-3 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-md";
+    const baseStyles = {
+      position: 'relative' as const,
+      padding: '0.75rem 1rem',
+      borderRadius: '0.5rem',
+      border: '2px solid',
+      transition: 'all 0.2s ease',
+      cursor: 'pointer'
+    };
     
     if (isCurrent) {
-      classes += " border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200";
+      return {
+        ...baseStyles,
+        borderColor: 'var(--primary)',
+        backgroundColor: 'var(--theme-info-light)',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 0 4px rgba(99, 102, 241, 0.1)'
+      };
     } else if (isPinned) {
-      classes += " border-purple-300 bg-purple-50 hover:border-purple-400";
+      return {
+        ...baseStyles,
+        borderColor: '#a855f7', // Purple-500 para mantener diseño original
+        backgroundColor: 'var(--theme-bg-primary)' // Adaptativo para dark mode
+      };
     } else if (isAnswered) {
       if (isSubmitted) {
-        classes += isCorrect 
-          ? " border-green-300 bg-green-50 hover:border-green-400"
-          : " border-red-300 bg-red-50 hover:border-red-400";
+        if (isCorrect) {
+          return {
+            ...baseStyles,
+            borderColor: 'var(--secondary)', // Verde para correctas
+            backgroundColor: 'var(--theme-success-light)'
+          };
+        } else {
+          return {
+            ...baseStyles,
+            borderColor: 'var(--theme-error)', // Rojo para incorrectas
+            backgroundColor: 'var(--theme-error-light)'
+          };
+        }
       } else {
-        classes += " border-blue-300 bg-blue-50 hover:border-blue-400";
+        return {
+          ...baseStyles,
+          borderColor: 'var(--primary)', // Azul para contestadas
+          backgroundColor: 'var(--theme-info-light)'
+        };
       }
     } else {
-      classes += " border-gray-300 bg-gray-50 hover:border-gray-400";
+      return {
+        ...baseStyles,
+        borderColor: 'var(--theme-border-primary)',
+        backgroundColor: 'var(--theme-bg-secondary)'
+      };
     }
-    
-    return classes;
   };
 
-  const getNumberClass = (index: number) => {
+  const getHoverStyles = (index: number) => {
     const isAnswered = userAnswers[index] !== undefined;
     const isPinned = pinnedQuestions[index];
     const isCurrent = index === currentQuestionIndex;
@@ -76,20 +108,65 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
     const isCorrect = isAnswered && question.correcta !== undefined && 
                      userAnswers[index] === question.correcta;
     
-    if (isCurrent) {
-      return "bg-blue-600 text-white";
-    } else if (isPinned) {
-      return "bg-purple-600 text-white";
+    if (isCurrent) return { transform: 'scale(1.05)' };
+    
+    if (isPinned) {
+      return { borderColor: '#9333ea' }; // Purple-600
     } else if (isAnswered) {
       if (isSubmitted) {
         return isCorrect 
-          ? "bg-green-600 text-white"
-          : "bg-red-600 text-white";
+          ? { borderColor: 'var(--secondary)' }
+          : { borderColor: 'var(--theme-error)' };
       } else {
-        return "bg-blue-600 text-white";
+        return { borderColor: 'var(--primary)' };
       }
     } else {
-      return "bg-gray-400 text-white";
+      return { borderColor: 'var(--theme-border-secondary)' };
+    }
+  };
+
+  const getNumberStyles = (index: number) => {
+    const isAnswered = userAnswers[index] !== undefined;
+    const isPinned = pinnedQuestions[index];
+    const isCurrent = index === currentQuestionIndex;
+    const question = questions[index];
+    const isCorrect = isAnswered && question.correcta !== undefined && 
+                     userAnswers[index] === question.correcta;
+    
+    if (isCurrent) {
+      return {
+        backgroundColor: 'var(--primary)',
+        color: 'white'
+      };
+    } else if (isPinned) {
+      return {
+        backgroundColor: '#9333ea', // Purple-600 para mantener diseño original
+        color: 'white'
+      };
+    } else if (isAnswered) {
+      if (isSubmitted) {
+        if (isCorrect) {
+          return {
+            backgroundColor: 'var(--secondary)', // Verde para correctas
+            color: 'white'
+          };
+        } else {
+          return {
+            backgroundColor: 'var(--theme-error)', // Rojo para incorrectas
+            color: 'white'
+          };
+        }
+      } else {
+        return {
+          backgroundColor: 'var(--primary)', // Azul para contestadas
+          color: 'white'
+        };
+      }
+    } else {
+      return {
+        backgroundColor: 'var(--theme-text-tertiary)',
+        color: 'white'
+      };
     }
   };
 
@@ -109,20 +186,44 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 
+          className="text-lg font-semibold transition-colors duration-300"
+          style={{ color: 'var(--theme-text-primary)' }}
+        >
           Vista General de Preguntas
         </h3>
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
+        <div 
+          className="flex items-center space-x-4 text-sm transition-colors duration-300"
+          style={{ color: 'var(--theme-text-secondary)' }}
+        >
           <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
+            <div 
+              className="w-3 h-3 border rounded transition-colors duration-300"
+              style={{ 
+                backgroundColor: 'var(--theme-info-light)', 
+                borderColor: 'var(--primary)' 
+              }}
+            ></div>
             <span>Contestadas ({answeredCount})</span>
           </div>
           <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded"></div>
+            <div 
+              className="w-3 h-3 border rounded transition-colors duration-300"
+              style={{ 
+                backgroundColor: 'var(--theme-bg-secondary)', 
+                borderColor: 'var(--theme-border-primary)' 
+              }}
+            ></div>
             <span>Sin contestar ({unansweredCount})</span>
           </div>
           <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-purple-100 border border-purple-300 rounded"></div>
+            <div 
+              className="w-3 h-3 border rounded transition-colors duration-300"
+              style={{ 
+                backgroundColor: 'var(--theme-bg-primary)', 
+                borderColor: '#a855f7' 
+              }}
+            ></div>
             <span>Fijadas ({pinnedCount})</span>
           </div>
         </div>
@@ -132,13 +233,22 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
       {pinnedCount > 0 && (
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
-            <h4 className="text-md font-semibold text-purple-800">
-              <i className="fas fa-star mr-2 text-yellow-500"></i>
+            <h4 
+              className="text-md font-semibold transition-colors duration-300"
+              style={{ color: '#7c3aed' }}
+            >
+              <i className="fas fa-star mr-2" style={{ color: '#eab308' }}></i>
               Preguntas Fijadas ({pinnedCount})
             </h4>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div 
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4 rounded-lg border transition-colors duration-300"
+            style={{
+              backgroundColor: 'var(--theme-bg-secondary)',
+              borderColor: '#a855f7' // Purple-500 para mantener identidad visual
+            }}
+          >
             {pinnedIndices.map((originalIndex) => {
               const question = questions[originalIndex];
               const isAnswered = userAnswers[originalIndex] !== undefined;
@@ -151,13 +261,23 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
               return (
                 <div
                   key={originalIndex}
-                  className={getCardClass(originalIndex)}
+                  style={getCardStyles(originalIndex)}
                   onClick={() => handleQuestionClick(originalIndex)}
                   data-question-index={originalIndex}
+                  onMouseEnter={(e) => {
+                    const hoverStyles = getHoverStyles(originalIndex);
+                    Object.assign(e.currentTarget.style, hoverStyles);
+                  }}
+                  onMouseLeave={(e) => {
+                    Object.assign(e.currentTarget.style, getCardStyles(originalIndex));
+                  }}
                 >
                   {/* Question Number and Pin Button */}
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getNumberClass(originalIndex)}`}>
+                    <span 
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors duration-300"
+                      style={getNumberStyles(originalIndex)}
+                    >
                       {originalIndex + 1}
                     </span>
                     
@@ -173,7 +293,10 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
 
                   {/* Question Preview */}
                   <div className="space-y-2">
-                    <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed">
+                    <p 
+                      className="text-xs line-clamp-2 leading-relaxed transition-colors duration-300"
+                      style={{ color: 'var(--theme-text-primary)' }}
+                    >
                       {question.pregunta.substring(0, 80)}
                       {question.pregunta.length > 80 ? '...' : ''}
                     </p>
@@ -181,12 +304,20 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
                     {/* Answer Preview */}
                     {isAnswered && (
                       <div className="text-xs">
-                        <span className="text-gray-500">Respuesta: </span>
-                        <span className={`font-medium ${
-                          isSubmitted 
-                            ? isCorrect ? 'text-green-600' : 'text-red-600'
-                            : 'text-blue-600'
-                        }`}>
+                        <span 
+                          className="transition-colors duration-300"
+                          style={{ color: 'var(--theme-text-secondary)' }}
+                        >
+                          Respuesta: 
+                        </span>
+                        <span 
+                          className="font-medium transition-colors duration-300"
+                          style={{
+                            color: isSubmitted 
+                              ? isCorrect ? 'var(--secondary)' : 'var(--theme-error)'
+                              : 'var(--primary)'
+                          }}
+                        >
                           {question.opciones?.[userAnswers[originalIndex]]?.substring(0, 30) || 'N/A'}
                           {(question.opciones?.[userAnswers[originalIndex]]?.length || 0) > 30 ? '...' : ''}
                         </span>
@@ -202,8 +333,14 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
 
       {/* All Questions Section */}
       <div className="space-y-4">
-        <h4 className="text-md font-semibold text-gray-800">
-          <i className="fas fa-list mr-2"></i>
+        <h4 
+          className="text-md font-semibold transition-colors duration-300"
+          style={{ color: 'var(--theme-text-primary)' }}
+        >
+          <i 
+            className="fas fa-list mr-2 transition-colors duration-300"
+            style={{ color: 'var(--theme-text-secondary)' }}
+          ></i>
           Todas las Preguntas ({questions.length})
         </h4>
 
@@ -220,13 +357,23 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
           return (
             <div
               key={index}
-              className={getCardClass(index)}
+              style={getCardStyles(index)}
               onClick={() => handleQuestionClick(index)}
               data-question-index={index}
+              onMouseEnter={(e) => {
+                const hoverStyles = getHoverStyles(index);
+                Object.assign(e.currentTarget.style, hoverStyles);
+              }}
+              onMouseLeave={(e) => {
+                Object.assign(e.currentTarget.style, getCardStyles(index));
+              }}
             >
               {/* Question Number and Pin Button */}
               <div className="flex items-center justify-between mb-2">
-                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getNumberClass(index)}`}>
+                <span 
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-colors duration-300"
+                  style={getNumberStyles(index)}
+                >
                   {index + 1}
                 </span>
                 
@@ -246,7 +393,10 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
 
               {/* Question Preview */}
               <div className="space-y-2">
-                <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed">
+                <p 
+                  className="text-xs line-clamp-2 leading-relaxed transition-colors duration-300"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >
                   {question.pregunta.substring(0, 80)}
                   {question.pregunta.length > 80 ? '...' : ''}
                 </p>
@@ -254,12 +404,20 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
                 {/* Answer Preview */}
                 {isAnswered && (
                   <div className="text-xs">
-                    <span className="text-gray-500">Respuesta: </span>
-                    <span className={`font-medium ${
-                      isSubmitted 
-                        ? isCorrect ? 'text-green-600' : 'text-red-600'
-                        : 'text-blue-600'
-                    }`}>
+                    <span 
+                      className="transition-colors duration-300"
+                      style={{ color: 'var(--theme-text-secondary)' }}
+                    >
+                      Respuesta: 
+                    </span>
+                    <span 
+                      className="font-medium transition-colors duration-300"
+                      style={{
+                        color: isSubmitted 
+                          ? isCorrect ? 'var(--secondary)' : 'var(--theme-error)'
+                          : 'var(--primary)'
+                      }}
+                    >
                       {question.opciones?.[userAnswers[index]]?.substring(0, 30) || 'N/A'}
                       {(question.opciones?.[userAnswers[index]]?.length || 0) > 30 ? '...' : ''}
                     </span>
@@ -274,24 +432,51 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+      <div 
+        className="grid grid-cols-3 gap-4 p-4 rounded-lg transition-colors duration-300"
+        style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
+      >
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900">
+          <div 
+            className="text-2xl font-bold transition-colors duration-300"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >
             {answeredCount}
           </div>
-          <div className="text-sm text-gray-600">Contestadas</div>
+          <div 
+            className="text-sm transition-colors duration-300"
+            style={{ color: 'var(--theme-text-secondary)' }}
+          >
+            Contestadas
+          </div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900">
+          <div 
+            className="text-2xl font-bold transition-colors duration-300"
+            style={{ color: 'var(--theme-text-primary)' }}
+          >
             {unansweredCount}
           </div>
-          <div className="text-sm text-gray-600">Pendientes</div>
+          <div 
+            className="text-sm transition-colors duration-300"
+            style={{ color: 'var(--theme-text-secondary)' }}
+          >
+            Pendientes
+          </div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-purple-600">
+          <div 
+            className="text-2xl font-bold transition-colors duration-300"
+            style={{ color: '#7c3aed' }}
+          >
             {pinnedCount}
           </div>
-          <div className="text-sm text-gray-600">Fijadas</div>
+          <div 
+            className="text-sm transition-colors duration-300"
+            style={{ color: 'var(--theme-text-secondary)' }}
+          >
+            Fijadas
+          </div>
         </div>
       </div>
     </div>
