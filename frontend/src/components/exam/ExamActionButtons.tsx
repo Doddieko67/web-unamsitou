@@ -5,6 +5,7 @@ interface ExamActionButtonsProps {
   isSubmitted: boolean;
   onSubmit: (timeSpent: number) => Promise<void>;
   onSuspend: (timeSpent: number) => Promise<void>;
+  onReset?: () => Promise<void>;
   timeSpent: number;
   onGenerateFeedback?: () => void;
   canSubmit?: boolean;
@@ -22,6 +23,7 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
   isSubmitted,
   onSubmit,
   onSuspend,
+  onReset,
   timeSpent,
   onGenerateFeedback,
   canSubmit = true,
@@ -74,6 +76,33 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
         Swal.fire({
           title: 'Error',
           text: 'Hubo un problema al suspender el examen. Por favor, inténtalo de nuevo.',
+          icon: 'error',
+        });
+      }
+    }
+  };
+
+  const handleResetClick = async () => {
+    if (!onReset) return;
+
+    const result = await Swal.fire({
+      title: '¿Reiniciar el examen?',
+      text: 'Esto creará una nueva instancia del examen. Tu progreso actual se mantendrá guardado en el historial.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#8B5CF6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, reiniciar examen',
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await onReset();
+      } catch (error) {
+        Swal.fire({
+          title: 'Error',
+          text: 'Hubo un problema al reiniciar el examen. Por favor, inténtalo de nuevo.',
           icon: 'error',
         });
       }
@@ -138,6 +167,19 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
                 <span>Retroalimentar todo</span>
               </>
             )}
+          </button>
+        )}
+
+        {/* Reset Button */}
+        {onReset && (
+          <button
+            onClick={handleResetClick}
+            className="w-full text-purple-600 bg-purple-100 shadow-purple-100 border-purple-300 border-2 hover:shadow-purple-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Reiniciar examen"
+            disabled={isLoading}
+          >
+            <i className="fas fa-redo mr-2"></i>
+            <span>Reiniciar el Examen</span>
           </button>
         )}
 

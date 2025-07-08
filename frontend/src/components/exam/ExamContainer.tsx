@@ -9,15 +9,18 @@ import { useExamPersistence } from '../../hooks/useExamPersistence';
 import { useExamNavigation } from '../../hooks/useExamNavigation';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { useFeedbackGeneration } from '../../hooks/useFeedbackGeneration';
+import { useOfflineMode } from '../../hooks/useOfflineMode';
+import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 
 // Components
 import { ExamTimerDisplay } from './ExamTimerDisplay';
 import { ExamQuestionCard } from './ExamQuestionCard';
 import { ExamProgressBar } from './ExamProgressBar';
-import { ExamNavigationPanel } from './ExamNavigationPanel';
 import { ExamActionButtons } from './ExamActionButtons';
 import { ExamSearchFilter } from './ExamSearchFilter';
 import { ExamQuestionCards } from './ExamQuestionCards';
+import { OfflineIndicator } from './OfflineIndicator';
+import { PerformanceDashboard } from './PerformanceDashboard';
 import { QuestionSelector } from '../../Examen/QuestionSelector';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { LoadingSpinner } from '../LoadingSpinner';
@@ -36,6 +39,12 @@ export const ExamContainer: React.FC = () => {
   
   // Initialize feedback generation
   const feedbackState = useFeedbackGeneration();
+  
+  // Initialize offline mode
+  const offlineState = useOfflineMode();
+  
+  // Initialize performance monitoring
+  const performanceMetrics = usePerformanceMetrics();
   
   // Initialize timer
   const timer = useExamTimer(
@@ -86,14 +95,44 @@ export const ExamContainer: React.FC = () => {
     return Object.keys(examState.userAnswers).length;
   }, [examState.userAnswers]);
 
-  // Keyboard navigation
+  // Keyboard navigation with performance tracking
   useKeyboardNavigation({
-    onPrevious: navigation.goToPrevious,
-    onNext: navigation.goToNext,
-    onAnswer1: () => currentQuestion && examState.setAnswer(examState.currentQuestionIndex, 0),
-    onAnswer2: () => currentQuestion && examState.setAnswer(examState.currentQuestionIndex, 1),
-    onAnswer3: () => currentQuestion && examState.setAnswer(examState.currentQuestionIndex, 2),
-    onAnswer4: () => currentQuestion && examState.setAnswer(examState.currentQuestionIndex, 3),
+    onPrevious: () => {
+      navigation.goToPrevious();
+      performanceMetrics.recordNavigation();
+    },
+    onNext: () => {
+      navigation.goToNext();
+      performanceMetrics.recordNavigation();
+    },
+    onAnswer1: () => {
+      if (currentQuestion) {
+        examState.setAnswer(examState.currentQuestionIndex, 0);
+        performanceMetrics.recordKeystroke();
+        performanceMetrics.recordQuestionAnswer();
+      }
+    },
+    onAnswer2: () => {
+      if (currentQuestion) {
+        examState.setAnswer(examState.currentQuestionIndex, 1);
+        performanceMetrics.recordKeystroke();
+        performanceMetrics.recordQuestionAnswer();
+      }
+    },
+    onAnswer3: () => {
+      if (currentQuestion) {
+        examState.setAnswer(examState.currentQuestionIndex, 2);
+        performanceMetrics.recordKeystroke();
+        performanceMetrics.recordQuestionAnswer();
+      }
+    },
+    onAnswer4: () => {
+      if (currentQuestion) {
+        examState.setAnswer(examState.currentQuestionIndex, 3);
+        performanceMetrics.recordKeystroke();
+        performanceMetrics.recordQuestionAnswer();
+      }
+    },
     isSubmitted: examState.isSubmitted,
   });
 
@@ -179,6 +218,13 @@ export const ExamContainer: React.FC = () => {
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-100">
         
+        {/* Offline/Online Indicator */}
+        <OfflineIndicator
+          isOnline={offlineState.isOnline}
+          pendingSyncCount={offlineState.pendingSyncCount}
+          onForcSync={offlineState.forceSyncPendingData}
+        />
+        
         {/* Header with Exam Info */}
         <div className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -261,6 +307,7 @@ export const ExamContainer: React.FC = () => {
                 isSubmitted={examState.isSubmitted}
                 onSubmit={examState.submitExam}
                 onSuspend={examState.suspendExam}
+                onReset={examState.isSubmitted ? examState.resetExam : undefined}
                 timeSpent={timer.timeSpent}
                 onGenerateFeedback={() => feedbackState.generateFeedback(examId!)}
                 isFeedbackLoading={feedbackState.isLoading}
@@ -279,7 +326,7 @@ export const ExamContainer: React.FC = () => {
                 answeredQuestions={answeredCount}
               />
 
-              {/* Current Question */}
+              {/* Current Question with Integrated Navigation */}
               <ExamQuestionCard
                 question={currentQuestion}
                 questionIndex={examState.currentQuestionIndex}
@@ -297,17 +344,10 @@ export const ExamContainer: React.FC = () => {
                   examState.setAnswer(examState.currentQuestionIndex, answerIndex)
                 }
                 onTogglePin={() => examState.togglePin(examState.currentQuestionIndex)}
-              />
-
-              {/* Navigation Panel */}
-              <ExamNavigationPanel
+                onPrevious={navigation.canGoPrevious ? navigation.goToPrevious : undefined}
+                onNext={navigation.canGoNext ? navigation.goToNext : undefined}
                 canGoPrevious={navigation.canGoPrevious}
                 canGoNext={navigation.canGoNext}
-                onPrevious={navigation.goToPrevious}
-                onNext={navigation.goToNext}
-                isSubmitted={examState.isSubmitted}
-                currentIndex={examState.currentQuestionIndex}
-                totalQuestions={examState.exam.datos.length}
               />
 
               {/* All Questions Overview */}
@@ -329,6 +369,12 @@ export const ExamContainer: React.FC = () => {
             </div>
           </div>
         </main>
+
+        {/* Performance Dashboard (Development Only) */}
+        <PerformanceDashboard
+          metrics={performanceMetrics}
+          onExportReport={performanceMetrics.getMetricsReport}
+        />
       </div>
     </ErrorBoundary>
   );
