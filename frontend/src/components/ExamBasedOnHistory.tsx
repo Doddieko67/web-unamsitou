@@ -3,7 +3,7 @@ import { ExamButton } from "./ExamButton";
 import { Personalization } from "./Main/Personalization";
 import { QuestionConf } from "./Main/QuestionConf";
 import { useNavigate } from "react-router";
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { TimerConf } from "./TimerConf";
 import { PreviewableRecentExamCard } from "./Main/PreviewableExamRecents";
 import { supabase } from "../supabase.config";
@@ -11,9 +11,9 @@ import { ExamenData } from "./Main/interfacesExam";
 import { url_backend } from "../url_backend";
 
 export function ExamBasedOnHistory() {
-  const { session } = UserAuth();
+  const { session } = useAuthStore();
   const navigate = useNavigate();
-  const { user } = UserAuth(); // Obtener el usuario
+  const { user } = useAuthStore(); // Obtener el usuario
 
   // --- Estados para la generación del examen ---
   // Estado para los IDs de exámenes SELECCIONADOS para generar el nuevo examen
@@ -82,7 +82,7 @@ export function ExamBasedOnHistory() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            authorization: `Bearer ${session && session.access_token}`,
+            authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
             prompt: promptText,

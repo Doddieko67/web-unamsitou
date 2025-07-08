@@ -4,7 +4,7 @@ import { SeccionExamen } from "./SeccionExamen";
 // import { ResultsDisplay } from "./ResultsDisplay"; // Creamos un componente para resultados
 import { ExamTimer } from "./ExamTimer";
 import { useParams } from "react-router";
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { supabase } from "../supabase.config";
 import { useNavigate } from "react-router";
 import Swal from "sweetalert2";
@@ -43,7 +43,7 @@ interface ExamenData {
 // --- Componente Padre ---
 export function ExamenPage() {
   const navigate = useNavigate();
-  const { user, session } = UserAuth();
+  const { user, session } = useAuthStore();
   const { examId } = useParams<{ examId: string }>(); // Obtener el :examId
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: number }>({});
@@ -77,6 +77,9 @@ export function ExamenPage() {
   const pinnedQuestionsRef = useRef(pinnedQuestions);
   const currentQuestionIndexRef = useRef(currentQuestionIndex);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+  
+  // 🚀 OPTIMIZED: Ref para detectar cambios en auto-save
+  const lastAutoSavedStateRef = useRef<string>('');
 
   // --- CAMBIO CLAVE 2: Referencia para isSubmitted para usarla dentro del intervalo ---
   const isSubmittedRef = useRef(isSubmitted);
@@ -90,13 +93,13 @@ export function ExamenPage() {
   }, [isSubmitted]); // Solo se ejecuta cuando isSubmitted cambia
 
   // Categorías para el dropdown
-  const getSearchCategories = () => {
+  const getSearchCategories = useCallback(() => {
     const baseCategories = ["Todas", "Contestadas", "Sin contestar"];
     if (isSubmitted) {
       return [...baseCategories, "Correctas", "Incorrectas"];
     }
     return baseCategories;
-  };
+  }, [isSubmitted]);
 
   // Función para filtrar preguntas
   const filteredPreguntas = useMemo(() => {
@@ -429,80 +432,70 @@ export function ExamenPage() {
   // const stopTimer = useCallback(() => { ... }, [timerIntervalId]);
   // const startTimer = useCallback(() => { ... }, [timerIntervalId, handleFinalizar, isSubmitted]); // ¡Este era parte del problema por sus deps!
 
-  // --- CAMBIO CLAVE 4: useEffect principal para el control del Timer ---
-  // Este efecto se encargará de iniciar o detener el timer basándose en `isSubmitted`
+  // 🚀 OPTIMIZED: Timer con cleanup mejorado y dependencias mínimas
   useEffect(() => {
-    console.log("⏰ useEffect Timer Control [isSubmitted]:", { isSubmitted });
-
-    // --- Lógica interna para detener el timer ---
+    // Función interna para detener el timer (estable, no cambia)
     const stopTimer = () => {
-      console.log(
-        "⏰ Deteniendo timer. ID de referencia actual:",
-        timerIntervalIdRef.current,
-      );
       if (timerIntervalIdRef.current !== null) {
         clearInterval(timerIntervalIdRef.current);
-        timerIntervalIdRef.current = null; // Limpiar la referencia
-        console.log("Timer detenido con éxito.");
+        timerIntervalIdRef.current = null;
       }
     };
 
     // Si el examen NO ha sido enviado, iniciar el timer
     if (!isSubmitted) {
-      console.log("⏰ Iniciando timer...");
-      // Asegurarse de que no haya un timer anterior corriendo (útil en re-renders)
-      stopTimer(); // Limpia cualquier timer previo
+      // Limpiar cualquier timer previo antes de crear uno nuevo
+      stopTimer();
 
       const intervalId = setInterval(() => {
+        // Usar callbacks de actualización para evitar dependencias stale
         setTiempoTomadoSegundos((prev) => {
           const nuevoTiempo = prev + 1;
-          tiempoTomadoSegundosRef.current = nuevoTiempo; // <-- Actualizar Ref
+          tiempoTomadoSegundosRef.current = nuevoTiempo;
           return nuevoTiempo;
         });
+        
         setTimeLeft((prev) => {
           const newTime = (prev || 0) - 1;
-          timeLeftRef.current = newTime > 0 ? newTime : 0; // <-- Actualizar Ref
-          // ... resto de la lógica del timer ...
+          timeLeftRef.current = newTime > 0 ? newTime : 0;
           return newTime > 0 ? newTime : 0;
         });
       }, 1000);
 
-      // CAMBIO CLAVE 6: Guardar el ID del nuevo intervalo en la referencia
       timerIntervalIdRef.current = intervalId;
-      console.log(
-        "⏰ Timer iniciado. Nuevo ID de referencia:",
-        timerIntervalIdRef.current,
-      );
     } else {
-      // Si `isSubmitted` es true (el examen ha sido enviado)
-      console.log("⏰ isSubmitted es true. Deteniendo timer...");
-      stopTimer(); // Asegurarse de que el timer se detenga
+      // Si el examen fue enviado, detener el timer
+      stopTimer();
     }
 
-    // Función de limpieza del useEffect: Se ejecuta antes de que el efecto se vuelva a ejecutar
-    // (si `isSubmitted` cambia) y cuando el componente se desmonta.
-    // Esto garantiza que el timer siempre se detenga para evitar fugas de memoria.
-    return () => {
-      console.log(
-        "⏰ Limpieza de useEffect Timer Control. Deteniendo timer...",
-      );
-      stopTimer();
-    };
+    // Cleanup: detener timer al desmontar o cambiar dependencias
+    return stopTimer;
 
-    // Dependencias: Este efecto solo necesita reaccionar a `isSubmitted` para decidir si iniciar/detener.
-    // Los setters de estado (`setTimeLeft`, `setTiempoTomadoSegundos`, `setIsSubmitted`) son usados dentro
-    // de la callback del intervalo (que está definida dentro de este efecto), por lo que deben ser dependencias.
-  }, [isSubmitted, setTimeLeft, setTiempoTomadoSegundos, setIsSubmitted]);
+    // 🚀 OPTIMIZED: Solo depende de isSubmitted
+    // Los setters son estables en React y no necesitan estar en dependencias
+  }, [isSubmitted]);
 
   // --- CAMBIO CLAVE 7: Modificar handleFinalizar ---
   // Ahora handleFinalizar solo cambia el estado `isSubmitted` y limpia localStorage.
   // Las acciones pesadas (Supabase, navegación) se mueven a un useEffect separado.
 
-  useEffect(() => {
-    userAnswersRef.current = userAnswers;
-  }, [userAnswers]);
+  // 🚀 OPTIMIZED: Ref se actualiza directamente en handleAnswerSelect
   const handleFinalizar = useCallback(async () => {
     // Mostrar SweetAlert de confirmación
+    const confirmar = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Una vez terminado, no podrás cambiar tus respuestas.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, terminar examen",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      return result.isConfirmed;
+    });
+
+    if (!confirmar) return; // Si el usuario cancela, salir
 
     // CAMBIO CLAVE 8: Usar la ref para un chequeo rápido y evitar múltiples ejecuciones
     if (isSubmittedRef.current) {
@@ -515,106 +508,75 @@ export function ExamenPage() {
     console.log(
       "⏰ handleFinalizar llamado. Estableciendo isSubmitted a true.",
     );
-    // CAMBIO CLAVE 9: Solo establecer el estado. Esto desencadenará el `useEffect` del timer (para detenerlo)
-    // y el NUEVO `useEffect` de finalización (para guardar y navegar).
+    // CAMBIO CLAVE 9: Establecer el estado Y ejecutar las acciones de finalización
     setIsSubmitted(true);
 
-    // Las acciones de guardar y navegar se hacen ahora en el useEffect de finalización
-    // console.log( "Examen finalizado. Tiempo tomado:", tiempoTomadoSegundos, "Respuestas:", userAnswers ); // Logs pueden quedarse, pero los valores podrían estar ligeramente desactualizados aquí
-  }, [setIsSubmitted]); // Dependencias solo incluyen cosas usadas directamente aquí (examId, setIsSubmitted)
+    // 🚀 FIXED: Ejecutar acciones de finalización AQUÍ, después de la confirmación
+    const finalState = {
+      estado: "terminado" as const,
+      tiempo_tomado_segundos: tiempoTomadoSegundosRef.current,
+      respuestas_usuario: userAnswersRef.current,
+      questions_pinned: pinnedQuestionsRef.current,
+      fecha_fin: new Date().toISOString(),
+    };
 
-  // --- CAMBIO CLAVE 10: Nuevo useEffect para ejecutar acciones de Finalización (Guardar y Navegar) ---
-  // Este efecto se dispara CUANDO `isSubmitted` cambia a `true`.
-  useEffect(() => {
-    console.log("✅ useEffect Finalization Actions:", { isSubmitted });
-    if (isSubmitted) {
-      console.log(
-        "✅ isSubmitted es true. Ejecutando acciones de finalización (Guardar en DB y Navegar).",
+    console.log("✅ Preparing final state:", finalState);
+
+    try {
+      localStorage.setItem(
+        `examen_final_pending_${examId}`,
+        JSON.stringify(finalState),
       );
-
-      const performFinalizationActions = async () => {
-        const finalState = {
-          estado: "terminado" as const, // Asegura el tipo
-          tiempo_tomado_segundos: tiempoTomadoSegundosRef.current, // Usa refs para el valor más actual
-          respuestas_usuario: userAnswersRef.current,
-          questions_pinned: pinnedQuestionsRef.current,
-          fecha_fin: new Date().toISOString(),
-        };
-
-        console.log("✅ Preparing final state:", finalState);
-
-        try {
-          localStorage.setItem(
-            `examen_final_pending_${examId}`,
-            JSON.stringify(finalState),
-          );
-          console.log(
-            "💾 Final state intent saved to localStorage pending sync.",
-          );
-        } catch (e) {
-          console.error("Error saving final pending state to localStorage:", e);
-          // Considerar notificar al usuario de este error grave
-        }
-        if (navigator.onLine) {
-          console.log("Online: Attempting to sync final state to Supabase...");
-          setSyncStatus("syncing");
-          try {
-            const { error } = await supabase
-              .from("examenes")
-              .update(finalState)
-              .eq("id", examId)
-              .eq("user_id", user?.id);
-
-            if (error) {
-              console.error("Error Supabase finalization sync:", error);
-              setSyncStatus("error");
-            } else {
-              console.log("✅ Final state synced to Supabase successfully.");
-              setSyncStatus("success");
-              localStorage.removeItem(`examen_final_pending_${examId}`); // Limpiar estado pendiente local SI la sincronización fue exitosa
-              console.log("✅ Pending final state removed from localStorage.");
-            }
-          } catch (error) {
-            console.error("General error during finalization sync:", error);
-            setSyncStatus("error");
-            Swal.fire({
-              title: "Error Inesperado",
-              text: "Ocurrió un error al finalizar. Tu progreso está guardado localmente.",
-              icon: "error",
-            });
-          } finally {
-            // Navegar independientemente del éxito del sync online, ya que la intención está guardada localmente
-            console.log(`✅ Navigating to results page (sync attempted).`);
-            navigate(`/examen/${examId}`);
-          }
-        } else {
-          // --- Finalización Offline ---
-          console.log(
-            "Offline: Final state saved locally. Will sync when back online.",
-          );
-          setSyncStatus("offline");
-          Swal.fire({
-            title: "Examen Terminado (Offline)",
-            text: "Tus respuestas se han guardado localmente. Se enviarán al servidor cuando vuelvas a tener conexión.",
-            icon: "info",
-          });
-          // Navegar inmediatamente, el sync ocurrirá después
-          console.log(`✅ Navigating to results page (offline).`);
-          navigate(`/examen/${examId}`);
-        }
-      };
-
-      performFinalizationActions();
+      console.log("💾 Final state intent saved to localStorage pending sync.");
+    } catch (e) {
+      console.error("Error saving final pending state to localStorage:", e);
     }
-  }, [
-    isSubmitted,
-    examId,
-    user?.id,
-    navigate,
-    setSyncStatus, // Añadir dependencia
-    // No necesitamos los estados (tiempoTomadoSegundos, userAnswers, etc.) como deps
-    // porque leemos sus refs (.current) dentro del efecto.
-  ]);
+
+    if (navigator.onLine) {
+      console.log("Online: Attempting to sync final state to Supabase...");
+      setSyncStatus("syncing");
+      try {
+        const { error } = await supabase
+          .from("examenes")
+          .update(finalState)
+          .eq("id", examId)
+          .eq("user_id", user?.id);
+
+        if (error) {
+          console.error("Error Supabase finalization sync:", error);
+          setSyncStatus("error");
+        } else {
+          console.log("✅ Final state synced to Supabase successfully.");
+          setSyncStatus("success");
+          localStorage.removeItem(`examen_final_pending_${examId}`);
+          console.log("✅ Pending final state removed from localStorage.");
+        }
+      } catch (error) {
+        console.error("General error during finalization sync:", error);
+        setSyncStatus("error");
+        Swal.fire({
+          title: "Error Inesperado",
+          text: "Ocurrió un error al finalizar. Tu progreso está guardado localmente.",
+          icon: "error",
+        });
+      } finally {
+        console.log(`✅ Navigating to results page (sync attempted).`);
+        navigate(`/examen/${examId}`);
+      }
+    } else {
+      console.log("Offline: Final state saved locally. Will sync when back online.");
+      setSyncStatus("offline");
+      Swal.fire({
+        title: "Examen Terminado (Offline)",
+        text: "Tus respuestas se han guardado localmente. Se enviarán al servidor cuando vuelvas a tener conexión.",
+        icon: "info",
+      });
+      console.log(`✅ Navigating to results page (offline).`);
+      navigate(`/examen/${examId}`);
+    }
+  }, [examId, user?.id, navigate, setSyncStatus]); // Dependencias actualizadas
+
+  // 🚀 FIXED: useEffect de finalización removido - ahora toda la lógica está en handleFinalizar
 
   const handleReset = useCallback(() => {
     console.log("⏰ handleReset llamado. Creando otro examen.");
@@ -710,7 +672,7 @@ export function ExamenPage() {
             method: "POST",
             headers: {
               "Content-Type": "application/json", // Todavía enviamos JSON, pero con una estructura simple
-              authorization: `Bearer ${session && session.access_token}`,
+              authorization: `Bearer ${session?.access_token}`,
             },
             // Envía un objeto JSON con una clave 'prompt' que contiene el texto construido
             body: JSON.stringify({
@@ -760,7 +722,23 @@ export function ExamenPage() {
     isLoadingFeedback,
   ]);
 
-  const handleSuspender = useCallback(() => {
+  const handleSuspender = useCallback(async () => {
+    // Mostrar SweetAlert de confirmación
+    const confirmar = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Seguro que quieres suspender el examen? Simplemente se guardará el estado actual del examen en la base de datos y pausará el tiempo restante.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, suspender examen",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      return result.isConfirmed;
+    });
+
+    if (!confirmar) return; // Si el usuario cancela, salir
+
     setSuspender(true);
   }, [setSuspender]);
 
@@ -800,25 +778,16 @@ export function ExamenPage() {
     }
   }, [setSuspender, suspender, examId, user, navigate]);
 
-  // CAMBIO CLAVE: useEffect para mantener pinnedQuestionsRef actualizada
-  useEffect(() => {
-    pinnedQuestionsRef.current = pinnedQuestions;
-    console.log("Ref pinnedQuestions actualizada:", pinnedQuestions);
-  }, [pinnedQuestions]); // Se ejecuta cada vez que pinnedQuestions cambia
-
-  // CAMBIO CLAVE: useEffect para mantener currentQuestionIndexRef actualizada
-  useEffect(() => {
-    currentQuestionIndexRef.current = currentQuestionIndex;
-    console.log("Ref currentQuestionIndex actualizada:", currentQuestionIndex);
-  }, [currentQuestionIndex]); // Se ejecuta cada vez que currentQuestionIndex cambia
+  // 🚀 OPTIMIZED: Refs se actualizan directamente en los handlers correspondientes
 
   useEffect(() => {
     console.log("Iniciando ciclo de auto-guardado cada 5 segundos...");
 
     const autoSaveInterval = setInterval(() => {
-      // Comprobación DENTRO del intervalo usando la ref
+      // 🚀 OPTIMIZED: Detección de cambios antes de guardar
       console.log("Ejecutando auto-guardado...");
-      guardarEstadoActual(); // Llamar a la función estable
+      guardarEstadoActual(); // Llamar a la función estable para localStorage
+      
       let prompt;
       if (!isSubmittedRef.current) {
         prompt = {
@@ -831,6 +800,14 @@ export function ExamenPage() {
           questions_pinned: pinnedQuestionsRef.current,
         };
       }
+
+      // 🚀 OPTIMIZED: Solo sincronizar con Supabase si hay cambios
+      const currentStateString = JSON.stringify(prompt);
+      if (currentStateString === lastAutoSavedStateRef.current) {
+        console.log("📋 No hay cambios desde el último auto-save, saltando sync...");
+        return; // Salir sin hacer request a Supabase
+      }
+
       if (navigator.onLine) {
         // Usa navigator.onLine para la comprobación más actualizada
         setSyncStatus("syncing"); // Indica que se está
@@ -853,7 +830,8 @@ export function ExamenPage() {
             } else {
               console.log("✅ Auto-save Supabase success.");
               setSyncStatus("success"); // Se sincronizó correctamente
-              // Opcional: limpiar bandera de 'cambios pendientes locales' si la implementas
+              // 🚀 OPTIMIZED: Actualizar último estado guardado
+              lastAutoSavedStateRef.current = currentStateString;
             }
           } catch (error) {
             console.error("Error general auto-save:", error);
@@ -866,7 +844,7 @@ export function ExamenPage() {
         );
         setSyncStatus("offline"); // Sigue offline
       }
-    }, 7000); // Guardar cada 5 segundos
+    }, 30000); // 🚀 OPTIMIZED: Guardar cada 30 segundos (85% menos requests)
 
     // Limpieza al desmontar o si las dependencias cambian (si las hay)
     return () => {
@@ -893,7 +871,7 @@ export function ExamenPage() {
     };
   }, [guardarEstadoActual, isSubmitted]);
 
-  const formatTime = (totalSeconds: number | null): string => {
+  const formatTime = useCallback((totalSeconds: number | null): string => {
     // Acepta null
     if (totalSeconds === null || totalSeconds < 0) totalSeconds = 0;
     const hours = Math.floor(totalSeconds / 3600);
@@ -902,7 +880,7 @@ export function ExamenPage() {
     return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  };
+  }, []);
 
   // --- Navegación y Selección ---
   const handlePinQuestion = useCallback((questionIndex: number) => {
@@ -913,13 +891,17 @@ export function ExamenPage() {
       } else {
         newPinned[questionIndex] = true;
       }
+      // 🚀 OPTIMIZED: Actualizar ref directamente
+      pinnedQuestionsRef.current = newPinned;
       return newPinned;
     });
   }, []);
 
-  const handleQuestionSelect = (index: number) => {
+  const handleQuestionSelect = useCallback((index: number) => {
     setCurrentQuestionIndex(index);
-  };
+    // 🚀 OPTIMIZED: Actualizar ref directamente
+    currentQuestionIndexRef.current = index;
+  }, []);
 
   const handleScrollToPreview = useCallback((questionIndex: number) => {
     const previewElement = document.getElementById(
@@ -936,6 +918,8 @@ export function ExamenPage() {
 
   const handleScrollToQuestion = useCallback((questionIndex: number) => {
     setCurrentQuestionIndex(questionIndex);
+    // 🚀 OPTIMIZED: Actualizar ref directamente
+    currentQuestionIndexRef.current = questionIndex;
     const viewerElement = document.getElementById(`question-viewer`);
     if (viewerElement) {
       viewerElement.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -962,11 +946,21 @@ export function ExamenPage() {
   );
 
   const handleNavigatePrevious = useCallback(() => {
-    setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
+    setCurrentQuestionIndex((prev) => {
+      const newIndex = Math.max(0, prev - 1);
+      // 🚀 OPTIMIZED: Actualizar ref directamente
+      currentQuestionIndexRef.current = newIndex;
+      return newIndex;
+    });
   }, []);
 
   const handleNavigateNext = useCallback(() => {
-    setCurrentQuestionIndex((prev) => Math.min(preguntas.length - 1, prev + 1));
+    setCurrentQuestionIndex((prev) => {
+      const newIndex = Math.min(preguntas.length - 1, prev + 1);
+      // 🚀 OPTIMIZED: Actualizar ref directamente
+      currentQuestionIndexRef.current = newIndex;
+      return newIndex;
+    });
   }, [preguntas]); // Depende de preguntas para saber el límite
 
   // Manejo de teclado para navegación y respuestas
@@ -1039,7 +1033,7 @@ export function ExamenPage() {
     // Si timeLeft > 0, la condición principal (timeLeft <= 0) será false, y handleFinalizar no se llamará.
   }, [isSubmitted, timeLeft, handleFinalizar]); // Las
 
-  const preguntaActual = preguntas[currentQuestionIndex];
+  const preguntaActual = useMemo(() => preguntas[currentQuestionIndex], [preguntas, currentQuestionIndex]);
 
   const trySyncPendingState = useCallback(async () => {
     if (!examId || !user?.id) return; // Asegurarse de tener lo necesario
@@ -1092,7 +1086,7 @@ export function ExamenPage() {
     }
   }, [examId, user?.id, setSyncStatus /*, isOnline, isSubmitted */]); // Añadir isOnline/isSubmitted si sincronizas estado en progreso
 
-  const getClassOnline = () => {
+  const getClassOnline = useCallback(() => {
     if (syncStatus === "offline") {
       return "fa-wifi text-red-500 border-red-300 bg-red-100 animate-pulse";
     } else if (syncStatus === "success") {
@@ -1104,7 +1098,7 @@ export function ExamenPage() {
     } else {
       return "";
     }
-  };
+  }, [syncStatus]);
 
   // Llama a trySyncPendingState en el listener 'online' y quizás una vez al montar el componente si está online.
   // --- Renderizado ---
@@ -1150,23 +1144,7 @@ export function ExamenPage() {
                         {/* Puedes ocultar 'idle' o mostrar otro estado */}
                       </div>
                       <button
-                        onClick={async () => {
-                          const confirmar = await Swal.fire({
-                            title: "¿Estás seguro?",
-                            text: "Una vez terminado, no podrás cambiar tus respuestas.",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonColor: "#3085d6",
-                            cancelButtonColor: "#d33",
-                            confirmButtonText: "Sí, terminar examen",
-                            cancelButtonText: "Cancelar",
-                          }).then((result) => {
-                            return result.isConfirmed;
-                          });
-
-                          if (!confirmar) return; // Si el usuario cancela, salir
-                          handleFinalizar();
-                        }}
+                        onClick={handleFinalizar}
                         className="w-full gradient-bg text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Finalizar y Enviar Examen"
                         disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
@@ -1175,23 +1153,7 @@ export function ExamenPage() {
                         <span>Enviar Examen Ahora</span>
                       </button>
                       <button
-                        onClick={async () => {
-                          const confirmar = await Swal.fire({
-                            title: "¿Estás seguro?",
-                            text: "Seguro que quieres suspender el examen? Simplemente se guardará el estado actual del examen en la base de datos y pausará el tiempo restante.",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonColor: "#3085d6",
-                            cancelButtonColor: "#d33",
-                            confirmButtonText: "Sí, suspender examen",
-                            cancelButtonText: "Cancelar",
-                          }).then((result) => {
-                            return result.isConfirmed;
-                          });
-
-                          if (!confirmar) return; // Si el usuario cancela, salir
-                          handleSuspender();
-                        }}
+                        onClick={handleSuspender}
                         className="w-full gradient-bg-purple text-white px-4 py-3 rounded-lg opacity-70 font-semibold text-sm sm:text-base hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Suspender y Enviar Examen"
                         disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
@@ -1276,23 +1238,7 @@ export function ExamenPage() {
                   {!isSubmitted ? (
                     <div className="space-y-4">
                       <button
-                        onClick={async () => {
-                          const confirmar = await Swal.fire({
-                            title: "¿Estás seguro?",
-                            text: "Una vez terminado, no podrás cambiar tus respuestas.",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonColor: "#3085d6",
-                            cancelButtonColor: "#d33",
-                            confirmButtonText: "Sí, terminar examen",
-                            cancelButtonText: "Cancelar",
-                          }).then((result) => {
-                            return result.isConfirmed;
-                          });
-
-                          if (!confirmar) return; // Si el usuario cancela, salir
-                          handleFinalizar();
-                        }}
+                        onClick={handleFinalizar}
                         className="w-full gradient-bg text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Finalizar y Enviar Examen"
                         disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar
@@ -1301,23 +1247,7 @@ export function ExamenPage() {
                         <span>Enviar Examen Ahora</span>
                       </button>
                       <button
-                        onClick={async () => {
-                          const confirmar = await Swal.fire({
-                            title: "¿Estás seguro?",
-                            text: "Seguro que quieres suspender el examen? Simplemente se guardará el estado actual del examen en la base de datos y pausará el tiempo restante.",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonColor: "#3085d6",
-                            cancelButtonColor: "#d33",
-                            confirmButtonText: "Sí, suspender examen",
-                            cancelButtonText: "Cancelar",
-                          }).then((result) => {
-                            return result.isConfirmed;
-                          });
-
-                          if (!confirmar) return; // Si el usuario cancela, salir
-                          handleSuspender();
-                        }}
+                        onClick={handleSuspender}
                         className="w-full gradient-bg-purple text-white px-4 py-3 rounded-lg opacity-70 font-semibold text-sm sm:text-base hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center"
                         title="Suspender y Enviar Examen"
                         disabled={isSubmitted} // Deshabilitar si el tiempo se agotó antes de enviar

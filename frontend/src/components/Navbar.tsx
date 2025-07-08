@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react"; // Import useState
-import { Link } from "react-router"; // Use react-router-dom for web (if applicable) - NavLink is from here too
-import { NavLink } from "react-router"; // Use react-router-dom for web
-import { UserAuth } from "../context/AuthContext";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink } from "react-router";
+import { useAuthStore } from "../stores/authStore";
 
 const Data = [
   {
@@ -15,7 +14,7 @@ const Data = [
 ];
 
 export function NavBar() {
-  const { user, signOut, signInWithGoogle } = UserAuth();
+  const { user, signOut } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile menu
   const [isDesktopDropdownOpen, setIsDesktopDropdownOpen] = useState(false); // State for desktop profile dropdown
 
@@ -79,15 +78,15 @@ export function NavBar() {
     }
   };
 
-  // Assuming signInWithGoogle might change the user or is used for changing sessions
-  const handleChangeSession = async () => {
+  // Redirect to login for session change
+  const handleChangeSession = () => {
     try {
-      await signInWithGoogle(); // Or whatever your signInWithGoogle does
+      signOut(); // Sign out current user
       closeMobileMenu(); // Close mobile menu
       closeDesktopDropdown(); // Close desktop dropdown
+      // La redirección al login se manejará automáticamente por el auth store
     } catch (error) {
-      console.error("Error during sign in/change session:", error);
-      // Handle error
+      console.error("Error during sign out:", error);
       closeMobileMenu();
       closeDesktopDropdown();
     }
@@ -156,7 +155,7 @@ export function NavBar() {
                         {/* For screen readers */}
                         <img
                           className="h-8 w-8 rounded-full"
-                          src={user?.user_metadata.picture}
+                          src={user?.user_metadata?.picture || '/default-avatar.svg'}
                           alt="User profile"
                         />
                       </button>
@@ -171,7 +170,7 @@ export function NavBar() {
                       >
                         {/* User Info (Optional) */}
                         <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-                          {user?.user_metadata.name || user?.email || "User"}
+                          {user?.user_metadata?.name || user?.email || "User"}
                         </div>
 
                         <a
@@ -279,15 +278,15 @@ export function NavBar() {
               ))}
 
               {/* Mobile User Info & Auth Actions */}
-              {user?.user_metadata.picture && ( // Show profile picture if available
+              {user && ( // Show profile picture if user exists
                 <div className="flex items-center px-3 py-2 space-x-3">
                   <img
                     className="h-8 w-8 rounded-full"
-                    src={user.user_metadata.picture}
+                    src={user.user_metadata?.picture || '/default-avatar.svg'}
                     alt="User profile"
                   />
                   <span className="text-sm font-medium text-white">
-                    {user.user_metadata.name || user.email}
+                    {user.user_metadata?.name || user.email}
                   </span>{" "}
                   {/* Show user name or email */}
                 </div>

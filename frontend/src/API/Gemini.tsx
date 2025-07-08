@@ -1,8 +1,8 @@
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { url_backend } from "../url_backend";
 
 export async function handleGenerate(input: string) {
-  const { session } = UserAuth();
+  const { session } = useAuthStore();
   try {
     const token = session?.access_token;
     // Llama a TU backend, no directamente a Google
@@ -11,7 +11,7 @@ export async function handleGenerate(input: string) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer: ${token}`,
+        authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ prompt: input }), // Envía el input como 'prompt'
     });
