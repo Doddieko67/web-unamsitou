@@ -48,10 +48,10 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
   };
 
   return (
-    <div className={`p-4 rounded-2xl bg-gradient-to-br ${getTimerGradient()} border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300`}>
+    <div className={`p-4 rounded-2xl bg-gradient-to-br ${getTimerGradient()} transition-all duration-300`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <div className={`w-8 h-8 rounded-full bg-gray-50 border border-gray-200 shadow-md flex items-center justify-center`}>
+          <div className={`w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center`}>
             <i className={`fas fa-stopwatch ${getIconColor()} text-sm`}></i>
           </div>
           <h3 className="text-sm font-bold text-gray-800">
@@ -96,7 +96,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
         </div>
 
         {/* Time Spent - Secondary Display */}
-        <div className="flex justify-between items-center bg-gray-50 bg-opacity-90 border border-gray-200 rounded-lg px-3 py-2">
+        <div className="flex justify-between items-center bg-gray-50 bg-opacity-90 rounded-lg px-3 py-2">
           <span className="text-xs font-medium text-gray-600 flex items-center">
             <i className="fas fa-hourglass-half mr-1 text-gray-500"></i>
             Transcurrido
@@ -107,7 +107,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
         </div>
 
         {/* Status indicator with emoji */}
-        <div className="flex items-center justify-center space-x-2 bg-gray-50 bg-opacity-90 border border-gray-200 rounded-lg px-3 py-1">
+        <div className="flex items-center justify-center space-x-2 bg-gray-50 bg-opacity-90 rounded-lg px-3 py-1">
           <span className="text-sm">
             {isSubmitted
               ? '🏁'
@@ -126,7 +126,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
 
         {/* Warning for low time - Fun style */}
         {timeLeft !== undefined && timeLeft <= 300 && !isSubmitted && (
-          <div className="mt-3 p-2 bg-gradient-to-r from-red-200 to-red-300 border border-red-300 rounded-lg animate-pulse">
+          <div className="mt-3 p-2 bg-gradient-to-r from-red-200 to-red-300 rounded-lg animate-pulse">
             <div className="flex items-center justify-center text-red-800">
               <span className="text-sm font-bold animate-bounce">
                 🚨 ¡Solo {Math.floor(timeLeft / 60)} minutos! 🚨
