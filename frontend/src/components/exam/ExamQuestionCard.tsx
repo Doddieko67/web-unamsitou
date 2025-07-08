@@ -98,25 +98,25 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
       {/* Question Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-3">
+          <div className="flex items-center space-x-4 mb-3">
             <button
               onClick={onScrollToOverview}
-              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer"
+              className="inline-flex items-center px-4 py-2 rounded-full text-base font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer"
               title="Ver en Vista General de Preguntas"
             >
-              <i className="fas fa-external-link-alt mr-2 text-xs"></i>
+              <i className="fas fa-external-link-alt mr-2 text-sm"></i>
               Pregunta {questionIndex + 1} de {totalQuestions}
             </button>
             <button
               onClick={onTogglePin}
-              className={`p-1 rounded-full transition-colors ${
+              className={`p-2 rounded-full transition-colors ${
                 isPinned
                   ? 'text-yellow-500 hover:text-yellow-600'
                   : 'text-gray-400 hover:text-gray-600'
               }`}
               title={isPinned ? 'Desfijar pregunta' : 'Fijar pregunta'}
             >
-              <i className={isPinned ? 'fas fa-star' : 'far fa-star'}></i>
+              <i className={`${isPinned ? 'fas fa-star' : 'far fa-star'} text-xl`}></i>
             </button>
           </div>
         </div>
