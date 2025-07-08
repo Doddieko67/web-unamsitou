@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -33,6 +33,10 @@ export const ExamContainer: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+
+  // Refs for scrolling
+  const overviewRef = useRef<HTMLDivElement>(null);
+  const currentQuestionRef = useRef<HTMLDivElement>(null);
 
   // Initialize exam state
   const examState = useExamState(examId!);
@@ -95,6 +99,34 @@ export const ExamContainer: React.FC = () => {
   const answeredCount = useMemo(() => {
     return Object.keys(examState.userAnswers).length;
   }, [examState.userAnswers]);
+
+  // Scroll to overview function
+  const scrollToOverview = useCallback(() => {
+    overviewRef.current?.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start' 
+    });
+    
+    // Highlight the current question card briefly
+    setTimeout(() => {
+      const currentCard = overviewRef.current?.querySelector(`[data-question-index="${examState.currentQuestionIndex}"]`);
+      if (currentCard) {
+        currentCard.classList.add('ring-4', 'ring-blue-400');
+        setTimeout(() => {
+          currentCard.classList.remove('ring-4', 'ring-blue-400');
+        }, 2000);
+      }
+    }, 500);
+  }, [examState.currentQuestionIndex]);
+
+  // Navigate to question and scroll to main area
+  const navigateToQuestionAndScroll = useCallback((index: number) => {
+    examState.navigateToQuestion(index);
+    currentQuestionRef.current?.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start' 
+    });
+  }, [examState.navigateToQuestion]);
 
   // Keyboard navigation with performance tracking
   useKeyboardNavigation({
@@ -307,7 +339,7 @@ export const ExamContainer: React.FC = () => {
             </div>
 
             {/* Main Content - Optimized for Cursor Movement */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3" ref={currentQuestionRef}>
               
               {/* Question Content with Side Navigation */}
               <div className="bg-white rounded-lg">
@@ -353,6 +385,7 @@ export const ExamContainer: React.FC = () => {
                       onNext={undefined} // Handled by side buttons
                       canGoPrevious={navigation.canGoPrevious}
                       canGoNext={navigation.canGoNext}
+                      onScrollToOverview={scrollToOverview}
                     />
                   </div>
 
@@ -379,7 +412,7 @@ export const ExamContainer: React.FC = () => {
           </div>
 
           {/* Questions Overview - Full Width at Bottom */}
-          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+          <div className="mt-8 bg-white rounded-lg shadow-md p-6" ref={overviewRef}>
             <ExamQuestionCards
               questions={examState.exam.datos}
               currentQuestionIndex={examState.currentQuestionIndex}
@@ -390,7 +423,7 @@ export const ExamContainer: React.FC = () => {
                 ...feedbackState.feedback,
               }}
               isSubmitted={examState.isSubmitted}
-              onQuestionSelect={examState.navigateToQuestion}
+              onQuestionSelect={navigateToQuestionAndScroll}
               onTogglePin={examState.togglePin}
             />
           </div>
