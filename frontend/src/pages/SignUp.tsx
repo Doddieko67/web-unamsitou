@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { Link } from "react-router";
 import Swal from "sweetalert2";
 
 export function SignUp() {
-  const { signUpNewUser } = UserAuth();
+  const { signUp } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signUpNewUser(email, password);
+      await signUp(email, password);
       Swal.fire({
         icon: "success",
         title: "Correo enviado",

@@ -1,16 +1,30 @@
-import { Route, Routes } from "react-router";
-import Home from "../pages/home";
-import { Main } from "../pages/Inicio";
-import { Examenes } from "../pages/Examenes";
-import { NotFound } from "../pages/NotFound";
-import { Login } from "../pages/Login";
-import { Contacto } from "../pages/Contacto";
-import { SignUp } from "../pages/SignUp";
-import { ResetPassword } from "../pages/ResetPassword";
-import { UpdatePassword } from "../pages/updatePassword";
-import { Perfil } from "../pages/Perfil";
-import { ExamenPage } from "../Examen/ExamenPage";
-import { useParams } from "react-router";
+import { Route, Routes, useParams } from "react-router";
+import { Suspense, lazy } from "react";
+import { ProtectedRoute } from "../components/ProtectedRoute";
+import { PublicRoute } from "../components/PublicRoute";
+
+// Lazy loading de componentes
+const Home = lazy(() => import("../pages/home"));
+const Main = lazy(() => import("../pages/Inicio").then(module => ({ default: module.Main })));
+const Examenes = lazy(() => import("../pages/Examenes").then(module => ({ default: module.Examenes })));
+const NotFound = lazy(() => import("../pages/NotFound").then(module => ({ default: module.NotFound })));
+const Login = lazy(() => import("../pages/Login").then(module => ({ default: module.Login })));
+const Contacto = lazy(() => import("../pages/Contacto").then(module => ({ default: module.Contacto })));
+const SignUp = lazy(() => import("../pages/SignUp").then(module => ({ default: module.SignUp })));
+const ResetPassword = lazy(() => import("../pages/ResetPassword").then(module => ({ default: module.ResetPassword })));
+const UpdatePassword = lazy(() => import("../pages/updatePassword").then(module => ({ default: module.UpdatePassword })));
+const Perfil = lazy(() => import("../pages/Perfil").then(module => ({ default: module.Perfil })));
+const ExamenPage = lazy(() => import("../Examen/ExamenPage").then(module => ({ default: module.ExamenPage })));
+
+// Componente de loading
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p className="text-gray-600">Cargando página...</p>
+    </div>
+  </div>
+);
 
 function ExamenPageWrapper() {
   const { examId } = useParams();
@@ -22,18 +36,26 @@ function ExamenPageWrapper() {
 
 export function MyRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="*" element={<NotFound></NotFound>} />
-      <Route path="/inicio" element={<Main></Main>} />
-      <Route path="/examen/:examId" element={<ExamenPageWrapper />} />
-      <Route path="/examenes" element={<Examenes />} />
-      <Route path="/mi-perfil" element={<Perfil />}></Route>
-      <Route path="/login" element={<Login />}></Route>
-      <Route path="/signup" element={<SignUp />}></Route>
-      <Route path="/contact" element={<Contacto />}></Route>
-      <Route path="/reset-password" element={<ResetPassword />}></Route>
-      <Route path="/update-password" element={<UpdatePassword />}></Route>
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Rutas públicas - redirigen a /inicio si ya está autenticado */}
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+        <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+        <Route path="/update-password" element={<UpdatePassword />} />
+        <Route path="/contact" element={<Contacto />} />
+        
+        {/* Rutas protegidas - requieren autenticación */}
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/inicio" element={<ProtectedRoute><Main /></ProtectedRoute>} />
+        <Route path="/examen/:examId" element={<ProtectedRoute><ExamenPageWrapper /></ProtectedRoute>} />
+        <Route path="/examenes" element={<ProtectedRoute><Examenes /></ProtectedRoute>} />
+        <Route path="/mi-perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+        
+        
+        {/* Ruta 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }

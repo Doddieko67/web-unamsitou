@@ -1,6 +1,6 @@
 // src/components/ExamRecents.tsx
 import { useCallback, useEffect, useState, useMemo } from "react"; // <-- Añadir useMemo
-import { UserAuth } from "../../context/AuthContext"; // Ensure this path is correct
+import { useAuthStore } from "../../stores/authStore"; // Ensure this path is correct
 import { supabase } from "../../supabase.config"; // Ensure this path is correct
 
 // Importa la interfaz ExamenData (si no está en este archivo)
@@ -19,7 +19,7 @@ import { useNavigate } from "react-router";
 
 // --- React Component ---
 export function ExamRecents() {
-  const { user } = UserAuth();
+  const { user } = useAuthStore();
   const [recentExams, setRecentExams] = useState<ExamenData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

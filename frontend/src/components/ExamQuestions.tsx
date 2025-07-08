@@ -3,7 +3,7 @@ import { ExamButton } from "./ExamButton";
 // Importa el componente de dificultad
 // import { DifficultExam } from "./Main/DifficultExam"; // Asegúrate que la ruta sea correcta
 import { Personalization } from "./Main/Personalization";
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { useNavigate } from "react-router";
 import Swal from "sweetalert2";
 import { TimerConf } from "./TimerConf";
@@ -20,7 +20,7 @@ export function ExamQuestions() {
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const [fineTuning, setFineTuning] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
-  const { session } = UserAuth();
+  const { session } = useAuthStore();
   const [hour, setHour] = useState<number>(3);
   const [minute, setMinute] = useState<number>(0);
   const [second, setSecond] = useState<number>(0);
@@ -129,7 +129,7 @@ export function ExamQuestions() {
       const response = await fetch(`${url_backend}/api/upload_files`, {
         method: "POST",
         headers: {
-          authorization: `Bearer ${session && session.access_token}`,
+          authorization: `Bearer ${session?.access_token}`,
         },
         body: requestBody,
       });

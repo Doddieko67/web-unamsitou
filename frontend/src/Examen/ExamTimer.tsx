@@ -1,6 +1,6 @@
 interface ExamTimerProps {
   timeLeft: number | null;
-  formatTime: (time: number) => string;
+  formatTime: (time: number | null) => string;
   isSubmitted: boolean;
 }
 

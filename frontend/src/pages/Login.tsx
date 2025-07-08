@@ -1,16 +1,16 @@
 import { Link } from "react-router";
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { useState } from "react";
 import Swal from "sweetalert2";
 
 export function Login() {
-  const { signInWithGoogle, signInWithEmail } = UserAuth();
+  const { signIn, signInWithGoogle } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevenir el comportamiento por defecto
     try {
-      await signInWithEmail(email, password);
+      await signIn(email, password);
       // La redirección se maneja en el AuthContext
     } catch (error) {
       Swal.fire({

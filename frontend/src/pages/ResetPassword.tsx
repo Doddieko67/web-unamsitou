@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import { Link } from "react-router";
 import Swal from "sweetalert2";
 
 export function ResetPassword() {
-  const { resetPasswordForEmail } = UserAuth();
+  const { resetPassword } = useAuthStore();
   const [email, setEmail] = useState("");
 
   const handleResetPasswordForEmail = async (
@@ -12,7 +12,7 @@ export function ResetPassword() {
   ) => {
     e.preventDefault();
     try {
-      await resetPasswordForEmail(email);
+      await resetPassword(email);
       Swal.fire({
         icon: "success",
         title: "Correo enviado",

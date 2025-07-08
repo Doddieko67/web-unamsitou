@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { UserAuth } from "../context/AuthContext";
+import { useAuthStore } from "../stores/authStore";
 import Swal from "sweetalert2";
 
 export function UpdatePassword() {
-  const { updatePassword } = UserAuth();
+  const { updatePassword } = useAuthStore();
   const [password, setPassword] = useState("");
 
   const handleUpdatePassword = async (e: React.MouseEvent) => {

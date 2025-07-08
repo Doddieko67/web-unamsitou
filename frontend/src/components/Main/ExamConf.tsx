@@ -5,7 +5,7 @@ import { Materias } from "./Materias";
 import { Personalization } from "./Personalization";
 import { QuestionConf } from "./QuestionConf";
 import { useNavigate } from "react-router";
-import { UserAuth } from "../../context/AuthContext";
+import { useAuthStore } from "../../stores/authStore";
 import { TimerConf } from "../TimerConf";
 import { url_backend } from "../../url_backend";
 
@@ -57,7 +57,7 @@ const initialAvailableSubjects: Subject[] = [
 ];
 
 export function ExamConf() {
-  const { session } = UserAuth(); // Asumiendo que UserAuth devuelve un objeto con 'session'
+  const { session } = useAuthStore(); // Usar el store de Zustand
   const navigate = useNavigate();
 
   // --- Estados ---
@@ -187,6 +187,23 @@ export function ExamConf() {
       //   promptText += `El examen tiene un tiempo límite de ${hour} horas, ${minute} minutos y ${second} segundos.\n`;
       // }
 
+      // Preparar el payload
+      const requestPayload = {
+        prompt: promptText, // Envía el prompt de texto construido
+        dificultad: selectedDifficulty, // Envía la dificultad como dato estructurado si el backend lo necesita
+        tiempo_limite_segundos: tiempoLimiteSegundos, // Envía el tiempo límite
+        materias_seleccionadas: selectedSubjectsDetails.map((s) => ({
+          // Envía detalles estructurados de las materias
+          name: s.name,
+          description: s.description,
+        })),
+        cantidad_preguntas: questionCount, // Envía la cantidad de preguntas
+        instrucciones_adicionales: fineTuning.trim(), // Envía las instrucciones adicionales
+        // Puedes añadir más datos estructurados si tu backend los espera
+      };
+
+      // Payload preparado para el backend
+
       // --- Llama al backend para generar el examen ---
       const response = await fetch(
         // Asegúrate de que la URL es correcta para tu API
@@ -199,19 +216,7 @@ export function ExamConf() {
             authorization: `Bearer ${session?.access_token}`, // Usa encadenamiento opcional por si session es null/undefined
           },
           // Envía los datos necesarios al backend
-          body: JSON.stringify({
-            prompt: promptText, // Envía el prompt de texto construido
-            dificultad: selectedDifficulty, // Envía la dificultad como dato estructurado si el backend lo necesita
-            tiempo_limite_segundos: tiempoLimiteSegundos, // Envía el tiempo límite
-            materias_seleccionadas: selectedSubjectsDetails.map((s) => ({
-              // Envía detalles estructurados de las materias
-              name: s.name,
-              description: s.description,
-            })),
-            cantidad_preguntas: questionCount, // Envía la cantidad de preguntas
-            instrucciones_adicionales: fineTuning.trim(), // Envía las instrucciones adicionales
-            // Puedes añadir más datos estructurados si tu backend los espera
-          }),
+          body: JSON.stringify(requestPayload),
         },
       );
 
@@ -219,8 +224,12 @@ export function ExamConf() {
       if (!response.ok) {
         // Intenta leer el mensaje de error del cuerpo de la respuesta si está disponible
         const errorBody = await response.json().catch(() => null); // Intenta parsear JSON, ignora errores si no es JSON
+        
+        // Log del error para debugging
+        console.error('Error del backend:', errorBody || response.statusText);
+        
         const errorMessage =
-          errorBody?.message ||
+          errorBody?.error || errorBody?.message ||
           `Error del servidor: ${response.status} ${response.statusText}`;
         throw new Error(errorMessage); // Lanza un error con un mensaje más específico
       }
