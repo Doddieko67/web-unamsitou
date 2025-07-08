@@ -259,7 +259,7 @@ export const ExamContainer: React.FC = () => {
         />
         
         {/* Header with Exam Info - Compact Design */}
-        <div className="bg-gradient-to-r from-blue-200 to-indigo-200 border-b border-blue-300">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between">
               <div className="flex flex-col items-center justify-center text-center flex-1">
