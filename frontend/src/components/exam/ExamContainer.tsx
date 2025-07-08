@@ -383,20 +383,6 @@ export const ExamContainer: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Sidebar - Action Buttons */}
-            <div className="lg:col-span-2 space-y-4">
-              <ExamActionButtons
-                isSubmitted={examState.isSubmitted}
-                onSubmit={examState.submitExam}
-                onSuspend={examState.suspendExam}
-                onReset={examState.isSubmitted ? examState.resetExam : undefined}
-                timeSpent={timer.timeSpent}
-                onGenerateFeedback={() => feedbackState.generateFeedback(examId!)}
-                isFeedbackLoading={feedbackState.isLoading}
-                hasFeedback={Object.keys(feedbackState.feedback).length > 0}
-                syncStatus={persistence.syncStatus}
-              />
-            </div>
           </div>
 
           {/* Questions Overview - Full Width at Bottom */}
