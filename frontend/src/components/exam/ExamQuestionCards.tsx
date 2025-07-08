@@ -103,6 +103,10 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
     onTogglePin(index);
   };
 
+  // Filter pinned questions
+  const pinnedQuestionsList = questions.filter((_, index) => pinnedQuestions[index]);
+  const pinnedIndices = Object.keys(pinnedQuestions).map(Number).filter(index => pinnedQuestions[index]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -125,8 +129,100 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
         </div>
       </div>
 
-      {/* Question Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      {/* Pinned Questions Section */}
+      {pinnedCount > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <h4 className="text-md font-semibold text-purple-800">
+              <i className="fas fa-star mr-2 text-yellow-500"></i>
+              Preguntas Fijadas ({pinnedCount})
+            </h4>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            {pinnedIndices.map((originalIndex) => {
+              const question = questions[originalIndex];
+              const isAnswered = userAnswers[originalIndex] !== undefined;
+              const isPinned = true; // Always true in this section
+              const isCurrent = originalIndex === currentQuestionIndex;
+              const isCorrect = isAnswered && question.correcta !== undefined && 
+                               userAnswers[originalIndex] === question.correcta;
+              const hasFeedback = feedback[originalIndex] || (question.id && feedback[question.id]);
+
+              return (
+                <div
+                  key={originalIndex}
+                  className={getCardClass(originalIndex)}
+                  onClick={() => handleQuestionClick(originalIndex)}
+                >
+                  {/* Pin Button */}
+                  <button
+                    onClick={(e) => handlePinToggle(e, originalIndex)}
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs bg-yellow-500 text-white flex items-center justify-center transition-colors hover:bg-yellow-600"
+                    title="Desfijar pregunta"
+                  >
+                    <i className="fas fa-star"></i>
+                  </button>
+
+                  {/* Question Number */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getNumberClass(originalIndex)}`}>
+                      {originalIndex + 1}
+                    </span>
+                    
+                    {/* Status Indicators */}
+                    <div className="flex items-center space-x-1">
+                      {isAnswered && (
+                        <i className={`fas fa-check text-xs ${
+                          isSubmitted 
+                            ? isCorrect ? 'text-green-600' : 'text-red-600'
+                            : 'text-blue-600'
+                        }`}></i>
+                      )}
+                      {isCurrent && (
+                        <i className="fas fa-eye text-xs text-blue-600"></i>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Question Preview */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed">
+                      {question.pregunta.substring(0, 80)}
+                      {question.pregunta.length > 80 ? '...' : ''}
+                    </p>
+                    
+                    {/* Answer Preview */}
+                    {isAnswered && (
+                      <div className="text-xs">
+                        <span className="text-gray-500">Respuesta: </span>
+                        <span className={`font-medium ${
+                          isSubmitted 
+                            ? isCorrect ? 'text-green-600' : 'text-red-600'
+                            : 'text-blue-600'
+                        }`}>
+                          {question.opciones?.[userAnswers[originalIndex]]?.substring(0, 30) || 'N/A'}
+                          {(question.opciones?.[userAnswers[originalIndex]]?.length || 0) > 30 ? '...' : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* All Questions Section */}
+      <div className="space-y-4">
+        <h4 className="text-md font-semibold text-gray-800">
+          <i className="fas fa-list mr-2"></i>
+          Todas las Preguntas ({questions.length})
+        </h4>
+
+        {/* Question Cards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {questions.map((question, index) => {
           const isAnswered = userAnswers[index] !== undefined;
           const isPinned = pinnedQuestions[index];
@@ -204,6 +300,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
             </div>
           );
         })}
+        </div>
       </div>
 
       {/* Quick Stats */}

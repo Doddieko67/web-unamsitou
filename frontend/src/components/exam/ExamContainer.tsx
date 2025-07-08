@@ -291,26 +291,6 @@ export const ExamContainer: React.FC = () => {
                 />
               </div>
 
-              {/* Pinned Questions */}
-              {Object.keys(examState.pinnedQuestions).length > 0 && (
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    <i className="fas fa-star mr-2"></i>
-                    Preguntas Fijadas
-                  </h3>
-                  <QuestionSelector
-                    totalQuestions={examState.exam.datos.length}
-                    currentQuestionIndex={examState.currentQuestionIndex}
-                    answeredQuestions={examState.userAnswers}
-                    preguntas={examState.exam.datos}
-                    onQuestionSelect={examState.navigateToQuestion}
-                    isSubmitted={examState.isSubmitted}
-                    title="Fijadas"
-                    pinnedQuestions={examState.pinnedQuestions}
-                    pinnedMode={true}
-                  />
-                </div>
-              )}
 
               {/* Action Buttons */}
               <ExamActionButtons
