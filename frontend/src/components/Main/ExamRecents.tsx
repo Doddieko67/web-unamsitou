@@ -450,103 +450,187 @@ export function ExamRecents() {
         
         {/* Filters Row */}
         <div className="flex flex-wrap items-center gap-6">
-          {/* Difficulty Filter - Custom Pills */}
+          {/* Difficulty Filter - Theme-Aware Pills */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center">
-              <i className="fas fa-signal mr-2 text-blue-500"></i>
+            <label 
+              className="text-sm font-medium flex items-center"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
+              <i 
+                className="fas fa-signal mr-2"
+                style={{ color: 'var(--theme-info)' }}
+              ></i>
               Dificultad
             </label>
             <div className="flex flex-wrap gap-2">
               {[
-                { value: 'all', label: 'Todas', icon: '🎯', color: 'bg-gray-100 text-gray-700 border-gray-300' },
-                { value: 'easy', label: 'Fácil', icon: '🟢', color: 'bg-green-100 text-green-800 border-green-300' },
-                { value: 'medium', label: 'Medio', icon: '🟡', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-                { value: 'hard', label: 'Difícil', icon: '🔴', color: 'bg-red-100 text-red-800 border-red-300' },
-                { value: 'mixed', label: 'Mixto', icon: '🌈', color: 'bg-purple-100 text-purple-800 border-purple-300' }
-              ].map(({ value, label, icon, color }) => (
-                <button
-                  key={value}
-                  onClick={() => setDifficultyFilter(value as FilterDifficulty)}
-                  className={`px-3 py-2 text-sm font-medium rounded-full border-2 transition-all duration-200 hover:scale-105 ${
-                    difficultyFilter === value
-                      ? `${color} ring-2 ring-offset-2 ${value === 'all' ? 'ring-gray-400' : value === 'easy' ? 'ring-green-400' : value === 'medium' ? 'ring-yellow-400' : value === 'hard' ? 'ring-red-400' : 'ring-purple-400'} shadow-md`
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <span className="mr-1">{icon}</span>
-                  {label}
-                </button>
-              ))}
+                { value: 'all', label: 'Todas', icon: '🎯' },
+                { value: 'easy', label: 'Fácil', icon: '🟢' },
+                { value: 'medium', label: 'Medio', icon: '🟡' },
+                { value: 'hard', label: 'Difícil', icon: '🔴' },
+                { value: 'mixed', label: 'Mixto', icon: '🌈' }
+              ].map(({ value, label, icon }) => {
+                const isSelected = difficultyFilter === value;
+                const colorStyles = getLocalFilterColorStyles('difficulty', value, isSelected);
+                return (
+                  <button
+                    key={value}
+                    onClick={() => setDifficultyFilter(value as FilterDifficulty)}
+                    className="px-3 py-2 text-sm font-medium rounded-full border-2 transition-all duration-200 hover:scale-105 shadow-sm"
+                    style={{
+                      ...colorStyles,
+                      boxShadow: isSelected 
+                        ? `0 0 0 3px ${colorStyles.borderColor}20, var(--theme-shadow-md)` 
+                        : 'var(--theme-shadow-sm)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = colorStyles.borderColor;
+                        e.currentTarget.style.backgroundColor = colorStyles.backgroundColor + '40';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'var(--theme-border-primary)';
+                        e.currentTarget.style.backgroundColor = 'var(--theme-bg-primary)';
+                      }
+                    }}
+                  >
+                    <span className="mr-1">{icon}</span>
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
           
-          {/* Status Filter - Custom Cards */}
+          {/* Status Filter - Theme-Aware Cards */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center">
-              <i className="fas fa-tasks mr-2 text-purple-500"></i>
+            <label 
+              className="text-sm font-medium flex items-center"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
+              <i 
+                className="fas fa-tasks mr-2"
+                style={{ color: 'var(--primary)' }}
+              ></i>
               Estado
             </label>
             <div className="flex flex-wrap gap-2">
               {[
-                { value: 'all', label: 'Todos', icon: '📋', color: 'bg-gray-100 text-gray-700 border-gray-300' },
-                { value: 'pendiente', label: 'Pendiente', icon: '⏳', color: 'bg-orange-100 text-orange-800 border-orange-300' },
-                { value: 'en_progreso', label: 'En Progreso', icon: '⚡', color: 'bg-blue-100 text-blue-800 border-blue-300' },
-                { value: 'terminado', label: 'Completado', icon: '✅', color: 'bg-green-100 text-green-800 border-green-300' },
-                { value: 'suspendido', label: 'Suspendido', icon: '⏸️', color: 'bg-red-100 text-red-800 border-red-300' }
-              ].map(({ value, label, icon, color }) => (
-                <button
-                  key={value}
-                  onClick={() => setStatusFilter(value as FilterStatus)}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all duration-200 hover:scale-105 flex items-center space-x-1 ${
-                    statusFilter === value
-                      ? `${color} ring-2 ring-offset-2 ${value === 'all' ? 'ring-gray-400' : value === 'pendiente' ? 'ring-orange-400' : value === 'en_progreso' ? 'ring-blue-400' : value === 'terminado' ? 'ring-green-400' : 'ring-red-400'} shadow-md`
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <span>{icon}</span>
-                  <span>{label}</span>
-                </button>
-              ))}
+                { value: 'all', label: 'Todos', icon: '📋' },
+                { value: 'pendiente', label: 'Pendiente', icon: '⏳' },
+                { value: 'en_progreso', label: 'En Progreso', icon: '⚡' },
+                { value: 'terminado', label: 'Completado', icon: '✅' },
+                { value: 'suspendido', label: 'Suspendido', icon: '⏸️' }
+              ].map(({ value, label, icon }) => {
+                const isSelected = statusFilter === value;
+                const colorStyles = getLocalFilterColorStyles('status', value, isSelected);
+                return (
+                  <button
+                    key={value}
+                    onClick={() => setStatusFilter(value as FilterStatus)}
+                    className="px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all duration-200 hover:scale-105 flex items-center space-x-1 shadow-sm"
+                    style={{
+                      ...colorStyles,
+                      boxShadow: isSelected 
+                        ? `0 0 0 3px ${colorStyles.borderColor}20, var(--theme-shadow-md)` 
+                        : 'var(--theme-shadow-sm)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = colorStyles.borderColor;
+                        e.currentTarget.style.backgroundColor = colorStyles.backgroundColor + '40';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'var(--theme-border-primary)';
+                        e.currentTarget.style.backgroundColor = 'var(--theme-bg-primary)';
+                      }
+                    }}
+                  >
+                    <span>{icon}</span>
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
           
-          {/* Sort Options - Enhanced Design */}
+          {/* Sort Options - Theme-Aware Design */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center">
-              <i className="fas fa-sort mr-2 text-indigo-500"></i>
+            <label 
+              className="text-sm font-medium flex items-center"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
+              <i 
+                className="fas fa-sort mr-2"
+                style={{ color: 'var(--primary)' }}
+              ></i>
               Ordenar por
             </label>
             <div className="flex flex-wrap gap-2">
               {[
-                { key: 'date', label: 'Fecha', icon: '📅', emoji: '📅' },
-                { key: 'title', label: 'Título', icon: '🔤', emoji: '🔤' },
-                { key: 'difficulty', label: 'Dificultad', icon: '⚡', emoji: '⚡' },
-                { key: 'duration', label: 'Tiempo', icon: '⏱️', emoji: '⏱️' }
-              ].map(({ key, label, emoji }) => (
-                <button
-                  key={key}
-                  onClick={() => handleSort(key as SortOption)}
-                  className={`px-3 py-2 text-sm font-medium rounded-xl border-2 transition-all duration-200 hover:scale-105 flex items-center space-x-2 min-w-[100px] justify-center ${
-                    sortBy === key
-                      ? 'bg-indigo-500 text-white border-indigo-500 shadow-lg shadow-indigo-200'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
-                  }`}
-                  title={`Ordenar por ${label}`}
-                >
-                  <span>{emoji}</span>
-                  <span className="hidden sm:inline">{label}</span>
-                  {sortBy === key && (
-                    <i className={`fas fa-chevron-${sortDirection === 'asc' ? 'up' : 'down'} text-xs animate-pulse`}></i>
-                  )}
-                </button>
-              ))}
+                { key: 'date', label: 'Fecha', emoji: '📅' },
+                { key: 'title', label: 'Título', emoji: '🔤' },
+                { key: 'difficulty', label: 'Dificultad', emoji: '⚡' },
+                { key: 'duration', label: 'Tiempo', emoji: '⏱️' }
+              ].map(({ key, label, emoji }) => {
+                const isSelected = sortBy === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleSort(key as SortOption)}
+                    className="px-3 py-2 text-sm font-medium rounded-xl border-2 transition-all duration-200 hover:scale-105 flex items-center space-x-2 min-w-[100px] justify-center shadow-sm"
+                    style={{
+                      backgroundColor: isSelected ? 'var(--primary)' : 'var(--theme-bg-primary)',
+                      color: isSelected ? 'white' : 'var(--theme-text-secondary)',
+                      borderColor: isSelected ? 'var(--primary)' : 'var(--theme-border-primary)',
+                      boxShadow: isSelected 
+                        ? 'var(--theme-shadow-lg)' 
+                        : 'var(--theme-shadow-sm)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'var(--primary)';
+                        e.currentTarget.style.backgroundColor = 'var(--theme-info-light)';
+                        e.currentTarget.style.color = 'var(--primary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'var(--theme-border-primary)';
+                        e.currentTarget.style.backgroundColor = 'var(--theme-bg-primary)';
+                        e.currentTarget.style.color = 'var(--theme-text-secondary)';
+                      }
+                    }}
+                    title={`Ordenar por ${label}`}
+                  >
+                    <span>{emoji}</span>
+                    <span className="hidden sm:inline">{label}</span>
+                    {isSelected && (
+                      <i 
+                        className={`fas fa-chevron-${sortDirection === 'asc' ? 'up' : 'down'} text-xs animate-pulse`}
+                        style={{ color: 'white' }}
+                      ></i>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
           
           {/* Action Buttons */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center">
-              <i className="fas fa-cogs mr-2 text-teal-500"></i>
+            <label 
+              className="text-sm font-medium flex items-center"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
+              <i 
+                className="fas fa-cogs mr-2"
+                style={{ color: 'var(--secondary)' }}
+              ></i>
               Acciones
             </label>
             <div className="flex flex-wrap gap-2">
@@ -554,7 +638,20 @@ export function ExamRecents() {
               {(searchTerm || difficultyFilter !== 'all' || statusFilter !== 'all' || sortBy !== 'date' || sortDirection !== 'desc') && (
                 <button
                   onClick={clearFilters}
-                  className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white text-sm rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 hover:scale-105 shadow-md flex items-center space-x-2"
+                  className="px-4 py-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 shadow-md flex items-center space-x-2"
+                  style={{
+                    background: 'var(--theme-gradient-primary)',
+                    color: 'white',
+                    border: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05) translateY(-1px)';
+                    e.currentTarget.style.boxShadow = 'var(--theme-shadow-lg)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'var(--theme-shadow-md)';
+                  }}
                 >
                   <i className="fas fa-broom"></i>
                   <span>Limpiar</span>
@@ -565,7 +662,22 @@ export function ExamRecents() {
               {(pinnedExamList.length > 0 || slicedNonPinnedExams.length > 0) && (
                 <button
                   onClick={selectedExams.size === pinnedExamList.length + slicedNonPinnedExams.length ? handleDeselectAll : handleSelectAll}
-                  className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white text-sm rounded-lg hover:from-teal-600 hover:to-teal-700 transition-all duration-200 hover:scale-105 shadow-md flex items-center space-x-2"
+                  className="px-4 py-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 shadow-md flex items-center space-x-2"
+                  style={{
+                    backgroundColor: 'var(--secondary)',
+                    color: 'white',
+                    border: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05) translateY(-1px)';
+                    e.currentTarget.style.boxShadow = 'var(--theme-shadow-lg)';
+                    e.currentTarget.style.backgroundColor = 'var(--theme-success-dark)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'var(--theme-shadow-md)';
+                    e.currentTarget.style.backgroundColor = 'var(--secondary)';
+                  }}
                 >
                   <i className={`fas ${selectedExams.size === pinnedExamList.length + slicedNonPinnedExams.length ? 'fa-check-square' : 'fa-square'}`}></i>
                   <span className="hidden sm:inline">
@@ -580,29 +692,64 @@ export function ExamRecents() {
           </div>
         </div>
         
-        {/* Active Filters Summary - Enhanced Design */}
+        {/* Active Filters Summary - Theme-Aware Design */}
         {(searchTerm || difficultyFilter !== 'all' || statusFilter !== 'all') && (
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+          <div 
+            className="rounded-xl p-4 shadow-sm border transition-colors duration-300"
+            style={{
+              background: 'var(--theme-gradient-card)',
+              borderColor: 'var(--theme-border-primary)'
+            }}
+          >
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <i className="fas fa-filter text-blue-500"></i>
-                <span className="text-sm font-semibold text-gray-700">Filtros activos:</span>
+                <i 
+                  className="fas fa-filter"
+                  style={{ color: 'var(--theme-info)' }}
+                ></i>
+                <span 
+                  className="text-sm font-semibold"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >
+                  Filtros activos:
+                </span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {searchTerm && (
-                  <span className="inline-flex items-center space-x-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-300 shadow-sm">
+                  <span 
+                    className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium border shadow-sm transition-colors duration-200"
+                    style={{
+                      backgroundColor: 'var(--theme-info-light)',
+                      color: 'var(--theme-info-dark)',
+                      borderColor: 'var(--theme-info)'
+                    }}
+                  >
                     <i className="fas fa-search text-xs"></i>
                     <span>"{searchTerm}"</span>
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
+                      className="ml-1 transition-colors duration-200"
+                      style={{ color: 'var(--theme-info-dark)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'var(--theme-error)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'var(--theme-info-dark)';
+                      }}
                     >
                       <i className="fas fa-times text-xs"></i>
                     </button>
                   </span>
                 )}
                 {difficultyFilter !== 'all' && (
-                  <span className="inline-flex items-center space-x-1 bg-gradient-to-r from-green-100 to-green-200 text-green-800 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm">
+                  <span 
+                    className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium border shadow-sm transition-colors duration-200"
+                    style={{
+                      backgroundColor: 'var(--theme-success-light)',
+                      color: 'var(--theme-success-dark)',
+                      borderColor: 'var(--theme-success)'
+                    }}
+                  >
                     <span>
                       {difficultyFilter === 'easy' ? '🟢' : 
                        difficultyFilter === 'medium' ? '🟡' : 
@@ -611,14 +758,28 @@ export function ExamRecents() {
                     <span className="capitalize">{difficultyFilter}</span>
                     <button
                       onClick={() => setDifficultyFilter('all')}
-                      className="ml-1 text-green-600 hover:text-green-800"
+                      className="ml-1 transition-colors duration-200"
+                      style={{ color: 'var(--theme-success-dark)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'var(--theme-error)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'var(--theme-success-dark)';
+                      }}
                     >
                       <i className="fas fa-times text-xs"></i>
                     </button>
                   </span>
                 )}
                 {statusFilter !== 'all' && (
-                  <span className="inline-flex items-center space-x-1 bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 px-3 py-1 rounded-full text-sm font-medium border border-purple-300 shadow-sm">
+                  <span 
+                    className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium border shadow-sm transition-colors duration-200"
+                    style={{
+                      backgroundColor: 'var(--theme-warning-light)',
+                      color: 'var(--theme-warning-dark)',
+                      borderColor: 'var(--theme-warning)'
+                    }}
+                  >
                     <span>
                       {statusFilter === 'pendiente' ? '⏳' : 
                        statusFilter === 'en_progreso' ? '⚡' : 
@@ -631,7 +792,14 @@ export function ExamRecents() {
                     </span>
                     <button
                       onClick={() => setStatusFilter('all')}
-                      className="ml-1 text-purple-600 hover:text-purple-800"
+                      className="ml-1 transition-colors duration-200"
+                      style={{ color: 'var(--theme-warning-dark)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'var(--theme-error)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = 'var(--theme-warning-dark)';
+                      }}
                     >
                       <i className="fas fa-times text-xs"></i>
                     </button>
@@ -643,29 +811,63 @@ export function ExamRecents() {
         )}
       </div>
 
-      {/* Loading and Error States */}
+      {/* Loading and Error States - Theme Aware */}
       {isLoading && (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-          <p className="text-gray-600">Cargando exámenes...</p>
+          <div 
+            className="animate-spin rounded-full h-8 w-8 border-b-2 mr-3"
+            style={{ borderColor: 'var(--primary)' }}
+          ></div>
+          <p style={{ color: 'var(--theme-text-secondary)' }}>Cargando exámenes...</p>
         </div>
       )}
 
       {!isLoading && error && (
         <div className="text-center py-8">
-          <i className="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
-          <p className="text-red-600">{error}</p>
+          <i 
+            className="fas fa-exclamation-triangle text-4xl mb-4"
+            style={{ color: 'var(--theme-error)' }}
+          ></i>
+          <p style={{ color: 'var(--theme-error-dark)' }}>{error}</p>
         </div>
       )}
 
       {!isLoading && !error && !hasExams && (
         <div className="text-center py-12">
-          <i className="fas fa-clipboard-list text-6xl text-gray-300 mb-4"></i>
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">No tienes exámenes</h3>
-          <p className="text-gray-500 mb-4">Crea tu primer examen para comenzar</p>
+          <i 
+            className="fas fa-clipboard-list text-6xl mb-4"
+            style={{ color: 'var(--theme-text-muted)' }}
+          ></i>
+          <h3 
+            className="text-lg font-semibold mb-2"
+            style={{ color: 'var(--theme-text-secondary)' }}
+          >
+            No tienes exámenes
+          </h3>
+          <p 
+            className="mb-4"
+            style={{ color: 'var(--theme-text-muted)' }}
+          >
+            Crea tu primer examen para comenzar
+          </p>
           <button
             onClick={() => navigate('/inicio')}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105 shadow-md"
+            style={{
+              backgroundColor: 'var(--primary)',
+              color: 'white',
+              border: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+              e.currentTarget.style.transform = 'scale(1.05) translateY(-1px)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-lg)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary)';
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-md)';
+            }}
           >
             Crear Examen
           </button>
@@ -679,8 +881,14 @@ export function ExamRecents() {
           {pinnedExamList.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <i className="fas fa-star text-yellow-500 mr-2"></i>
-                <h3 className="text-lg font-semibold text-gray-700">
+                <i 
+                  className="fas fa-star mr-2"
+                  style={{ color: 'var(--theme-warning)' }}
+                ></i>
+                <h3 
+                  className="text-lg font-semibold"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >
                   Exámenes Fijados ({pinnedExamList.length})
                 </h3>
               </div>
@@ -701,7 +909,10 @@ export function ExamRecents() {
                 ))}
               </div>
               {slicedNonPinnedExams.length > 0 && (
-                <div className="border-t border-gray-200 mt-6 pt-6"></div>
+                <div 
+                  className="border-t mt-6 pt-6"
+                  style={{ borderColor: 'var(--theme-border-primary)' }}
+                ></div>
               )}
             </div>
           )}
@@ -710,8 +921,14 @@ export function ExamRecents() {
           {slicedNonPinnedExams.length > 0 && (
             <div>
               <div className="flex items-center mb-4">
-                <i className="fas fa-list text-gray-500 mr-2"></i>
-                <h3 className="text-lg font-semibold text-gray-700">
+                <i 
+                  className="fas fa-list mr-2"
+                  style={{ color: 'var(--theme-text-muted)' }}
+                ></i>
+                <h3 
+                  className="text-lg font-semibold"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >
                   {pinnedExamList.length > 0 ? "Otros Exámenes" : "Exámenes"} ({nonPinnedExamList.length})
                 </h3>
               </div>
@@ -733,26 +950,53 @@ export function ExamRecents() {
             </div>
           )}
 
-          {/* No Results */}
+          {/* No Results - Theme Aware */}
           {filteredAndSortedExams.length === 0 && (
             <div className="text-center py-8">
-              <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
-              <p className="text-gray-500 mb-2">No se encontraron exámenes con los filtros aplicados</p>
+              <i 
+                className="fas fa-search text-4xl mb-4"
+                style={{ color: 'var(--theme-text-muted)' }}
+              ></i>
+              <p 
+                className="mb-2"
+                style={{ color: 'var(--theme-text-secondary)' }}
+              >
+                No se encontraron exámenes con los filtros aplicados
+              </p>
               <button
                 onClick={clearFilters}
-                className="text-blue-500 hover:text-blue-600 text-sm"
+                className="text-sm transition-colors duration-200"
+                style={{ color: 'var(--primary)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--primary-dark)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--primary)';
+                }}
               >
                 Limpiar filtros
               </button>
             </div>
           )}
           
-          {/* Pin Suggestion */}
+          {/* Pin Suggestion - Theme Aware */}
           {hasExams && pinnedExamList.length === 0 && nonPinnedExamList.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <div 
+              className="border rounded-lg p-4 mt-4 transition-colors duration-300"
+              style={{
+                backgroundColor: 'var(--theme-info-light)',
+                borderColor: 'var(--theme-info)'
+              }}
+            >
               <div className="flex items-center">
-                <i className="fas fa-star text-blue-500 mr-2"></i>
-                <p className="text-blue-700 text-sm">
+                <i 
+                  className="fas fa-star mr-2"
+                  style={{ color: 'var(--theme-info)' }}
+                ></i>
+                <p 
+                  className="text-sm"
+                  style={{ color: 'var(--theme-info-dark)' }}
+                >
                   ¡Tip! Fija exámenes importantes para acceder a ellos rápidamente
                 </p>
               </div>
@@ -761,12 +1005,27 @@ export function ExamRecents() {
         </>
       )}
 
-      {/* Load More Button */}
+      {/* Load More Button - Theme Aware */}
       {!isLoading && !error && visibleCount < nonPinnedExamList.length && (
         <div className="flex justify-center mt-6">
           <button
             onClick={handleLoadMore}
-            className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+            className="flex items-center px-6 py-3 rounded-lg transition-all duration-200 hover:scale-105 shadow-md"
+            style={{
+              backgroundColor: 'var(--primary)',
+              color: 'white',
+              border: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+              e.currentTarget.style.transform = 'scale(1.05) translateY(-2px)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-lg)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary)';
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-md)';
+            }}
           >
             <i className="fas fa-chevron-down mr-2"></i>
             Cargar más ({Math.min(6, nonPinnedExamList.length - visibleCount)} de {nonPinnedExamList.length - visibleCount} restantes)
@@ -774,31 +1033,92 @@ export function ExamRecents() {
         </div>
       )}
       
-      {/* Statistics */}
+      {/* Statistics - Theme Aware */}
       {!isLoading && !error && hasExams && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        <div 
+          className="mt-6 pt-6 border-t"
+          style={{ borderColor: 'var(--theme-border-primary)' }}
+        >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div className="bg-blue-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-blue-600">{recentExams.length}</div>
-              <div className="text-xs text-blue-600">Total</div>
+            <div 
+              className="rounded-lg p-3 transition-all duration-200 hover:scale-105"
+              style={{
+                backgroundColor: 'var(--theme-info-light)',
+                boxShadow: 'var(--theme-shadow-sm)'
+              }}
+            >
+              <div 
+                className="text-2xl font-bold"
+                style={{ color: 'var(--theme-info-dark)' }}
+              >
+                {recentExams.length}
+              </div>
+              <div 
+                className="text-xs"
+                style={{ color: 'var(--theme-info-dark)' }}
+              >
+                Total
+              </div>
             </div>
-            <div className="bg-green-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-green-600">
+            <div 
+              className="rounded-lg p-3 transition-all duration-200 hover:scale-105"
+              style={{
+                backgroundColor: 'var(--theme-success-light)',
+                boxShadow: 'var(--theme-shadow-sm)'
+              }}
+            >
+              <div 
+                className="text-2xl font-bold"
+                style={{ color: 'var(--theme-success-dark)' }}
+              >
                 {recentExams.filter(e => e.estado === 'terminado').length}
               </div>
-              <div className="text-xs text-green-600">Completados</div>
+              <div 
+                className="text-xs"
+                style={{ color: 'var(--theme-success-dark)' }}
+              >
+                Completados
+              </div>
             </div>
-            <div className="bg-yellow-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-yellow-600">
+            <div 
+              className="rounded-lg p-3 transition-all duration-200 hover:scale-105"
+              style={{
+                backgroundColor: 'var(--theme-warning-light)',
+                boxShadow: 'var(--theme-shadow-sm)'
+              }}
+            >
+              <div 
+                className="text-2xl font-bold"
+                style={{ color: 'var(--theme-warning-dark)' }}
+              >
                 {recentExams.filter(e => e.is_pinned).length}
               </div>
-              <div className="text-xs text-yellow-600">Fijados</div>
+              <div 
+                className="text-xs"
+                style={{ color: 'var(--theme-warning-dark)' }}
+              >
+                Fijados
+              </div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-purple-600">
+            <div 
+              className="rounded-lg p-3 transition-all duration-200 hover:scale-105"
+              style={{
+                backgroundColor: '#f3e8ff',
+                boxShadow: 'var(--theme-shadow-sm)'
+              }}
+            >
+              <div 
+                className="text-2xl font-bold"
+                style={{ color: '#6b21a8' }}
+              >
                 {Math.round(recentExams.filter(e => e.tiempo_tomado_segundos).reduce((acc, e) => acc + (e.tiempo_tomado_segundos || 0), 0) / 60)}
               </div>
-              <div className="text-xs text-purple-600">Min. totales</div>
+              <div 
+                className="text-xs"
+                style={{ color: '#6b21a8' }}
+              >
+                Min. totales
+              </div>
             </div>
           </div>
         </div>
