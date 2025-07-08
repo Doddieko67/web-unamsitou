@@ -155,59 +155,20 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
         </div>
       )}
 
-      {/* Ergonomic Navigation - Positioned immediately after answers for minimal cursor travel */}
-      {(onPrevious || onNext) && (
-        <div className="mt-6 flex items-center justify-between">
-          {/* Previous Button */}
-          <button
-            onClick={onPrevious}
-            disabled={!canGoPrevious || !onPrevious}
-            className={`
-              flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105
-              ${canGoPrevious && onPrevious
-                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-lg hover:-translate-x-1'
-                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-              }
-            `}
-            title="Pregunta anterior (← tecla)"
-          >
-            <i className="fas fa-arrow-left"></i>
-            <span>Anterior</span>
-          </button>
-
-          {/* Question Counter with Navigation Hint */}
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-800">
-              {questionIndex + 1} <span className="text-gray-400">de</span> {totalQuestions}
-            </div>
-            {!isSubmitted && (
-              <div className="text-xs text-gray-500 mt-1">
-                ← → para navegar | 1-4 para responder
-              </div>
-            )}
-          </div>
-
-          {/* Next Button */}
-          <button
-            onClick={onNext}
-            disabled={!canGoNext || !onNext}
-            className={`
-              flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105
-              ${canGoNext && onNext
-                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow-lg hover:translate-x-1'
-                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-              }
-            `}
-            title="Siguiente pregunta (→ tecla)"
-          >
-            <span>Siguiente</span>
-            <i className="fas fa-arrow-right"></i>
-          </button>
+      {/* Question Counter and Navigation Hint */}
+      <div className="mt-6 text-center">
+        <div className="text-lg font-semibold text-gray-800">
+          {questionIndex + 1} <span className="text-gray-400">de</span> {totalQuestions}
         </div>
-      )}
+        {!isSubmitted && (
+          <div className="text-xs text-gray-500 mt-1">
+            ← → para navegar | 1-4 para responder
+          </div>
+        )}
+      </div>
 
-      {/* Keyboard Hint (when navigation not available) */}
-      {!isSubmitted && !(onPrevious || onNext) && (
+      {/* Keyboard Hint */}
+      {!isSubmitted && (
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <p className="text-xs text-gray-600">
             💡 <strong>Tip:</strong> Usa las teclas 1-4 para seleccionar respuestas rápidamente

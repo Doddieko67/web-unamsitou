@@ -141,9 +141,20 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
 
   if (isSubmitted) {
     return (
-      <div className="space-y-4">
+      <div className="bg-white rounded-lg shadow-md p-4 space-y-3">
+        {/* Completed Status */}
+        <div className="text-center p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center justify-center space-x-2 text-green-700">
+            <i className="fas fa-check-circle text-lg"></i>
+            <span className="font-semibold text-sm">Completado</span>
+          </div>
+          <p className="text-xs text-green-600 mt-1">
+            Respuestas guardadas
+          </p>
+        </div>
+
         {/* Sync Status */}
-        <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+        <div className="flex items-center justify-center space-x-2 text-xs text-gray-600">
           <i className={`fas ${getSyncStatusIcon()}`}></i>
           <span>{getSyncStatusText()}</span>
         </div>
@@ -152,19 +163,19 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
         {onGenerateFeedback && !hasFeedback && (
           <button
             onClick={onGenerateFeedback}
-            className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full text-yellow-600 bg-yellow-100 border-yellow-300 border-2 hover:bg-yellow-200 px-3 py-2 rounded-lg font-medium text-xs transition duration-150 ease-in-out flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             title="Generar retroalimentación"
             disabled={isFeedbackLoading}
           >
             {isFeedbackLoading ? (
               <>
-                <i className="fas fa-spinner fa-spin mr-2"></i>
+                <i className="fas fa-spinner fa-spin mr-1"></i>
                 <span>Generando...</span>
               </>
             ) : (
               <>
-                <i className="fas fa-wheat-awn-circle-exclamation mr-2"></i>
-                <span>Retroalimentar todo</span>
+                <i className="fas fa-lightbulb mr-1"></i>
+                <span>Feedback</span>
               </>
             )}
           </button>
@@ -174,33 +185,22 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
         {onReset && (
           <button
             onClick={handleResetClick}
-            className="w-full text-purple-600 bg-purple-100 shadow-purple-100 border-purple-300 border-2 hover:shadow-purple-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full text-purple-600 bg-purple-100 border-purple-300 border-2 hover:bg-purple-200 px-3 py-2 rounded-lg font-medium text-xs transition duration-150 ease-in-out flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             title="Reiniciar examen"
             disabled={isLoading}
           >
-            <i className="fas fa-redo mr-2"></i>
-            <span>Reiniciar el Examen</span>
+            <i className="fas fa-redo mr-1"></i>
+            <span>Reiniciar</span>
           </button>
         )}
-
-        {/* Completed Status */}
-        <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center justify-center space-x-2 text-green-700">
-            <i className="fas fa-check-circle text-xl"></i>
-            <span className="font-semibold">Examen Completado</span>
-          </div>
-          <p className="text-sm text-green-600 mt-1">
-            Tus respuestas han sido guardadas exitosamente
-          </p>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="bg-white rounded-lg shadow-md p-4 space-y-3">
       {/* Sync Status */}
-      <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+      <div className="flex items-center justify-center space-x-2 text-xs text-gray-600">
         <i className={`fas ${getSyncStatusIcon()}`}></i>
         <span>{getSyncStatusText()}</span>
       </div>
@@ -209,18 +209,18 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
       <button
         onClick={handleSubmitClick}
         disabled={!canSubmit || isLoading}
-        className="w-full gradient-bg text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg font-medium text-xs hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out shadow-md hover:shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
         title="Finalizar y Enviar Examen"
       >
         {isLoading ? (
           <>
-            <i className="fas fa-spinner fa-spin mr-2"></i>
+            <i className="fas fa-spinner fa-spin mr-1"></i>
             <span>Enviando...</span>
           </>
         ) : (
           <>
-            <i className="fas fa-paper-plane mr-2"></i>
-            <span>Enviar Examen Ahora</span>
+            <i className="fas fa-paper-plane mr-1"></i>
+            <span>Enviar Examen</span>
           </>
         )}
       </button>
@@ -229,18 +229,18 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
       <button
         onClick={handleSuspendClick}
         disabled={isLoading}
-        className="w-full gradient-bg-purple text-white px-4 py-3 rounded-lg opacity-70 font-semibold text-sm sm:text-base hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-2 rounded-lg font-medium text-xs hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition duration-150 ease-in-out shadow-md hover:shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
         title="Suspender Examen"
       >
         {isLoading ? (
           <>
-            <i className="fas fa-spinner fa-spin mr-2"></i>
+            <i className="fas fa-spinner fa-spin mr-1"></i>
             <span>Suspendiendo...</span>
           </>
         ) : (
           <>
-            <i className="fas fa-calendar-xmark mr-2"></i>
-            <span>Suspender el Examen</span>
+            <i className="fas fa-pause mr-1"></i>
+            <span>Suspender</span>
           </>
         )}
       </button>

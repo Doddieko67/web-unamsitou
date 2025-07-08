@@ -262,16 +262,25 @@ export const ExamContainer: React.FC = () => {
         </div>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Progress Bar - Always visible at top */}
+          <div className="mb-6">
+            <ExamProgressBar
+              currentQuestion={examState.currentQuestionIndex}
+              totalQuestions={examState.exam.datos.length}
+              answeredQuestions={answeredCount}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {/* Left Sidebar - Search and Pinned Questions */}
-            <div className="lg:col-span-1 space-y-6">
+            {/* Left Sidebar - Compact */}
+            <div className="lg:col-span-2 space-y-4">
               
-              {/* Search and Filter */}
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  <i className="fas fa-search mr-2"></i>
-                  Buscar Preguntas
+              {/* Search and Filter - Compact */}
+              <div className="bg-white rounded-lg shadow-md p-3">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  <i className="fas fa-search mr-1"></i>
+                  Buscar
                 </h3>
                 <ExamSearchFilter
                   questions={examState.exam.datos}
@@ -282,12 +291,12 @@ export const ExamContainer: React.FC = () => {
                 />
               </div>
 
-              {/* Pinned Questions */}
+              {/* Pinned Questions - Compact */}
               {Object.keys(examState.pinnedQuestions).length > 0 && (
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    <i className="fas fa-thumbtack mr-2"></i>
-                    Preguntas Fijadas
+                <div className="bg-white rounded-lg shadow-md p-3">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                    <i className="fas fa-thumbtack mr-1"></i>
+                    Fijadas
                   </h3>
                   <QuestionSelector
                     totalQuestions={examState.exam.datos.length}
@@ -302,8 +311,80 @@ export const ExamContainer: React.FC = () => {
                   />
                 </div>
               )}
+            </div>
 
-              {/* Action Buttons */}
+            {/* Main Content - Optimized for Cursor Movement */}
+            <div className="lg:col-span-8">
+              
+              {/* Question Content with Side Navigation */}
+              <div className="bg-white rounded-lg shadow-md">
+                <div className="flex items-stretch">
+                  
+                  {/* Left Navigation Button - Positioned for Easy Access */}
+                  <div className="flex items-center justify-center w-16 bg-gray-50 rounded-l-lg border-r">
+                    {navigation.canGoPrevious ? (
+                      <button
+                        onClick={navigation.goToPrevious}
+                        className="w-12 h-12 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-all duration-200 hover:scale-110 active:scale-95"
+                        title="Pregunta anterior (←)"
+                      >
+                        <i className="fas fa-chevron-left text-lg"></i>
+                      </button>
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center bg-gray-100 text-gray-400 rounded-full">
+                        <i className="fas fa-chevron-left text-lg"></i>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Central Question Content */}
+                  <div className="flex-1 p-6">
+                    <ExamQuestionCard
+                      question={currentQuestion}
+                      questionIndex={examState.currentQuestionIndex}
+                      totalQuestions={examState.exam.datos.length}
+                      selectedAnswer={examState.userAnswers[examState.currentQuestionIndex]}
+                      isSubmitted={examState.isSubmitted}
+                      feedback={
+                        currentQuestion?.id && feedbackState.feedback[currentQuestion.id] 
+                          ? feedbackState.feedback[currentQuestion.id]
+                          : examState.feedback[examState.currentQuestionIndex]
+                      }
+                      isPinned={examState.pinnedQuestions[examState.currentQuestionIndex] || false}
+                      showFeedback={examState.isSubmitted}
+                      onAnswerSelect={(answerIndex) => 
+                        examState.setAnswer(examState.currentQuestionIndex, answerIndex)
+                      }
+                      onTogglePin={() => examState.togglePin(examState.currentQuestionIndex)}
+                      onPrevious={undefined} // Handled by side buttons
+                      onNext={undefined} // Handled by side buttons
+                      canGoPrevious={navigation.canGoPrevious}
+                      canGoNext={navigation.canGoNext}
+                    />
+                  </div>
+
+                  {/* Right Navigation Button - Positioned for Easy Access */}
+                  <div className="flex items-center justify-center w-16 bg-gray-50 rounded-r-lg border-l">
+                    {navigation.canGoNext ? (
+                      <button
+                        onClick={navigation.goToNext}
+                        className="w-12 h-12 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-all duration-200 hover:scale-110 active:scale-95"
+                        title="Siguiente pregunta (→)"
+                      >
+                        <i className="fas fa-chevron-right text-lg"></i>
+                      </button>
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center bg-gray-100 text-gray-400 rounded-full">
+                        <i className="fas fa-chevron-right text-lg"></i>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Sidebar - Action Buttons */}
+            <div className="lg:col-span-2 space-y-4">
               <ExamActionButtons
                 isSubmitted={examState.isSubmitted}
                 onSubmit={examState.submitExam}
@@ -316,58 +397,23 @@ export const ExamContainer: React.FC = () => {
                 syncStatus={persistence.syncStatus}
               />
             </div>
+          </div>
 
-            {/* Main Content */}
-            <div className="lg:col-span-3 space-y-6">
-              
-              {/* Progress Bar */}
-              <ExamProgressBar
-                currentQuestion={examState.currentQuestionIndex}
-                totalQuestions={examState.exam.datos.length}
-                answeredQuestions={answeredCount}
-              />
-
-              {/* Current Question with Integrated Navigation */}
-              <ExamQuestionCard
-                question={currentQuestion}
-                questionIndex={examState.currentQuestionIndex}
-                totalQuestions={examState.exam.datos.length}
-                selectedAnswer={examState.userAnswers[examState.currentQuestionIndex]}
-                isSubmitted={examState.isSubmitted}
-                feedback={
-                  currentQuestion?.id && feedbackState.feedback[currentQuestion.id] 
-                    ? feedbackState.feedback[currentQuestion.id]
-                    : examState.feedback[examState.currentQuestionIndex]
-                }
-                isPinned={examState.pinnedQuestions[examState.currentQuestionIndex] || false}
-                showFeedback={examState.isSubmitted}
-                onAnswerSelect={(answerIndex) => 
-                  examState.setAnswer(examState.currentQuestionIndex, answerIndex)
-                }
-                onTogglePin={() => examState.togglePin(examState.currentQuestionIndex)}
-                onPrevious={navigation.canGoPrevious ? navigation.goToPrevious : undefined}
-                onNext={navigation.canGoNext ? navigation.goToNext : undefined}
-                canGoPrevious={navigation.canGoPrevious}
-                canGoNext={navigation.canGoNext}
-              />
-
-              {/* All Questions Overview */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <ExamQuestionCards
-                  questions={examState.exam.datos}
-                  currentQuestionIndex={examState.currentQuestionIndex}
-                  userAnswers={examState.userAnswers}
-                  pinnedQuestions={examState.pinnedQuestions}
-                  feedback={{
-                    ...examState.feedback,
-                    ...feedbackState.feedback,
-                  }}
-                  isSubmitted={examState.isSubmitted}
-                  onQuestionSelect={examState.navigateToQuestion}
-                  onTogglePin={examState.togglePin}
-                />
-              </div>
-            </div>
+          {/* Questions Overview - Full Width at Bottom */}
+          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+            <ExamQuestionCards
+              questions={examState.exam.datos}
+              currentQuestionIndex={examState.currentQuestionIndex}
+              userAnswers={examState.userAnswers}
+              pinnedQuestions={examState.pinnedQuestions}
+              feedback={{
+                ...examState.feedback,
+                ...feedbackState.feedback,
+              }}
+              isSubmitted={examState.isSubmitted}
+              onQuestionSelect={examState.navigateToQuestion}
+              onTogglePin={examState.togglePin}
+            />
           </div>
         </main>
 
