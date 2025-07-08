@@ -33,8 +33,9 @@ export const useFeedbackGeneration = (): UseFeedbackGenerationReturn => {
 
   const generateFeedback = useCallback(async (examId: string) => {
     if (!user || !session?.access_token) {
-      setState(prev => ({ ...prev, error: 'Usuario no autenticado' }));
-      return;
+      const errorMessage = 'Usuario no autenticado';
+      setState(prev => ({ ...prev, error: errorMessage }));
+      throw new Error(errorMessage);
     }
 
     setState(prev => ({ 
@@ -75,22 +76,27 @@ export const useFeedbackGeneration = (): UseFeedbackGenerationReturn => {
         console.log('✅ Feedback generado exitosamente:', responseData.feedback);
       } else {
         console.warn('⚠️ La API no devolvió el objeto de feedback esperado');
+        const errorMessage = 'Respuesta inesperada del servidor';
         setState(prev => ({
           ...prev,
           feedback: {},
           isGenerating: false,
           isLoading: false,
-          error: 'Respuesta inesperada del servidor',
+          error: errorMessage,
         }));
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('❌ Error en la generación de feedback:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setState(prev => ({
         ...prev,
         isGenerating: false,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Error desconocido',
+        error: errorMessage,
       }));
+      // Re-throw the error so it can be caught by the component
+      throw new Error(errorMessage);
     }
   }, [user, session]);
 

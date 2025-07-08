@@ -143,7 +143,10 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
     return (
       <div className="space-y-4">
         {/* Sync Status */}
-        <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+        <div 
+          className="flex items-center justify-center space-x-2 text-sm transition-colors duration-300"
+          style={{ color: 'var(--theme-text-secondary)' }}
+        >
           <i className={`fas ${getSyncStatusIcon()}`}></i>
           <span>{getSyncStatusText()}</span>
         </div>
@@ -151,8 +154,50 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
         {/* Feedback Button */}
         {onGenerateFeedback && !hasFeedback && (
           <button
-            onClick={onGenerateFeedback}
-            className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={async () => {
+              try {
+                await onGenerateFeedback();
+              } catch (error) {
+                console.error('Error en retroalimentación:', error);
+                const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+                
+                let userMessage = 'Hubo un problema al generar la retroalimentación.';
+                
+                if (errorMessage.includes('autenticado')) {
+                  userMessage = 'Necesitas estar autenticado para generar retroalimentación.';
+                } else if (errorMessage.includes('HTTP') || errorMessage.includes('fetch')) {
+                  userMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+                } else if (errorMessage.includes('inesperada')) {
+                  userMessage = 'El servidor devolvió una respuesta inesperada. Inténtalo más tarde.';
+                }
+                
+                Swal.fire({
+                  title: 'Error al generar retroalimentación',
+                  text: `${userMessage}\n\nDetalle técnico: ${errorMessage}`,
+                  icon: 'error',
+                  confirmButtonText: 'Entendido'
+                });
+              }
+            }}
+            className="w-full px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed border-2"
+            style={{
+              color: 'var(--theme-warning)',
+              backgroundColor: 'var(--theme-warning-light)',
+              borderColor: 'var(--theme-warning)',
+              boxShadow: 'var(--theme-shadow-md)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-warning)';
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-lg)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-warning-light)';
+              e.currentTarget.style.color = 'var(--theme-warning)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-md)';
+            }}
             title="Generar retroalimentación"
             disabled={isFeedbackLoading}
           >
@@ -174,7 +219,26 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
         {onReset && (
           <button
             onClick={handleResetClick}
-            className="w-full text-purple-600 bg-purple-100 shadow-purple-100 border-purple-300 border-2 hover:shadow-purple-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed border-2"
+            style={{
+              color: 'var(--terciary)',
+              backgroundColor: 'var(--theme-bg-primary)',
+              borderColor: 'var(--terciary)',
+              boxShadow: 'var(--theme-shadow-md)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, var(--terciary), var(--cuaternary))';
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-lg)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-bg-primary)';
+              e.currentTarget.style.background = 'var(--theme-bg-primary)';
+              e.currentTarget.style.color = 'var(--terciary)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'var(--theme-shadow-md)';
+            }}
             title="Reiniciar examen"
             disabled={isLoading}
           >
@@ -190,7 +254,10 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
   return (
     <div className="space-y-4">
       {/* Sync Status */}
-      <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+      <div 
+        className="flex items-center justify-center space-x-2 text-sm transition-colors duration-300"
+        style={{ color: 'var(--theme-text-secondary)' }}
+      >
         <i className={`fas ${getSyncStatusIcon()}`}></i>
         <span>{getSyncStatusText()}</span>
       </div>
@@ -199,7 +266,26 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
       <button
         onClick={handleSubmitClick}
         disabled={!canSubmit || isLoading}
-        className="w-full gradient-bg text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{
+          background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
+          '--tw-ring-color': 'var(--primary)',
+          '--tw-ring-opacity': '0.5'
+        } as React.CSSProperties}
+        onMouseEnter={(e) => {
+          if (!(!canSubmit || isLoading)) {
+            e.currentTarget.style.background = 'linear-gradient(135deg, var(--primary-dark), var(--primary))';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!(!canSubmit || isLoading)) {
+            e.currentTarget.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-dark))';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+          }
+        }}
         title="Finalizar y Enviar Examen"
       >
         {isLoading ? (
@@ -219,7 +305,27 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
       <button
         onClick={handleSuspendClick}
         disabled={isLoading}
-        className="w-full gradient-bg-purple text-white px-4 py-3 rounded-lg opacity-70 font-semibold text-sm sm:text-base hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out shadow-lg hover:shadow-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full text-white px-4 py-3 rounded-lg font-semibold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{
+          background: 'linear-gradient(135deg, var(--terciary), var(--cuaternary))',
+          opacity: '0.8',
+          '--tw-ring-color': 'var(--terciary)',
+          '--tw-ring-opacity': '0.5'
+        } as React.CSSProperties}
+        onMouseEnter={(e) => {
+          if (!isLoading) {
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isLoading) {
+            e.currentTarget.style.opacity = '0.8';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+          }
+        }}
         title="Suspender Examen"
       >
         {isLoading ? (

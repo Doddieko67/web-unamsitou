@@ -193,7 +193,10 @@ export const ExamContainer: React.FC = () => {
   // Handle loading state
   if (examState.loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div 
+        className="min-h-screen flex items-center justify-center transition-colors duration-300"
+        style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+      >
         <LoadingSpinner />
       </div>
     );
@@ -202,17 +205,44 @@ export const ExamContainer: React.FC = () => {
   // Handle error state
   if (examState.error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full mx-4">
+      <div 
+        className="min-h-screen flex items-center justify-center transition-colors duration-300"
+        style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+      >
+        <div 
+          className="p-8 rounded-lg shadow-md max-w-md w-full mx-4 transition-colors duration-300"
+          style={{ 
+            backgroundColor: 'var(--theme-bg-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
           <div className="text-center">
-            <i className="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <i 
+              className="fas fa-exclamation-triangle text-4xl mb-4 transition-colors duration-300"
+              style={{ color: 'var(--theme-error)' }}
+            ></i>
+            <h2 
+              className="text-xl font-semibold mb-2 transition-colors duration-300"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
               Error al cargar el examen
             </h2>
-            <p className="text-gray-600 mb-4">{examState.error}</p>
+            <p 
+              className="mb-4 transition-colors duration-300"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >
+              {examState.error}
+            </p>
             <button
               onClick={() => navigate('/examenes')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="text-white px-4 py-2 rounded-lg transition-all duration-300"
+              style={{ backgroundColor: 'var(--primary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary)';
+              }}
             >
               Volver a exámenes
             </button>
@@ -225,19 +255,44 @@ export const ExamContainer: React.FC = () => {
   // Handle no exam data
   if (!examState.exam || !currentQuestion) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full mx-4">
+      <div 
+        className="min-h-screen flex items-center justify-center transition-colors duration-300"
+        style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+      >
+        <div 
+          className="p-8 rounded-lg shadow-md max-w-md w-full mx-4 transition-colors duration-300"
+          style={{ 
+            backgroundColor: 'var(--theme-bg-primary)',
+            boxShadow: 'var(--theme-shadow-md)'
+          }}
+        >
           <div className="text-center">
-            <i className="fas fa-file-alt text-gray-400 text-4xl mb-4"></i>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <i 
+              className="fas fa-file-alt text-4xl mb-4 transition-colors duration-300"
+              style={{ color: 'var(--theme-text-tertiary)' }}
+            ></i>
+            <h2 
+              className="text-xl font-semibold mb-2 transition-colors duration-300"
+              style={{ color: 'var(--theme-text-primary)' }}
+            >
               Examen no encontrado
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p 
+              className="mb-4 transition-colors duration-300"
+              style={{ color: 'var(--theme-text-secondary)' }}
+            >
               No se pudo cargar el examen solicitado.
             </p>
             <button
               onClick={() => navigate('/examenes')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="text-white px-4 py-2 rounded-lg transition-all duration-300"
+              style={{ backgroundColor: 'var(--primary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary)';
+              }}
             >
               Volver a exámenes
             </button>
@@ -249,7 +304,10 @@ export const ExamContainer: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-100">
+      <div 
+        className="min-h-screen transition-colors duration-300"
+        style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+      >
         
         {/* Offline/Online Indicator */}
         <OfflineIndicator
@@ -259,31 +317,55 @@ export const ExamContainer: React.FC = () => {
         />
         
         {/* Header with Exam Info - Compact Design */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+        <div 
+          className="border-b transition-colors duration-300"
+          style={{
+            background: 'linear-gradient(135deg, var(--theme-bg-accent), var(--theme-info-light))',
+            borderBottomColor: 'var(--theme-border-primary)'
+          }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between">
               <div className="flex flex-col items-center justify-center text-center flex-1">
                 <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-300"
+                    style={{ backgroundColor: 'var(--primary)' }}
+                  >
                     <i className="fas fa-clipboard-list text-white text-lg"></i>
                   </div>
-                  <h1 className="text-xl font-bold text-gray-900">
+                  <h1 
+                    className="text-xl font-bold transition-colors duration-300"
+                    style={{ color: 'var(--theme-text-primary)' }}
+                  >
                     {examState.exam.titulo}
                   </h1>
                 </div>
                 
                 {examState.exam.descripcion && (
-                  <p className="text-sm text-gray-600 mb-3 max-w-md">
+                  <p 
+                    className="text-sm mb-3 max-w-md transition-colors duration-300"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
                     {examState.exam.descripcion}
                   </p>
                 )}
                 
                 <div className="flex items-center space-x-3">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+                  <span 
+                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium transition-colors duration-300"
+                    style={{
+                      backgroundColor: 'var(--theme-info-light)',
+                      color: 'var(--theme-info-dark)'
+                    }}
+                  >
                     <i className="fas fa-signal mr-1"></i>
                     {examState.exam.dificultad}
                   </span>
-                  <span className="inline-flex items-center text-xs text-gray-600">
+                  <span 
+                    className="inline-flex items-center text-xs transition-colors duration-300"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
                     <i className="fas fa-list-ol mr-1"></i>
                     {examState.exam.numero_preguntas} preguntas
                   </span>
@@ -335,9 +417,21 @@ export const ExamContainer: React.FC = () => {
             <div className="lg:col-span-1 space-y-6">
               
               {/* Search and Filter */}
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  <i className="fas fa-search mr-2"></i>
+              <div 
+                className="rounded-lg shadow-md p-4 transition-colors duration-300"
+                style={{
+                  backgroundColor: 'var(--theme-bg-primary)',
+                  boxShadow: 'var(--theme-shadow-md)'
+                }}
+              >
+                <h3 
+                  className="text-lg font-semibold mb-4 transition-colors duration-300"
+                  style={{ color: 'var(--theme-text-primary)' }}
+                >
+                  <i 
+                    className="fas fa-search mr-2 transition-colors duration-300"
+                    style={{ color: 'var(--primary)' }}
+                  ></i>
                   Buscar Preguntas
                 </h3>
                 <ExamSearchFilter
@@ -354,21 +448,49 @@ export const ExamContainer: React.FC = () => {
             <div className="lg:col-span-3" ref={currentQuestionRef}>
               
               {/* Question Content with Side Navigation */}
-              <div className="bg-white rounded-lg">
+              <div 
+                className="rounded-lg transition-colors duration-300"
+                style={{ backgroundColor: 'var(--theme-bg-primary)' }}
+              >
                 <div className="flex items-stretch">
                   
                   {/* Left Navigation Button - FULL HEIGHT for easier clicking */}
-                  <div className="w-24 bg-gray-50 rounded-l-lg border-r">
+                  <div 
+                    className="w-24 rounded-l-lg border-r transition-colors duration-300"
+                    style={{ 
+                      backgroundColor: 'var(--theme-bg-secondary)',
+                      borderRightColor: 'var(--theme-border-primary)'
+                    }}
+                  >
                     {navigation.canGoPrevious ? (
                       <button
                         onClick={navigation.goToPrevious}
-                        className="w-full h-full flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-l-lg transition-all duration-200 hover:bg-blue-300 active:bg-blue-400"
+                        className="w-full h-full flex items-center justify-center rounded-l-lg transition-all duration-200"
+                        style={{
+                          backgroundColor: 'var(--theme-info-light)',
+                          color: 'var(--primary)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '0.7';
+                          e.currentTarget.style.transform = 'scale(0.95)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
                         title="Pregunta anterior (←)"
                       >
                         <i className="fas fa-chevron-left text-2xl"></i>
                       </button>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-l-lg border border-gray-200">
+                      <div 
+                        className="w-full h-full flex items-center justify-center rounded-l-lg border transition-colors duration-300"
+                        style={{
+                          backgroundColor: 'var(--theme-bg-tertiary)',
+                          color: 'var(--theme-text-tertiary)',
+                          borderColor: 'var(--theme-border-primary)'
+                        }}
+                      >
                         <i className="fas fa-chevron-left text-2xl opacity-50"></i>
                       </div>
                     )}
@@ -402,17 +524,42 @@ export const ExamContainer: React.FC = () => {
                   </div>
 
                   {/* Right Navigation Button - FULL HEIGHT for easier clicking */}
-                  <div className="w-24 bg-gray-50 rounded-r-lg border-l">
+                  <div 
+                    className="w-24 rounded-r-lg border-l transition-colors duration-300"
+                    style={{ 
+                      backgroundColor: 'var(--theme-bg-secondary)',
+                      borderLeftColor: 'var(--theme-border-primary)'
+                    }}
+                  >
                     {navigation.canGoNext ? (
                       <button
                         onClick={navigation.goToNext}
-                        className="w-full h-full flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-r-lg transition-all duration-200 hover:bg-blue-300 active:bg-blue-400"
+                        className="w-full h-full flex items-center justify-center rounded-r-lg transition-all duration-200"
+                        style={{
+                          backgroundColor: 'var(--theme-info-light)',
+                          color: 'var(--primary)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '0.7';
+                          e.currentTarget.style.transform = 'scale(0.95)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
                         title="Siguiente pregunta (→)"
                       >
                         <i className="fas fa-chevron-right text-2xl"></i>
                       </button>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-r-lg border border-gray-200">
+                      <div 
+                        className="w-full h-full flex items-center justify-center rounded-r-lg border transition-colors duration-300"
+                        style={{
+                          backgroundColor: 'var(--theme-bg-tertiary)',
+                          color: 'var(--theme-text-tertiary)',
+                          borderColor: 'var(--theme-border-primary)'
+                        }}
+                      >
                         <i className="fas fa-chevron-right text-2xl opacity-50"></i>
                       </div>
                     )}
@@ -424,7 +571,14 @@ export const ExamContainer: React.FC = () => {
           </div>
 
           {/* Questions Overview - Full Width at Bottom */}
-          <div className="mt-8 bg-white rounded-lg shadow-md p-6" ref={overviewRef}>
+          <div 
+            className="mt-8 rounded-lg shadow-md p-6 transition-colors duration-300" 
+            ref={overviewRef}
+            style={{
+              backgroundColor: 'var(--theme-bg-primary)',
+              boxShadow: 'var(--theme-shadow-md)'
+            }}
+          >
             <ExamQuestionCards
               questions={examState.exam.datos}
               currentQuestionIndex={examState.currentQuestionIndex}
