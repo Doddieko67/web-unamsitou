@@ -14,7 +14,7 @@ const SignUp = lazy(() => import("../pages/SignUp").then(module => ({ default: m
 const ResetPassword = lazy(() => import("../pages/ResetPassword").then(module => ({ default: module.ResetPassword })));
 const UpdatePassword = lazy(() => import("../pages/updatePassword").then(module => ({ default: module.UpdatePassword })));
 const Perfil = lazy(() => import("../pages/Perfil").then(module => ({ default: module.Perfil })));
-const ExamenPage = lazy(() => import("../Examen/ExamenPage").then(module => ({ default: module.ExamenPage })));
+const ExamContainer = lazy(() => import("../components/exam/ExamContainer").then(module => ({ default: module.ExamContainer })));
 
 // Componente de loading
 const PageLoader = () => (
@@ -26,12 +26,12 @@ const PageLoader = () => (
   </div>
 );
 
-function ExamenPageWrapper() {
+function ExamContainerWrapper() {
   const { examId } = useParams();
-  // 2. Renderiza ExamenPage pasándole examId como key
-  //    Esto le dice a React: si examId cambia, trata esto como
-  //    un componente COMPLETAMENTE NUEVO.
-  return <ExamenPage key={examId} />;
+  // Renderiza ExamContainer pasándole examId como key
+  // Esto le dice a React: si examId cambia, trata esto como
+  // un componente COMPLETAMENTE NUEVO.
+  return <ExamContainer key={examId} />;
 }
 
 export function MyRoutes() {
@@ -48,7 +48,7 @@ export function MyRoutes() {
         {/* Rutas protegidas - requieren autenticación */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/inicio" element={<ProtectedRoute><Main /></ProtectedRoute>} />
-        <Route path="/examen/:examId" element={<ProtectedRoute><ExamenPageWrapper /></ProtectedRoute>} />
+        <Route path="/examen/:examId" element={<ProtectedRoute><ExamContainerWrapper /></ProtectedRoute>} />
         <Route path="/examenes" element={<ProtectedRoute><Examenes /></ProtectedRoute>} />
         <Route path="/mi-perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         

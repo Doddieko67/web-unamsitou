@@ -8,6 +8,7 @@ import { useExamTimer } from '../../hooks/useExamTimer';
 import { useExamPersistence } from '../../hooks/useExamPersistence';
 import { useExamNavigation } from '../../hooks/useExamNavigation';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
+import { useFeedbackGeneration } from '../../hooks/useFeedbackGeneration';
 
 // Components
 import { ExamTimerDisplay } from './ExamTimerDisplay';
@@ -30,6 +31,9 @@ export const ExamContainer: React.FC = () => {
 
   // Initialize exam state
   const examState = useExamState(examId!);
+  
+  // Initialize feedback generation
+  const feedbackState = useFeedbackGeneration();
   
   // Initialize timer
   const timer = useExamTimer(
@@ -97,6 +101,13 @@ export const ExamContainer: React.FC = () => {
       timer.start();
     }
   }, [examState.exam, examState.isSubmitted, timer]);
+
+  // Load feedback when exam loads
+  React.useEffect(() => {
+    if (examState.exam?.feedback) {
+      feedbackState.setFeedback(examState.exam.feedback);
+    }
+  }, [examState.exam?.feedback, feedbackState.setFeedback]);
 
   // Stop timer when submitted
   React.useEffect(() => {
@@ -218,6 +229,9 @@ export const ExamContainer: React.FC = () => {
                 onSubmit={examState.submitExam}
                 onSuspend={examState.suspendExam}
                 timeSpent={timer.timeSpent}
+                onGenerateFeedback={() => feedbackState.generateFeedback(examId!)}
+                isFeedbackLoading={feedbackState.isLoading}
+                hasFeedback={Object.keys(feedbackState.feedback).length > 0}
                 syncStatus={persistence.syncStatus}
               />
             </div>
@@ -239,8 +253,13 @@ export const ExamContainer: React.FC = () => {
                 totalQuestions={examState.exam.datos.length}
                 selectedAnswer={examState.userAnswers[examState.currentQuestionIndex]}
                 isSubmitted={examState.isSubmitted}
-                feedback={examState.feedback[examState.currentQuestionIndex]}
+                feedback={
+                  currentQuestion?.id && feedbackState.feedback[currentQuestion.id] 
+                    ? feedbackState.feedback[currentQuestion.id]
+                    : examState.feedback[examState.currentQuestionIndex]
+                }
                 isPinned={examState.pinnedQuestions[examState.currentQuestionIndex] || false}
+                showFeedback={examState.isSubmitted}
                 onAnswerSelect={(answerIndex) => 
                   examState.setAnswer(examState.currentQuestionIndex, answerIndex)
                 }

@@ -9,6 +9,8 @@ interface ExamActionButtonsProps {
   onGenerateFeedback?: () => void;
   canSubmit?: boolean;
   isLoading?: boolean;
+  isFeedbackLoading?: boolean;
+  hasFeedback?: boolean;
   syncStatus?: 'idle' | 'syncing' | 'success' | 'error' | 'offline';
 }
 
@@ -24,6 +26,8 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
   onGenerateFeedback,
   canSubmit = true,
   isLoading = false,
+  isFeedbackLoading = false,
+  hasFeedback = false,
   syncStatus = 'idle',
 }) => {
   const handleSubmitClick = async () => {
@@ -116,22 +120,22 @@ export const ExamActionButtons: React.FC<ExamActionButtonsProps> = memo(({
         </div>
 
         {/* Feedback Button */}
-        {onGenerateFeedback && (
+        {onGenerateFeedback && !hasFeedback && (
           <button
             onClick={onGenerateFeedback}
             className="w-full text-yellow-600 bg-yellow-100 shadow-yellow-100 border-yellow-300 border-2 hover:shadow-yellow-400 px-4 py-3 rounded-lg font-semibold text-sm sm:text-base transition duration-150 ease-in-out shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             title="Generar retroalimentación"
-            disabled={isLoading}
+            disabled={isFeedbackLoading}
           >
-            {isLoading ? (
+            {isFeedbackLoading ? (
               <>
                 <i className="fas fa-spinner fa-spin mr-2"></i>
                 <span>Generando...</span>
               </>
             ) : (
               <>
-                <i className="fas fa-lightbulb mr-2"></i>
-                <span>Generar Retroalimentación</span>
+                <i className="fas fa-wheat-awn-circle-exclamation mr-2"></i>
+                <span>Retroalimentar todo</span>
               </>
             )}
           </button>
