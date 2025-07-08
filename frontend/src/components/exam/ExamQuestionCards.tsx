@@ -151,7 +151,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
                 } flex items-center justify-center transition-colors`}
                 title={isPinned ? 'Desfijar pregunta' : 'Fijar pregunta'}
               >
-                <i className={isPinned ? 'fas fa-thumbtack' : 'far fa-thumbtack'}></i>
+                <i className={isPinned ? 'fas fa-star' : 'far fa-star'}></i>
               </button>
 
               {/* Question Number */}

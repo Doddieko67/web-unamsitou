@@ -295,7 +295,7 @@ export const ExamContainer: React.FC = () => {
               {Object.keys(examState.pinnedQuestions).length > 0 && (
                 <div className="bg-white rounded-lg shadow-md p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    <i className="fas fa-thumbtack mr-2"></i>
+                    <i className="fas fa-star mr-2"></i>
                     Preguntas Fijadas
                   </h3>
                   <QuestionSelector
@@ -344,7 +344,7 @@ export const ExamContainer: React.FC = () => {
                         <i className="fas fa-chevron-left text-2xl"></i>
                       </button>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-l-lg">
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-l-lg border border-gray-200">
                         <i className="fas fa-chevron-left text-2xl opacity-50"></i>
                       </div>
                     )}
@@ -387,7 +387,7 @@ export const ExamContainer: React.FC = () => {
                         <i className="fas fa-chevron-right text-2xl"></i>
                       </button>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-r-lg">
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 rounded-r-lg border border-gray-200">
                         <i className="fas fa-chevron-right text-2xl opacity-50"></i>
                       </div>
                     )}

@@ -109,7 +109,7 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
               }`}
               title={isPinned ? 'Desfijar pregunta' : 'Fijar pregunta'}
             >
-              <i className={isPinned ? 'fas fa-thumbtack' : 'far fa-thumbtack'}></i>
+              <i className={isPinned ? 'fas fa-star' : 'far fa-star'}></i>
             </button>
           </div>
         </div>
@@ -155,17 +155,14 @@ export const ExamQuestionCard: React.FC<ExamQuestionCardProps> = memo(({
         </div>
       )}
 
-      {/* Question Counter and Navigation Hint */}
-      <div className="mt-6 text-center">
-        <div className="text-lg font-semibold text-gray-800">
-          {questionIndex + 1} <span className="text-gray-400">de</span> {totalQuestions}
-        </div>
-        {!isSubmitted && (
-          <div className="text-xs text-gray-500 mt-1">
+      {/* Navigation Hint */}
+      {!isSubmitted && (
+        <div className="mt-6 text-center">
+          <div className="text-xs text-gray-500">
             ← → para navegar | 1-4 para responder
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Keyboard Hint */}
       {!isSubmitted && (
