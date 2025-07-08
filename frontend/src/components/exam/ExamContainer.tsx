@@ -262,42 +262,46 @@ export const ExamContainer: React.FC = () => {
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <i className="fas fa-clipboard-list text-white text-xl"></i>
-                </div>
-                <div>
+              <div className="flex flex-col items-center justify-center text-center flex-1">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <i className="fas fa-clipboard-list text-white text-lg"></i>
+                  </div>
                   <h1 className="text-xl font-bold text-gray-900">
                     {examState.exam.titulo}
                   </h1>
-                  {examState.exam.descripcion && (
-                    <p className="text-sm text-gray-600 mt-0.5">
-                      {examState.exam.descripcion}
-                    </p>
-                  )}
-                  <div className="flex items-center space-x-3 mt-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
-                      <i className="fas fa-signal mr-1"></i>
-                      {examState.exam.dificultad}
-                    </span>
-                    <span className="inline-flex items-center text-xs text-gray-600">
-                      <i className="fas fa-list-ol mr-1"></i>
-                      {examState.exam.numero_preguntas} preguntas
-                    </span>
-                  </div>
+                </div>
+                
+                {examState.exam.descripcion && (
+                  <p className="text-sm text-gray-600 mb-3 max-w-md">
+                    {examState.exam.descripcion}
+                  </p>
+                )}
+                
+                <div className="flex items-center space-x-3">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+                    <i className="fas fa-signal mr-1"></i>
+                    {examState.exam.dificultad}
+                  </span>
+                  <span className="inline-flex items-center text-xs text-gray-600">
+                    <i className="fas fa-list-ol mr-1"></i>
+                    {examState.exam.numero_preguntas} preguntas
+                  </span>
                 </div>
               </div>
               
               {/* Timer Display - Fun and Colorful */}
-              <ExamTimerDisplay
-                timeLeft={timer.timeLeft}
-                timeSpent={timer.timeSpent}
-                isRunning={timer.isRunning}
-                isSubmitted={examState.isSubmitted}
-                formatTime={formatTime}
-                onPause={timer.pause}
-                onResume={timer.start}
-              />
+              <div className="flex-shrink-0">
+                <ExamTimerDisplay
+                  timeLeft={timer.timeLeft}
+                  timeSpent={timer.timeSpent}
+                  isRunning={timer.isRunning}
+                  isSubmitted={examState.isSubmitted}
+                  formatTime={formatTime}
+                  onPause={timer.pause}
+                  onResume={timer.start}
+                />
+              </div>
             </div>
           </div>
         </div>
