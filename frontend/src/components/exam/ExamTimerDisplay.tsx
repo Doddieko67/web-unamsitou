@@ -32,11 +32,11 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
   };
 
   const getTimerGradient = () => {
-    if (isSubmitted) return 'from-gray-200 to-gray-300';
-    if (timeLeft === undefined) return 'from-blue-200 to-blue-300';
-    if (timeLeft <= 300) return 'from-red-200 to-red-300'; // Last 5 minutes
-    if (timeLeft <= 900) return 'from-yellow-200 to-yellow-300'; // Last 15 minutes
-    return 'from-green-200 to-green-300';
+    if (isSubmitted) return 'from-blue-300 to-slate-400';
+    if (timeLeft === undefined) return 'from-blue-400 to-indigo-500';
+    if (timeLeft <= 300) return 'from-red-400 to-red-500'; // Last 5 minutes
+    if (timeLeft <= 900) return 'from-orange-400 to-yellow-500'; // Last 15 minutes
+    return 'from-blue-400 to-indigo-500';
   };
 
   const getIconColor = () => {
