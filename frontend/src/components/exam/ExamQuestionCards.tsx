@@ -48,7 +48,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
     const isCorrect = isAnswered && question.correcta !== undefined && 
                      userAnswers[index] === question.correcta;
     
-    let classes = "relative p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-md";
+    let classes = "relative px-4 py-3 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-md";
     
     if (isCurrent) {
       classes += " border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200";
@@ -155,34 +155,20 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
                   className={getCardClass(originalIndex)}
                   onClick={() => handleQuestionClick(originalIndex)}
                 >
-                  {/* Pin Button */}
-                  <button
-                    onClick={(e) => handlePinToggle(e, originalIndex)}
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs bg-yellow-500 text-white flex items-center justify-center transition-colors hover:bg-yellow-600"
-                    title="Desfijar pregunta"
-                  >
-                    <i className="fas fa-star"></i>
-                  </button>
-
-                  {/* Question Number */}
+                  {/* Question Number and Pin Button */}
                   <div className="flex items-center justify-between mb-2">
                     <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getNumberClass(originalIndex)}`}>
                       {originalIndex + 1}
                     </span>
                     
-                    {/* Status Indicators */}
-                    <div className="flex items-center space-x-1">
-                      {isAnswered && (
-                        <i className={`fas fa-check text-xs ${
-                          isSubmitted 
-                            ? isCorrect ? 'text-green-600' : 'text-red-600'
-                            : 'text-blue-600'
-                        }`}></i>
-                      )}
-                      {isCurrent && (
-                        <i className="fas fa-eye text-xs text-blue-600"></i>
-                      )}
-                    </div>
+                    {/* Pin Button - Always filled in pinned section */}
+                    <button
+                      onClick={(e) => handlePinToggle(e, originalIndex)}
+                      className="w-8 h-8 rounded-full text-sm bg-yellow-500 text-white hover:bg-yellow-600 flex items-center justify-center transition-colors"
+                      title="Desfijar pregunta"
+                    >
+                      <i className="fas fa-star"></i>
+                    </button>
                   </div>
 
                   {/* Question Preview */}
@@ -237,41 +223,24 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
               className={getCardClass(index)}
               onClick={() => handleQuestionClick(index)}
             >
-              {/* Pin Button */}
-              <button
-                onClick={(e) => handlePinToggle(e, index)}
-                className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs ${
-                  isPinned
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
-                } flex items-center justify-center transition-colors`}
-                title={isPinned ? 'Desfijar pregunta' : 'Fijar pregunta'}
-              >
-                <i className={isPinned ? 'fas fa-star' : 'far fa-star'}></i>
-              </button>
-
-              {/* Question Number */}
+              {/* Question Number and Pin Button */}
               <div className="flex items-center justify-between mb-2">
                 <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getNumberClass(index)}`}>
                   {index + 1}
                 </span>
                 
-                {/* Status Indicators */}
-                <div className="flex items-center space-x-1">
-                  {isAnswered && (
-                    <i className={`fas fa-check text-xs ${
-                      isSubmitted 
-                        ? isCorrect ? 'text-green-600' : 'text-red-600'
-                        : 'text-blue-600'
-                    }`}></i>
-                  )}
-                  {hasFeedback && (
-                    <i className="fas fa-lightbulb text-xs text-yellow-600"></i>
-                  )}
-                  {isCurrent && (
-                    <i className="fas fa-eye text-xs text-blue-600"></i>
-                  )}
-                </div>
+                {/* Pin Button - More prominent */}
+                <button
+                  onClick={(e) => handlePinToggle(e, index)}
+                  className={`w-8 h-8 rounded-full text-sm ${
+                    isPinned
+                      ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                      : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                  } flex items-center justify-center transition-colors`}
+                  title={isPinned ? 'Desfijar pregunta' : 'Fijar pregunta'}
+                >
+                  <i className={isPinned ? 'fas fa-star' : 'far fa-star'}></i>
+                </button>
               </div>
 
               {/* Question Preview */}
