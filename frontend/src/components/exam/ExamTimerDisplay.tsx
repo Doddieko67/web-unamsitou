@@ -32,11 +32,11 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
   };
 
   const getTimerGradient = () => {
-    if (isSubmitted) return 'from-gray-50 to-gray-100';
-    if (timeLeft === undefined) return 'from-blue-50 to-blue-100';
-    if (timeLeft <= 300) return 'from-red-50 to-red-100'; // Last 5 minutes
-    if (timeLeft <= 900) return 'from-yellow-50 to-yellow-100'; // Last 15 minutes
-    return 'from-green-50 to-green-100';
+    if (isSubmitted) return 'from-gray-200 to-gray-300';
+    if (timeLeft === undefined) return 'from-blue-200 to-blue-300';
+    if (timeLeft <= 300) return 'from-red-200 to-red-300'; // Last 5 minutes
+    if (timeLeft <= 900) return 'from-yellow-200 to-yellow-300'; // Last 15 minutes
+    return 'from-green-200 to-green-300';
   };
 
   const getIconColor = () => {
@@ -51,7 +51,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
     <div className={`px-6 py-4 rounded-2xl bg-gradient-to-br ${getTimerGradient()} transition-all duration-300 min-w-[380px]`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <div className={`w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center`}>
+          <div className={`w-8 h-8 rounded-full bg-white bg-opacity-90 flex items-center justify-center`}>
             <i className={`fas fa-stopwatch ${getIconColor()} text-sm`}></i>
           </div>
           <h3 className="text-sm font-bold text-gray-800">
@@ -96,7 +96,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
         </div>
 
         {/* Time Spent - Secondary Display */}
-        <div className="flex justify-between items-center bg-gray-50 bg-opacity-90 rounded-lg px-3 py-2">
+        <div className="flex justify-between items-center bg-white bg-opacity-80 rounded-lg px-3 py-2">
           <span className="text-xs font-medium text-gray-600 flex items-center">
             <i className="fas fa-hourglass-half mr-1 text-gray-500"></i>
             Transcurrido
@@ -107,7 +107,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
         </div>
 
         {/* Status indicator with emoji */}
-        <div className="flex items-center justify-center space-x-2 bg-gray-50 bg-opacity-90 rounded-lg px-3 py-1">
+        <div className="flex items-center justify-center space-x-2 bg-white bg-opacity-80 rounded-lg px-3 py-1">
           <span className="text-sm">
             {isSubmitted
               ? '🏁'
