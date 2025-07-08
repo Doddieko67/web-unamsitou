@@ -330,7 +330,7 @@ export const ExamContainer: React.FC = () => {
             <div className="lg:col-span-3">
               
               {/* Question Content with Side Navigation */}
-              <div className="bg-white rounded-lg shadow-md">
+              <div className="bg-white rounded-lg">
                 <div className="flex items-stretch">
                   
                   {/* Left Navigation Button - FULL HEIGHT for easier clicking */}
