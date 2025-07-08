@@ -1,20 +1,20 @@
-import { useState } from "react";
+import { useState, memo, useMemo, useCallback } from "react";
 import { ExamConf } from "./ExamConf";
 import { ExamQuestions } from "../ExamQuestions";
 import { ExamBasedOnHistory } from "../ExamBasedOnHistory";
 
-export function OpcionExam() {
+export const OpcionExam = memo(function OpcionExam() {
   // 1. Estado para guardar el ID de la pestaña activa
   //    Inicializamos con el ID de la pestaña que quieres activa por defecto.
   const [activeTab, setActiveTab] = useState("new-exam-tab"); // 'new-exam-tab' es el ID inicial
 
-  // 2. Función para manejar el clic en una pestaña
-  const handleTabClick = (tabId: string): void => {
+  // 2. Función para manejar el clic en una pestaña (memoizada para evitar re-renders)
+  const handleTabClick = useCallback((tabId: string): void => {
     setActiveTab(tabId);
-  };
+  }, []);
 
-  // (Opcional pero recomendado) Definir las pestañas como datos
-  const tabs = [
+  // (Opcional pero recomendado) Definir las pestañas como datos (memoizadas)
+  const tabs = useMemo(() => [
     {
       id: "new-exam-tab",
       label: "Nuevo Examen",
@@ -33,10 +33,10 @@ export function OpcionExam() {
       icon: "fas fa-history",
       content: <ExamBasedOnHistory />,
     },
-  ];
+  ], []);
 
-  // Estilos de tabs usando CSS variables
-  const getTabStyles = (isActive: boolean) => {
+  // Estilos de tabs usando CSS variables (memoizados)
+  const getTabStyles = useCallback((isActive: boolean) => {
     const baseStyles = {
       whiteSpace: 'nowrap' as const,
       padding: '1rem 0.25rem',
@@ -60,12 +60,12 @@ export function OpcionExam() {
         color: 'var(--theme-text-secondary)'
       };
     }
-  };
+  }, []);
 
-  const getTabHoverStyles = () => ({
+  const getTabHoverStyles = useCallback(() => ({
     color: 'var(--primary)',
     borderBottomColor: 'var(--theme-border-secondary)'
-  });
+  }), []);
 
   return (
     <div>
@@ -131,4 +131,4 @@ export function OpcionExam() {
       </div>
     </div>
   );
-}
+});
