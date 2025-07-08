@@ -46,6 +46,7 @@ export interface ExamActions {
   navigateToQuestion: (index: number) => void;
   submitExam: (timeSpent: number) => Promise<void>;
   suspendExam: (timeSpent: number) => Promise<void>;
+  resetExam: () => Promise<void>;
   loadExam: () => Promise<void>;
 }
 
@@ -289,6 +290,49 @@ export const useExamState = (examId: string): UseExamStateReturn => {
     }
   }, [state.exam, state.isSubmitted, examId, user?.id, navigate]);
 
+  // Reset exam - creates a new exam instance
+  const resetExam = useCallback(async () => {
+    if (!state.exam || !user?.id) return;
+
+    console.log('🔄 RESET: Creating new exam instance');
+
+    try {
+      const { data: newExam, error } = await supabase
+        .from('examenes')
+        .insert({
+          estado: 'pendiente',
+          user_id: user.id,
+          titulo: state.exam.titulo,
+          descripcion: state.exam.descripcion,
+          datos: state.exam.datos,
+          dificultad: state.exam.dificultad,
+          numero_preguntas: state.exam.numero_preguntas,
+          tiempo_limite_segundos: state.exam.tiempo_limite_segundos,
+          tiempo_tomado_segundos: 0,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      if (!newExam?.id) {
+        throw new Error('No se pudo crear el nuevo examen');
+      }
+
+      console.log('✅ RESET SUCCESS: New exam created with ID:', newExam.id);
+
+      // Clean up localStorage for current exam
+      localStorage.removeItem(`examen_estado_${examId}`);
+      localStorage.removeItem(`examen_final_pending_${examId}`);
+
+      // Navigate to new exam
+      navigate(`/examen/${newExam.id}`);
+    } catch (error) {
+      console.error('❌ Error resetting exam:', error);
+      throw error; // Re-throw to handle in UI
+    }
+  }, [state.exam, user?.id, examId, navigate]);
+
   // Load exam on mount
   useEffect(() => {
     loadExam();
@@ -301,6 +345,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
     navigateToQuestion,
     submitExam,
     suspendExam,
+    resetExam,
     loadExam,
   };
 };
