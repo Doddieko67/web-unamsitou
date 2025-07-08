@@ -32,11 +32,11 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
   };
 
   const getTimerGradient = () => {
-    if (isSubmitted) return 'from-gray-100 to-gray-200';
-    if (timeLeft === undefined) return 'from-blue-100 to-cyan-100';
-    if (timeLeft <= 300) return 'from-red-100 to-pink-100'; // Last 5 minutes
-    if (timeLeft <= 900) return 'from-orange-100 to-yellow-100'; // Last 15 minutes
-    return 'from-emerald-100 to-green-100';
+    if (isSubmitted) return 'from-slate-50 to-slate-100';
+    if (timeLeft === undefined) return 'from-blue-50 to-indigo-50';
+    if (timeLeft <= 300) return 'from-red-50 to-rose-50'; // Last 5 minutes
+    if (timeLeft <= 900) return 'from-amber-50 to-orange-50'; // Last 15 minutes
+    return 'from-emerald-50 to-teal-50';
   };
 
   const getIconColor = () => {
@@ -96,7 +96,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
         </div>
 
         {/* Time Spent - Secondary Display */}
-        <div className="flex justify-between items-center bg-white bg-opacity-60 rounded-lg px-3 py-2">
+        <div className="flex justify-between items-center bg-white bg-opacity-80 rounded-lg px-3 py-2 backdrop-blur-sm">
           <span className="text-xs font-medium text-gray-600 flex items-center">
             <i className="fas fa-hourglass-half mr-1 text-gray-500"></i>
             Transcurrido
@@ -107,7 +107,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
         </div>
 
         {/* Status indicator with emoji */}
-        <div className="flex items-center justify-center space-x-2 bg-white bg-opacity-60 rounded-lg px-3 py-1">
+        <div className="flex items-center justify-center space-x-2 bg-white bg-opacity-80 rounded-lg px-3 py-1 backdrop-blur-sm">
           <span className="text-sm">
             {isSubmitted
               ? '🏁'
@@ -126,8 +126,8 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
 
         {/* Warning for low time - Fun style */}
         {timeLeft !== undefined && timeLeft <= 300 && !isSubmitted && (
-          <div className="mt-3 p-2 bg-gradient-to-r from-red-400 to-red-500 rounded-lg animate-pulse">
-            <div className="flex items-center justify-center text-white">
+          <div className="mt-3 p-2 bg-gradient-to-r from-red-300 to-rose-300 rounded-lg animate-pulse">
+            <div className="flex items-center justify-center text-red-800">
               <span className="text-sm font-bold animate-bounce">
                 🚨 ¡Solo {Math.floor(timeLeft / 60)} minutos! 🚨
               </span>
