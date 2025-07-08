@@ -271,16 +271,16 @@ export const ExamContainer: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
-            {/* Left Sidebar - Compact */}
-            <div className="lg:col-span-2 space-y-4">
+            {/* Left Sidebar - Search, Pinned Questions, and Action Buttons */}
+            <div className="lg:col-span-1 space-y-6">
               
-              {/* Search and Filter - Compact */}
-              <div className="bg-white rounded-lg shadow-md p-3">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                  <i className="fas fa-search mr-1"></i>
-                  Buscar
+              {/* Search and Filter */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <i className="fas fa-search mr-2"></i>
+                  Buscar Preguntas
                 </h3>
                 <ExamSearchFilter
                   questions={examState.exam.datos}
@@ -291,12 +291,12 @@ export const ExamContainer: React.FC = () => {
                 />
               </div>
 
-              {/* Pinned Questions - Compact */}
+              {/* Pinned Questions */}
               {Object.keys(examState.pinnedQuestions).length > 0 && (
-                <div className="bg-white rounded-lg shadow-md p-3">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                    <i className="fas fa-thumbtack mr-1"></i>
-                    Fijadas
+                <div className="bg-white rounded-lg shadow-md p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    <i className="fas fa-thumbtack mr-2"></i>
+                    Preguntas Fijadas
                   </h3>
                   <QuestionSelector
                     totalQuestions={examState.exam.datos.length}
@@ -311,28 +311,41 @@ export const ExamContainer: React.FC = () => {
                   />
                 </div>
               )}
+
+              {/* Action Buttons */}
+              <ExamActionButtons
+                isSubmitted={examState.isSubmitted}
+                onSubmit={examState.submitExam}
+                onSuspend={examState.suspendExam}
+                onReset={examState.isSubmitted ? examState.resetExam : undefined}
+                timeSpent={timer.timeSpent}
+                onGenerateFeedback={() => feedbackState.generateFeedback(examId!)}
+                isFeedbackLoading={feedbackState.isLoading}
+                hasFeedback={Object.keys(feedbackState.feedback).length > 0}
+                syncStatus={persistence.syncStatus}
+              />
             </div>
 
             {/* Main Content - Optimized for Cursor Movement */}
-            <div className="lg:col-span-8">
+            <div className="lg:col-span-3">
               
               {/* Question Content with Side Navigation */}
               <div className="bg-white rounded-lg shadow-md">
                 <div className="flex items-stretch">
                   
-                  {/* Left Navigation Button - Positioned for Easy Access */}
-                  <div className="flex items-center justify-center w-16 bg-gray-50 rounded-l-lg border-r">
+                  {/* Left Navigation Button - EXPANDED for easier clicking */}
+                  <div className="flex items-center justify-center w-24 bg-gray-50 rounded-l-lg border-r">
                     {navigation.canGoPrevious ? (
                       <button
                         onClick={navigation.goToPrevious}
-                        className="w-12 h-12 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-all duration-200 hover:scale-110 active:scale-95"
+                        className="w-16 h-16 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
                         title="Pregunta anterior (←)"
                       >
-                        <i className="fas fa-chevron-left text-lg"></i>
+                        <i className="fas fa-chevron-left text-xl"></i>
                       </button>
                     ) : (
-                      <div className="w-12 h-12 flex items-center justify-center bg-gray-100 text-gray-400 rounded-full">
-                        <i className="fas fa-chevron-left text-lg"></i>
+                      <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-gray-400 rounded-xl">
+                        <i className="fas fa-chevron-left text-xl"></i>
                       </div>
                     )}
                   </div>
@@ -363,19 +376,19 @@ export const ExamContainer: React.FC = () => {
                     />
                   </div>
 
-                  {/* Right Navigation Button - Positioned for Easy Access */}
-                  <div className="flex items-center justify-center w-16 bg-gray-50 rounded-r-lg border-l">
+                  {/* Right Navigation Button - EXPANDED for easier clicking */}
+                  <div className="flex items-center justify-center w-24 bg-gray-50 rounded-r-lg border-l">
                     {navigation.canGoNext ? (
                       <button
                         onClick={navigation.goToNext}
-                        className="w-12 h-12 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full transition-all duration-200 hover:scale-110 active:scale-95"
+                        className="w-16 h-16 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
                         title="Siguiente pregunta (→)"
                       >
-                        <i className="fas fa-chevron-right text-lg"></i>
+                        <i className="fas fa-chevron-right text-xl"></i>
                       </button>
                     ) : (
-                      <div className="w-12 h-12 flex items-center justify-center bg-gray-100 text-gray-400 rounded-full">
-                        <i className="fas fa-chevron-right text-lg"></i>
+                      <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-gray-400 rounded-xl">
+                        <i className="fas fa-chevron-right text-xl"></i>
                       </div>
                     )}
                   </div>
