@@ -4,7 +4,7 @@ import { useAuthStore } from '../../stores/authStore';
 
 // Custom hooks
 import { useExamState } from '../../hooks/useExamState';
-import { useExamTimer } from '../../hooks/useExamTimer';
+import { useBasicTimer } from '../../hooks/useBasicTimer';
 import { useExamPersistence } from '../../hooks/useExamPersistence';
 import { useExamNavigation } from '../../hooks/useExamNavigation';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
@@ -51,7 +51,7 @@ export const ExamContainer: React.FC = () => {
   const performanceMetrics = usePerformanceMetrics();
   
   // Initialize timer
-  const timer = useExamTimer(
+  const timer = useBasicTimer(
     examState.exam?.tiempo_limite_segundos,
     () => examState.submitExam(timer.timeSpent), // Pass time spent on auto-submit
     examState.exam?.tiempo_tomado_segundos // Pass initial time spent for resumed exams
@@ -174,7 +174,7 @@ export const ExamContainer: React.FC = () => {
     if (examState.exam && !examState.isSubmitted && !timer.isRunning) {
       timer.start();
     }
-  }, [examState.exam, examState.isSubmitted, timer]);
+  }, [examState.exam, examState.isSubmitted, timer.isRunning, timer.start]);
 
   // Load feedback when exam loads
   React.useEffect(() => {
@@ -188,7 +188,7 @@ export const ExamContainer: React.FC = () => {
     if (examState.isSubmitted && timer.isRunning) {
       timer.stop();
     }
-  }, [examState.isSubmitted, timer]);
+  }, [examState.isSubmitted, timer.isRunning, timer.stop]);
 
   // Handle loading state
   if (examState.loading) {
@@ -298,8 +298,6 @@ export const ExamContainer: React.FC = () => {
                   isRunning={timer.isRunning}
                   isSubmitted={examState.isSubmitted}
                   formatTime={formatTime}
-                  onPause={timer.pause}
-                  onResume={timer.start}
                 />
               </div>
             </div>
@@ -307,18 +305,33 @@ export const ExamContainer: React.FC = () => {
         </div>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Progress Bar - Always visible at top */}
-          <div className="mb-6">
-            <ExamProgressBar
-              currentQuestion={examState.currentQuestionIndex}
-              totalQuestions={examState.exam.datos.length}
-              answeredQuestions={answeredCount}
-            />
+          {/* Action Buttons and Progress Bar - Same row */}
+          <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-6">
+            <div className="lg:flex-1">
+              <ExamProgressBar
+                currentQuestion={examState.currentQuestionIndex}
+                totalQuestions={examState.exam.datos.length}
+                answeredQuestions={answeredCount}
+              />
+            </div>
+            <div className="flex-shrink-0">
+              <ExamActionButtons
+                isSubmitted={examState.isSubmitted}
+                onSubmit={examState.submitExam}
+                onSuspend={examState.suspendExam}
+                onReset={examState.isSubmitted ? examState.resetExam : undefined}
+                timeSpent={timer.timeSpent}
+                onGenerateFeedback={() => feedbackState.generateFeedback(examId!)}
+                isFeedbackLoading={feedbackState.isLoading}
+                hasFeedback={Object.keys(feedbackState.feedback).length > 0}
+                syncStatus={persistence.syncStatus}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
-            {/* Left Sidebar - Search, Pinned Questions, and Action Buttons */}
+            {/* Left Sidebar - Search and Filter */}
             <div className="lg:col-span-1 space-y-6">
               
               {/* Search and Filter */}
@@ -335,20 +348,6 @@ export const ExamContainer: React.FC = () => {
                   isSubmitted={examState.isSubmitted}
                 />
               </div>
-
-
-              {/* Action Buttons */}
-              <ExamActionButtons
-                isSubmitted={examState.isSubmitted}
-                onSubmit={examState.submitExam}
-                onSuspend={examState.suspendExam}
-                onReset={examState.isSubmitted ? examState.resetExam : undefined}
-                timeSpent={timer.timeSpent}
-                onGenerateFeedback={() => feedbackState.generateFeedback(examId!)}
-                isFeedbackLoading={feedbackState.isLoading}
-                hasFeedback={Object.keys(feedbackState.feedback).length > 0}
-                syncStatus={persistence.syncStatus}
-              />
             </div>
 
             {/* Main Content - Optimized for Cursor Movement */}

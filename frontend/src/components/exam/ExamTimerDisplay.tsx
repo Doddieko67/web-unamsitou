@@ -6,8 +6,6 @@ interface ExamTimerDisplayProps {
   isRunning: boolean;
   isSubmitted: boolean;
   formatTime: (seconds: number | undefined) => string;
-  onPause?: () => void;
-  onResume?: () => void;
 }
 
 /**
@@ -20,31 +18,37 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
   isRunning,
   isSubmitted,
   formatTime,
-  onPause,
-  onResume,
 }) => {
   const getTimerColor = () => {
-    if (isSubmitted) return 'text-gray-600';
-    if (timeLeft === undefined) return 'text-blue-600';
-    if (timeLeft <= 300) return 'text-red-600'; // Last 5 minutes
-    if (timeLeft <= 900) return 'text-orange-600'; // Last 15 minutes
-    return 'text-emerald-600';
+    if (isSubmitted) return 'text-blue-700';
+    if (timeLeft === undefined) return 'text-blue-700';
+    if (timeLeft <= 300) return 'text-red-700'; // Last 5 minutes
+    if (timeLeft <= 900) return 'text-orange-700'; // Last 15 minutes
+    return 'text-emerald-700'; // Running
   };
 
   const getTimerGradient = () => {
-    if (isSubmitted) return 'from-blue-200 to-slate-300';
-    if (timeLeft === undefined) return 'from-blue-200 to-indigo-300';
-    if (timeLeft <= 300) return 'from-red-300 to-red-400'; // Last 5 minutes
-    if (timeLeft <= 900) return 'from-orange-300 to-yellow-400'; // Last 15 minutes
-    return 'from-blue-200 to-indigo-300';
+    if (isSubmitted) return 'from-blue-100 to-blue-200';
+    if (timeLeft === undefined) return 'from-blue-100 to-indigo-200';
+    if (timeLeft <= 300) return 'from-red-100 to-red-200'; // Last 5 minutes
+    if (timeLeft <= 900) return 'from-orange-100 to-yellow-200'; // Last 15 minutes
+    return 'from-emerald-100 to-green-200'; // Running
   };
 
   const getIconColor = () => {
-    if (isSubmitted) return 'text-gray-400';
+    if (isSubmitted) return 'text-blue-600';
     if (timeLeft === undefined) return 'text-blue-500';
     if (timeLeft <= 300) return 'text-red-500';
     if (timeLeft <= 900) return 'text-orange-500';
-    return 'text-emerald-500';
+    return 'text-emerald-500'; // Running
+  };
+
+  const getTextColor = () => {
+    if (isSubmitted) return 'text-blue-800';
+    if (timeLeft === undefined) return 'text-blue-800';
+    if (timeLeft <= 300) return 'text-red-800';
+    if (timeLeft <= 900) return 'text-orange-800';
+    return 'text-emerald-800'; // Running
   };
 
   return (
@@ -54,39 +58,26 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
           <div className={`w-8 h-8 rounded-full bg-white bg-opacity-90 flex items-center justify-center`}>
             <i className={`fas fa-stopwatch ${getIconColor()} text-sm`}></i>
           </div>
-          <h3 className="text-sm font-bold text-gray-800">
+          <h3 className={`text-sm font-bold ${getTextColor()}`}>
             ⏰ Tiempo de Examen
           </h3>
         </div>
-        {!isSubmitted && (
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={isRunning ? onPause : onResume}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 ${
-                isRunning 
-                  ? 'bg-yellow-400 hover:bg-yellow-500 text-yellow-900' 
-                  : 'bg-green-400 hover:bg-green-500 text-green-900'
-              } shadow-lg`}
-              title={isRunning ? 'Pausar timer' : 'Reanudar timer'}
-            >
-              <i className={`fas fa-${isRunning ? 'pause' : 'play'} text-xs`}></i>
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="space-y-3">
         {/* Time Left - Main Display */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-2 mb-1">
-            <span className="text-xs font-medium text-gray-600">⏳ Tiempo restante</span>
+            <span className={`text-xs font-medium ${getTextColor()}`}>⏳ Tiempo restante</span>
             <div
               className={`w-3 h-3 rounded-full ${
                 isSubmitted
-                  ? 'bg-gray-400'
-                  : isRunning
-                  ? 'bg-green-400 animate-pulse'
-                  : 'bg-yellow-400 animate-bounce'
+                  ? 'bg-blue-400'
+                  : timeLeft !== undefined && timeLeft <= 300
+                  ? 'bg-red-400 animate-pulse'
+                  : timeLeft !== undefined && timeLeft <= 900
+                  ? 'bg-orange-400 animate-pulse'
+                  : 'bg-emerald-400 animate-pulse'
               } shadow-sm`}
             />
           </div>
@@ -97,11 +88,11 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
 
         {/* Time Spent - Secondary Display */}
         <div className="flex justify-between items-center bg-white bg-opacity-80 rounded-lg px-3 py-2">
-          <span className="text-xs font-medium text-gray-600 flex items-center">
-            <i className="fas fa-hourglass-half mr-1 text-gray-500"></i>
+          <span className={`text-xs font-medium ${getTextColor()} flex items-center`}>
+            <i className={`fas fa-hourglass-half mr-1 ${getIconColor()}`}></i>
             Transcurrido
           </span>
-          <span className="text-sm font-bold text-gray-800">
+          <span className={`text-sm font-bold ${getTextColor()}`}>
             {formatTime(timeSpent)}
           </span>
         </div>
@@ -111,16 +102,20 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
           <span className="text-sm">
             {isSubmitted
               ? '🏁'
-              : isRunning
-              ? '🚀'
-              : '⏸️'}
+              : timeLeft !== undefined && timeLeft <= 300
+              ? '🚨'
+              : timeLeft !== undefined && timeLeft <= 900
+              ? '⚠️'
+              : '🚀'}
           </span>
-          <span className="text-xs font-medium text-gray-700">
+          <span className={`text-xs font-medium ${getTextColor()}`}>
             {isSubmitted
               ? 'Finalizado'
-              : isRunning
-              ? 'En marcha'
-              : 'Pausado'}
+              : timeLeft !== undefined && timeLeft <= 300
+              ? 'Tiempo crítico'
+              : timeLeft !== undefined && timeLeft <= 900
+              ? 'Tiempo limitado'
+              : 'En marcha'}
           </span>
         </div>
 
@@ -138,7 +133,7 @@ export const ExamTimerDisplay: React.FC<ExamTimerDisplayProps> = ({
         {/* Encouragement for good time */}
         {timeLeft !== undefined && timeLeft > 1800 && !isSubmitted && (
           <div className="mt-2 text-center">
-            <span className="text-xs text-gray-600">🌟 ¡Tienes tiempo suficiente! 🌟</span>
+            <span className={`text-xs ${getTextColor()}`}>🌟 ¡Tienes tiempo suficiente! 🌟</span>
           </div>
         )}
       </div>

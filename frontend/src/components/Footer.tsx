@@ -1,11 +1,14 @@
 export function Footer() {
   return (
-    <footer className="bg-gray-800 text-white py-8">
+    <footer className="py-8 transition-colors duration-300" style={{ 
+      backgroundColor: 'var(--theme-bg-secondary)',
+      color: 'var(--theme-text-primary)'
+    }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-row justify-evenly gap-8">
           <div>
             <h3 className="text-lg font-semibold mb-4">ExamGen AI</h3>
-            <p className="text-gray-400 text-sm">
+            <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>
               La plataforma inteligente para crear exámenes personalizados con
               ayuda de IA.
             </p>
@@ -16,13 +19,14 @@ export function Footer() {
               <li>
                 <a
                   href="mailto:hern04045@gmail.com"
-                  className="text-gray-400 hover:text-white text-sm"
+                  className="text-sm transition-colors hover:text-blue-500"
+                  style={{ color: 'var(--theme-text-muted)' }}
                 >
                   <i className="fa-solid fa-envelope"></i>
                 </a>
               </li>
               <li>
-                <span className="text-gray-400 hover:text-white text-sm">
+                <span className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>
                   55 4370 6437
                 </span>
               </li>
@@ -30,7 +34,8 @@ export function Footer() {
                 <a
                   href="https://www.linkedin.com/in/hernandez-tellez-hector-fidel-a710b72a8/"
                   target="_blank"
-                  className="text-gray-400 hover:text-white text-sm"
+                  className="text-sm transition-colors hover:text-blue-500"
+                  style={{ color: 'var(--theme-text-muted)' }}
                 >
                   <i className="fa-brands fa-linkedin-in"></i>
                 </a>
@@ -38,7 +43,10 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
+        <div className="mt-8 pt-8 text-center text-sm" style={{ 
+          borderTop: '1px solid var(--theme-border-primary)',
+          color: 'var(--theme-text-muted)'
+        }}>
           <p>© 2025 ExamGen AI.</p>
         </div>
       </div>

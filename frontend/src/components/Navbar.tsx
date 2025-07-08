@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router";
 import { useAuthStore } from "../stores/authStore";
+import { ThemeToggle } from "./ThemeToggle";
 
 const Data = [
   {
@@ -93,7 +94,7 @@ export function NavBar() {
   };
 
   return (
-    <nav className="gradient-bg text-white shadow-lg">
+    <nav className="gradient-bg text-white shadow-lg" style={{ background: 'var(--theme-gradient-primary)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo / Brand Section */}
@@ -138,7 +139,9 @@ export function NavBar() {
               <div className="hidden md:block">
                 {" "}
                 {/* Hide on small screens */}
-                <div className="ml-4 flex items-center">
+                <div className="ml-4 flex items-center gap-3">
+                  {/* Theme Toggle */}
+                  <ThemeToggle variant="icon" size="sm" />
                   <div className="ml-3 relative" ref={dropdownRef}>
                     {" "}
                     {/* Attach ref here */}
@@ -163,13 +166,21 @@ export function NavBar() {
                     {/* Desktop Dropdown Content */}
                     {isDesktopDropdownOpen && ( // Conditionally render based on state
                       <div
-                        className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none"
+                        className="origin-top-right absolute right-0 mt-2 w-48 rounded-md py-1 ring-1 ring-black ring-opacity-5 focus:outline-none"
+                        style={{ 
+                          backgroundColor: 'var(--theme-bg-primary)',
+                          boxShadow: 'var(--theme-shadow-lg)',
+                          color: 'var(--theme-text-primary)'
+                        }}
                         role="menu" // ARIA role
                         aria-orientation="vertical"
                         aria-labelledby="user-menu-button" // Link to the button
                       >
                         {/* User Info (Optional) */}
-                        <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                        <div className="px-4 py-2 text-sm" style={{ 
+                          color: 'var(--theme-text-secondary)',
+                          borderBottom: '1px solid var(--theme-border-primary)'
+                        }}>
                           {user?.user_metadata?.name || user?.email || "User"}
                         </div>
 
@@ -179,7 +190,11 @@ export function NavBar() {
                             e.preventDefault();
                             handleChangeSession();
                           }} // Use the handler that closes dropdown
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="block px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                          style={{ 
+                            color: 'var(--theme-text-secondary)',
+                            '&:hover': { backgroundColor: 'var(--theme-hover-bg)' }
+                          }}
                           role="menuitem" // ARIA role
                         >
                           <i className="fas fa-sync-alt mr-2"></i> Cambiar de
@@ -191,7 +206,10 @@ export function NavBar() {
                             e.preventDefault();
                             handleSignOut();
                           }} // Use the handler that closes dropdown
-                          className="block px-4 py-2 text-sm hover:bg-gray-100 text-red-500"
+                          className="block px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                          style={{ 
+                            color: 'var(--theme-error)'
+                          }}
                           role="menuitem" // ARIA role
                         >
                           <i className="fas fa-sign-out-alt mr-2"></i> Cerrar
@@ -291,6 +309,11 @@ export function NavBar() {
                   {/* Show user name or email */}
                 </div>
               )}
+              {/* Mobile Theme Toggle */}
+              <div className="px-3 py-2">
+                <ThemeToggle variant="button" size="sm" />
+              </div>
+              
               {/* Mobile Auth Actions */}
               <a
                 href="#"

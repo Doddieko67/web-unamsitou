@@ -3,6 +3,7 @@ import { NavBar } from "./components/Navbar";
 import { MyRoutes } from "./routers/routes";
 import { Footer } from "./components/Footer";
 import { QueryProvider } from "./providers/QueryProvider";
+import { ThemeProvider } from "./providers/ThemeProvider";
 import { useAuthInit } from "./hooks/useAuthInit";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
@@ -54,9 +55,11 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <QueryProvider>
-        <AppContent />
-      </QueryProvider>
+      <ThemeProvider>
+        <QueryProvider>
+          <AppContent />
+        </QueryProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

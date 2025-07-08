@@ -18,8 +18,47 @@ interface Subject {
   icon: string;
   description: string;
   colorClasses: { bg: string; text: string; iconBg: string };
+  colorTheme?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'indigo';
 }
 type Difficulty = "easy" | "medium" | "hard" | "mixed";
+
+// Sistema de color mapping dinámico para dark/light mode
+const getSubjectColorStyles = (colorTheme: string = 'blue') => {
+  const colorMap: Record<string, { bg: string; text: string; border: string }> = {
+    blue: {
+      bg: 'var(--theme-info-light)',
+      text: 'var(--theme-info-dark)',
+      border: 'var(--theme-info)'
+    },
+    green: {
+      bg: 'var(--theme-success-light)',
+      text: 'var(--theme-success-dark)', 
+      border: 'var(--theme-success)'
+    },
+    purple: {
+      bg: '#f3e8ff', // purple-100 equivalent
+      text: '#6b21a8', // purple-800 equivalent
+      border: '#a855f7' // purple-500 equivalent
+    },
+    orange: {
+      bg: 'var(--theme-warning-light)',
+      text: 'var(--theme-warning-dark)',
+      border: 'var(--theme-warning)'
+    },
+    red: {
+      bg: 'var(--theme-error-light)',
+      text: 'var(--theme-error-dark)',
+      border: 'var(--theme-error)'
+    },
+    indigo: {
+      bg: '#e0e7ff', // indigo-100
+      text: '#3730a3', // indigo-800
+      border: '#6366f1' // indigo-500
+    }
+  };
+  
+  return colorMap[colorTheme] || colorMap.blue;
+};
 
 // Lista inicial de materias (podría venir de otro lugar)
 const initialAvailableSubjects: Subject[] = [
@@ -27,8 +66,9 @@ const initialAvailableSubjects: Subject[] = [
     name: "Matemáticas",
     icon: "fas fa-square-root-alt",
     description: "Álgebra, cálculo, geometría",
+    colorTheme: 'blue',
     colorClasses: {
-      bg: "bg-blue-100",
+      bg: "bg-blue-100", // Legacy support - se reemplazará dinámicamente
       text: "text-blue-800",
       iconBg: "bg-blue-100",
     },
@@ -37,8 +77,9 @@ const initialAvailableSubjects: Subject[] = [
     name: "Biología",
     icon: "fas fa-dna",
     description: "Células, genética, ecología",
+    colorTheme: 'green',
     colorClasses: {
-      bg: "bg-green-100",
+      bg: "bg-green-100", // Legacy support - se reemplazará dinámicamente
       text: "text-green-800",
       iconBg: "bg-green-100",
     },
@@ -47,8 +88,9 @@ const initialAvailableSubjects: Subject[] = [
     name: "Literatura",
     icon: "fas fa-book-open",
     description: "Obras clásicas, análisis",
+    colorTheme: 'purple',
     colorClasses: {
-      bg: "bg-purple-100",
+      bg: "bg-purple-100", // Legacy support - se reemplazará dinámicamente
       text: "text-purple-800",
       iconBg: "bg-purple-100",
     },
@@ -225,8 +267,7 @@ export function ExamConf() {
         // Intenta leer el mensaje de error del cuerpo de la respuesta si está disponible
         const errorBody = await response.json().catch(() => null); // Intenta parsear JSON, ignora errores si no es JSON
         
-        // Log del error para debugging
-        console.error('Error del backend:', errorBody || response.statusText);
+        // Error del backend se manejará en el UI
         
         const errorMessage =
           errorBody?.error || errorBody?.message ||
@@ -243,7 +284,7 @@ export function ExamConf() {
         );
       }
 
-      console.log("Examen generado y guardado con ID:", result.examId);
+      // Examen generado exitosamente
 
       // --- NAVEGACIÓN A LA PÁGINA DEL EXAMEN ---
       // Navega a la ruta con el ID del examen generado.
@@ -252,7 +293,7 @@ export function ExamConf() {
     } catch (error) {
       // Especifica 'any' o un tipo de error más específico si lo conoces
       // --- Manejo de Errores con Swal ---
-      console.error("Error en la llamada de generación:", error); // Loguea el error completo para debugging
+      // Error en la generación del examen
       Swal.fire({
         icon: "error",
         title: "Error al Generar Examen",
@@ -274,9 +315,20 @@ export function ExamConf() {
   return (
     <div
       id="new-exam-section"
-      className="bg-white rounded-xl shadow-lg overflow-hidden p-6 sm:p-8 mb-8 border border-gray-200"
+      className="rounded-xl shadow-lg overflow-hidden p-6 sm:p-8 mb-8 border transition-colors duration-300"
+      style={{
+        backgroundColor: 'var(--theme-bg-primary)',
+        borderColor: 'var(--theme-border-primary)',
+        boxShadow: 'var(--theme-shadow-lg)'
+      }}
     >
-      <h2 className="text-2xl font-bold text-gray-900 mb-8 border-b pb-4">
+      <h2 
+        className="text-2xl font-bold mb-8 border-b pb-4 transition-colors duration-300"
+        style={{ 
+          color: 'var(--theme-text-primary)',
+          borderColor: 'var(--theme-border-primary)'
+        }}
+      >
         Configura tu Examen Personalizado
       </h2>
 
@@ -286,6 +338,7 @@ export function ExamConf() {
         selectedSubjects={selectedSubjects} // Pasa las materias seleccionadas
         onSubjectToggle={handleSubjectToggle} // Pasa el handler para (des)seleccionar
         onAddCustomSubject={handleAddCustomSubject} // Pasa el handler para añadir nueva materia
+        getSubjectColorStyles={getSubjectColorStyles} // Pasa el sistema dinámico de colores
       />
 
       <QuestionConf
@@ -321,7 +374,10 @@ export function ExamConf() {
 
       {/* Indicador visual mientras se genera el examen */}
       {isGenerating && (
-        <div className="mt-4 text-center text-sm text-indigo-600">
+        <div 
+          className="mt-4 text-center text-sm transition-colors duration-300"
+          style={{ color: 'var(--theme-info)' }}
+        >
           <i className="fas fa-spinner fa-spin mr-2"></i>{" "}
           {/* Icono de spinner (requiere FontAwesome) */}
           Generando tu examen... esto puede tardar unos momentos.

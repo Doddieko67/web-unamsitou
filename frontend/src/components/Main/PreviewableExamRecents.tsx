@@ -12,6 +12,8 @@ interface PreviewableRecentExamCardProps {
   isThisPinned?: boolean;
   onEntireToggle: (examId: string) => void;
   isPinneable: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
 // Umbral en píxeles desde el borde superior del viewport.
@@ -26,6 +28,8 @@ export function PreviewableRecentExamCard({
   isThisPinned = false,
   onEntireToggle,
   isPinneable = false,
+  isSelected = false,
+  onSelect,
 }: PreviewableRecentExamCardProps) {
   // Estado para la posición de la preview (true = abajo, false = arriba)
   const [showPreviewBelow, setShowPreviewBelow] = useState(false);
@@ -157,6 +161,8 @@ export function PreviewableRecentExamCard({
         isPinneable={isPinneable}
         isThisPinned={isThisPinned}
         onEntireToggle={onEntireToggle}
+        isSelected={isSelected}
+        onSelect={onSelect}
       />
 
       {/* Div para la vista previa. Inicialmente invisible y escalada */}

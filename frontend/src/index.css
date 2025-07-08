@@ -1,7 +1,9 @@
 @import "tailwindcss";
 @import "sweetalert2/dist/sweetalert2.min.css";
 
+/* Theme System - CSS Variables */
 :root {
+    /* Core Brand Colors */
     --primary: #6366f1;
     --primary-dark: #4f46e5;
     --terciary: oklch(51.1% 0.262 276.966);
@@ -9,11 +11,110 @@
     --secondary: #10b981;
     --dark: #1e293b;
     --light: #f8fafc;
+
+    /* Light Theme Colors */
+    --theme-bg-primary: #ffffff;
+    --theme-bg-secondary: #f8fafc;
+    --theme-bg-tertiary: #f1f5f9;
+    --theme-bg-accent: #e2e8f0;
+    
+    /* Text Colors */
+    --theme-text-primary: #1e293b;
+    --theme-text-secondary: #475569;
+    --theme-text-muted: #64748b;
+    --theme-text-accent: #6366f1;
+    
+    /* Border Colors */
+    --theme-border-primary: #e2e8f0;
+    --theme-border-secondary: #cbd5e1;
+    --theme-border-accent: #94a3b8;
+    
+    /* Status Colors */
+    --theme-success: #10b981;
+    --theme-success-light: #d1fae5;
+    --theme-success-dark: #065f46;
+    --theme-warning: #f59e0b;
+    --theme-warning-light: #fef3c7;
+    --theme-warning-dark: #92400e;
+    --theme-error: #ef4444;
+    --theme-error-light: #fee2e2;
+    --theme-error-dark: #991b1b;
+    --theme-info: #3b82f6;
+    --theme-info-light: #dbeafe;
+    --theme-info-dark: #1e40af;
+    
+    /* Interactive States */
+    --theme-hover-bg: #f1f5f9;
+    --theme-active-bg: #e2e8f0;
+    --theme-focus-ring: rgba(99, 102, 241, 0.2);
+    
+    /* Shadows */
+    --theme-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --theme-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    /* Gradients */
+    --theme-gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    --theme-gradient-purple: linear-gradient(135deg, var(--terciary) 0%, var(--cuaternary) 100%);
+    --theme-gradient-card: linear-gradient(135deg, var(--theme-bg-primary) 0%, var(--theme-bg-secondary) 100%);
+}
+
+/* Dark Theme Colors */
+[data-theme="dark"] {
+    /* Background Colors */
+    --theme-bg-primary: #0f172a;
+    --theme-bg-secondary: #1e293b;
+    --theme-bg-tertiary: #334155;
+    --theme-bg-accent: #475569;
+    
+    /* Text Colors */
+    --theme-text-primary: #f8fafc;
+    --theme-text-secondary: #e2e8f0;
+    --theme-text-muted: #cbd5e1;
+    --theme-text-accent: #818cf8;
+    
+    /* Border Colors */
+    --theme-border-primary: #334155;
+    --theme-border-secondary: #475569;
+    --theme-border-accent: #64748b;
+    
+    /* Status Colors - Adjusted for dark theme */
+    --theme-success: #10b981;
+    --theme-success-light: #064e3b;
+    --theme-success-dark: #34d399;
+    --theme-warning: #f59e0b;
+    --theme-warning-light: #451a03;
+    --theme-warning-dark: #fbbf24;
+    --theme-error: #ef4444;
+    --theme-error-light: #450a0a;
+    --theme-error-dark: #f87171;
+    --theme-info: #3b82f6;
+    --theme-info-light: #1e3a8a;
+    --theme-info-dark: #60a5fa;
+    
+    /* Interactive States */
+    --theme-hover-bg: #1e293b;
+    --theme-active-bg: #334155;
+    --theme-focus-ring: rgba(129, 140, 248, 0.3);
+    
+    /* Shadows - Enhanced for dark theme */
+    --theme-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --theme-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --theme-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --theme-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    
+    /* Gradients - Dark theme variants */
+    --theme-gradient-primary: linear-gradient(135deg, #4f46e5 0%, #059669 100%);
+    --theme-gradient-purple: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+    --theme-gradient-card: linear-gradient(135deg, var(--theme-bg-primary) 0%, var(--theme-bg-secondary) 100%);
 }
 
 body {
     font-family: "Poppins", sans-serif;
-    background-color: #f1f5f9;
+    background-color: var(--theme-bg-tertiary);
+    color: var(--theme-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .gradient-bg {

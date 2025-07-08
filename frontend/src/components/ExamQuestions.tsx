@@ -76,7 +76,7 @@ export function ExamQuestions() {
           return newFilesArray;
         }
       });
-      console.log("Archivos soltados:", event.dataTransfer.files);
+      // Archivos soltados procesados
     }
   }, []);
 
@@ -109,7 +109,7 @@ export function ExamQuestions() {
     }
 
     if (files.length > 0) {
-      console.log("Preparando FormData para archivos...");
+      // Preparando FormData para archivos
       const formData = new FormData();
       for (let i = 0; i < files.length; i++) {
         formData.append("fuentes", files[i]);
@@ -121,9 +121,9 @@ export function ExamQuestions() {
         (hour * 3600 + minute * 60 + second).toString(),
       );
       requestBody = formData;
-      console.log(requestBody);
+      // FormData preparado
     }
-    console.log("Preparando JSON para texto...");
+    // Preparando JSON para texto
 
     try {
       const response = await fetch(`${url_backend}/api/upload_files`, {
@@ -140,7 +140,7 @@ export function ExamQuestions() {
           const errorData = await response.json();
           errorMsg = errorData.error || errorData.message || errorMsg;
         } catch (jsonError) {
-          console.log(jsonError);
+          // Error procesando respuesta JSON
           Swal.fire({
             icon: "error",
             title: "Error del servidor interno",
@@ -149,7 +149,7 @@ export function ExamQuestions() {
         throw new Error(errorMsg);
       }
       const result = await response.json();
-      console.log("Respuesta de generación desde contenido:", result);
+      // Respuesta de generación desde contenido procesada
 
       if (!result.examId) {
         Swal.fire({
@@ -161,13 +161,17 @@ export function ExamQuestions() {
         );
       }
 
-      console.log("Examen generado y guardado con ID:", result.examId);
+      // Examen generado exitosamente
 
       // --- NAVEGACIÓN CON ID ---
       navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del examen
     } catch (error) {
-      console.error("Error al generar desde contenido:", error);
-      alert(`Error: ${error}`);
+      // Error al generar desde contenido
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al generar examen',
+        text: `Error: ${error}`,
+      });
     } finally {
       setIsLoading(false);
     }

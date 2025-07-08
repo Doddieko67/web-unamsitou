@@ -9,22 +9,53 @@ export function ExamTimer({
   formatTime,
   isSubmitted,
 }: ExamTimerProps) {
-  const getTimerClasses = () => {
-    const base =
-      "text-center px-4 py-3 rounded-lg font-semibold text-xl sm:text-2xl border transition-colors duration-300 flex items-center justify-center shadow-inner";
+  const getTimerStyles = () => {
+    const baseClasses = "text-center px-4 py-3 rounded-lg font-semibold text-xl sm:text-2xl border transition-all duration-300 flex items-center justify-center shadow-inner";
 
     if (timeLeft === null) {
       // Tiempo no disponible, gris/inactivo
-      return `${base} bg-gray-100 border-gray-200 text-gray-500`;
+      return {
+        classes: baseClasses,
+        styles: {
+          backgroundColor: 'var(--theme-bg-accent)',
+          borderColor: 'var(--theme-border-primary)',
+          color: 'var(--theme-text-muted)',
+          boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.1)'
+        }
+      };
     } else if (timeLeft <= 300 && timeLeft > 0 && !isSubmitted) {
       // Menos de 5 mins, advertencia pulsante
-      return `${base} bg-red-50 border-red-200 text-red-700 animate-pulse`;
+      return {
+        classes: `${baseClasses} animate-pulse`,
+        styles: {
+          backgroundColor: 'var(--theme-error-light)',
+          borderColor: 'var(--theme-error)',
+          color: 'var(--theme-error-dark)',
+          boxShadow: 'inset 0 2px 4px 0 rgba(239, 68, 68, 0.2)'
+        }
+      };
     } else if (timeLeft === 0 || isSubmitted) {
       // Tiempo agotado o enviado, gris/inactivo
-      return `${base} bg-gray-100 border-gray-200 text-gray-500`;
+      return {
+        classes: baseClasses,
+        styles: {
+          backgroundColor: 'var(--theme-bg-accent)',
+          borderColor: 'var(--theme-border-primary)',
+          color: 'var(--theme-text-muted)',
+          boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.1)'
+        }
+      };
     } else {
       // Tiempo normal, activo
-      return `${base} bg-blue-50 border-blue-200 text-blue-800`;
+      return {
+        classes: baseClasses,
+        styles: {
+          backgroundColor: 'var(--theme-info-light)',
+          borderColor: 'var(--theme-info)',
+          color: 'var(--theme-info-dark)',
+          boxShadow: 'inset 0 2px 4px 0 rgba(59, 130, 246, 0.2)'
+        }
+      };
     }
   };
 
@@ -34,8 +65,13 @@ export function ExamTimer({
       ? "(Activo)"
       : "(Agotado)";
 
+  const timerConfig = getTimerStyles();
+
   return (
-    <div className={getTimerClasses()}>
+    <div 
+      className={timerConfig.classes}
+      style={timerConfig.styles}
+    >
       <i className="far fa-clock mr-2 text-lg sm:text-xl"></i>
       <span>{timeLeft && formatTime(timeLeft)}</span>
       <span className="ml-2 text-xs sm:text-sm font-medium opacity-80">
