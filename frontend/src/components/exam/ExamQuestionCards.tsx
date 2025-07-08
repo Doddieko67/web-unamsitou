@@ -35,24 +35,25 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
   onTogglePin,
 }) => {
   
-  // Group questions by status for better organization
-  const questionGroups = useMemo(() => {
-    const answered: number[] = [];
-    const unanswered: number[] = [];
-    const pinned: number[] = [];
+  // Calculate stats for display
+  const stats = useMemo(() => {
+    let answered = 0;
+    let unanswered = 0;
+    let pinned = 0;
 
     questions.forEach((_, index) => {
       if (pinnedQuestions[index]) {
-        pinned.push(index);
-      } else if (userAnswers[index] !== undefined) {
-        answered.push(index);
+        pinned++;
+      }
+      if (userAnswers[index] !== undefined) {
+        answered++;
       } else {
-        unanswered.push(index);
+        unanswered++;
       }
     });
 
     return { answered, unanswered, pinned };
-  }, [questions, userAnswers, pinnedQuestions]);
+  }, [questions.length, Object.keys(userAnswers).length, Object.keys(pinnedQuestions).length]);
 
   const getQuestionStatus = (index: number) => {
     const isAnswered = userAnswers[index] !== undefined;
@@ -116,13 +117,12 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
     }
   };
 
-  const QuestionCard: React.FC<{ index: number }> = ({ index }) => {
+  const QuestionCard: React.FC<{ index: number }> = React.memo(({ index }) => {
     const question = questions[index];
     const { isAnswered, isPinned, isCurrent, isCorrect, hasFeedback } = getQuestionStatus(index);
     
     return (
       <motion.div
-        key={index}
         layout
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -226,7 +226,7 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
         )}
       </motion.div>
     );
-  };
+  });
 
   return (
     <div className="space-y-6">
@@ -237,24 +237,24 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
-            <span>Contestadas ({questionGroups.answered.length})</span>
+            <span>Contestadas ({stats.answered})</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded"></div>
-            <span>Sin contestar ({questionGroups.unanswered.length})</span>
+            <span>Sin contestar ({stats.unanswered})</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-purple-100 border border-purple-300 rounded"></div>
-            <span>Fijadas ({questionGroups.pinned.length})</span>
+            <span>Fijadas ({stats.pinned})</span>
           </div>
         </div>
       </div>
 
       {/* Question Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {questions.map((_, index) => (
-            <QuestionCard key={index} index={index} />
+            <QuestionCard key={`q-${index}`} index={index} />
           ))}
         </AnimatePresence>
       </div>
