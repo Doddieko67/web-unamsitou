@@ -1,5 +1,4 @@
-import React, { useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React from 'react';
 
 interface Question {
   id?: number;
@@ -21,7 +20,7 @@ interface ExamQuestionCardsProps {
 }
 
 /**
- * Grid of question cards for visual navigation
+ * Simple grid of question cards without complex state management
  * Displays all questions as clickable cards with status indicators
  */
 export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
@@ -35,70 +34,48 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
   onTogglePin,
 }) => {
   
-  // Calculate stats for display
-  const stats = useMemo(() => {
-    let answered = 0;
-    let unanswered = 0;
-    let pinned = 0;
+  // Simple stats calculation
+  const answeredCount = Object.keys(userAnswers).length;
+  const unansweredCount = questions.length - answeredCount;
+  const pinnedCount = Object.keys(pinnedQuestions).length;
+  const feedbackCount = Object.keys(feedback).length;
 
-    questions.forEach((_, index) => {
-      if (pinnedQuestions[index]) {
-        pinned++;
-      }
-      if (userAnswers[index] !== undefined) {
-        answered++;
-      } else {
-        unanswered++;
-      }
-    });
-
-    return { answered, unanswered, pinned };
-  }, [questions.length, Object.keys(userAnswers).length, Object.keys(pinnedQuestions).length]);
-
-  const getQuestionStatus = (index: number) => {
+  const getCardClass = (index: number) => {
     const isAnswered = userAnswers[index] !== undefined;
     const isPinned = pinnedQuestions[index];
     const isCurrent = index === currentQuestionIndex;
     const question = questions[index];
     const isCorrect = isAnswered && question.correcta !== undefined && 
                      userAnswers[index] === question.correcta;
-    const hasFeedback = feedback[index] || (question.id && feedback[question.id]);
-
-    return {
-      isAnswered,
-      isPinned,
-      isCurrent,
-      isCorrect,
-      hasFeedback,
-    };
-  };
-
-  const getCardClass = (index: number) => {
-    const { isAnswered, isPinned, isCurrent, isCorrect } = getQuestionStatus(index);
     
-    let baseClass = "relative p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer transform hover:scale-105 hover:shadow-md";
+    let classes = "relative p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:scale-105 hover:shadow-md";
     
     if (isCurrent) {
-      baseClass += " border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200";
+      classes += " border-blue-500 bg-blue-50 shadow-lg ring-2 ring-blue-200";
     } else if (isPinned) {
-      baseClass += " border-purple-300 bg-purple-50 hover:border-purple-400";
+      classes += " border-purple-300 bg-purple-50 hover:border-purple-400";
     } else if (isAnswered) {
       if (isSubmitted) {
-        baseClass += isCorrect 
+        classes += isCorrect 
           ? " border-green-300 bg-green-50 hover:border-green-400"
           : " border-red-300 bg-red-50 hover:border-red-400";
       } else {
-        baseClass += " border-blue-300 bg-blue-50 hover:border-blue-400";
+        classes += " border-blue-300 bg-blue-50 hover:border-blue-400";
       }
     } else {
-      baseClass += " border-gray-300 bg-gray-50 hover:border-gray-400";
+      classes += " border-gray-300 bg-gray-50 hover:border-gray-400";
     }
     
-    return baseClass;
+    return classes;
   };
 
   const getNumberClass = (index: number) => {
-    const { isAnswered, isPinned, isCurrent, isCorrect } = getQuestionStatus(index);
+    const isAnswered = userAnswers[index] !== undefined;
+    const isPinned = pinnedQuestions[index];
+    const isCurrent = index === currentQuestionIndex;
+    const question = questions[index];
+    const isCorrect = isAnswered && question.correcta !== undefined && 
+                     userAnswers[index] === question.correcta;
     
     if (isCurrent) {
       return "bg-blue-600 text-white";
@@ -117,116 +94,14 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
     }
   };
 
-  const QuestionCard: React.FC<{ index: number }> = React.memo(({ index }) => {
-    const question = questions[index];
-    const { isAnswered, isPinned, isCurrent, isCorrect, hasFeedback } = getQuestionStatus(index);
-    
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        transition={{ duration: 0.2 }}
-        className={getCardClass(index)}
-        onClick={() => onQuestionSelect(index)}
-      >
-        {/* Pin Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onTogglePin(index);
-          }}
-          className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs ${
-            isPinned
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
-          } flex items-center justify-center transition-colors`}
-          title={isPinned ? 'Desfijar pregunta' : 'Fijar pregunta'}
-        >
-          <i className={isPinned ? 'fas fa-thumbtack' : 'far fa-thumbtack'}></i>
-        </button>
+  const handleQuestionClick = (index: number) => {
+    onQuestionSelect(index);
+  };
 
-        {/* Question Number */}
-        <div className="flex items-center justify-between mb-2">
-          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getNumberClass(index)}`}>
-            {index + 1}
-          </span>
-          
-          {/* Status Indicators */}
-          <div className="flex items-center space-x-1">
-            {isAnswered && (
-              <i className={`fas fa-check text-xs ${
-                isSubmitted 
-                  ? isCorrect ? 'text-green-600' : 'text-red-600'
-                  : 'text-blue-600'
-              }`}></i>
-            )}
-            {hasFeedback && (
-              <i className="fas fa-lightbulb text-xs text-yellow-600"></i>
-            )}
-            {isCurrent && (
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              >
-                <i className="fas fa-eye text-xs text-blue-600"></i>
-              </motion.div>
-            )}
-          </div>
-        </div>
-
-        {/* Question Preview */}
-        <div className="space-y-2">
-          <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed">
-            {question.pregunta.substring(0, 80)}
-            {question.pregunta.length > 80 ? '...' : ''}
-          </p>
-          
-          {/* Answer Preview */}
-          {isAnswered && (
-            <div className="text-xs">
-              <span className="text-gray-500">Respuesta: </span>
-              <span className={`font-medium ${
-                isSubmitted 
-                  ? isCorrect ? 'text-green-600' : 'text-red-600'
-                  : 'text-blue-600'
-              }`}>
-                {question.opciones?.[userAnswers[index]]?.substring(0, 30) || 'N/A'}
-                {(question.opciones?.[userAnswers[index]]?.length || 0) > 30 ? '...' : ''}
-              </span>
-            </div>
-          )}
-
-          {/* Feedback Preview */}
-          {hasFeedback && isSubmitted && (
-            <div className="text-xs">
-              <span className="text-yellow-600 font-medium">
-                <i className="fas fa-lightbulb mr-1"></i>
-                Tiene retroalimentación
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Current Question Pulse */}
-        {isCurrent && (
-          <motion.div
-            className="absolute inset-0 border-2 border-blue-400 rounded-lg pointer-events-none"
-            animate={{ 
-              opacity: [0.5, 1, 0.5],
-              scale: [1, 1.02, 1] 
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-        )}
-      </motion.div>
-    );
-  });
+  const handlePinToggle = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
+    onTogglePin(index);
+  };
 
   return (
     <div className="space-y-6">
@@ -237,51 +112,132 @@ export const ExamQuestionCards: React.FC<ExamQuestionCardsProps> = ({
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
-            <span>Contestadas ({stats.answered})</span>
+            <span>Contestadas ({answeredCount})</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded"></div>
-            <span>Sin contestar ({stats.unanswered})</span>
+            <span>Sin contestar ({unansweredCount})</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-purple-100 border border-purple-300 rounded"></div>
-            <span>Fijadas ({stats.pinned})</span>
+            <span>Fijadas ({pinnedCount})</span>
           </div>
         </div>
       </div>
 
       {/* Question Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        <AnimatePresence mode="popLayout">
-          {questions.map((_, index) => (
-            <QuestionCard key={`q-${index}`} index={index} />
-          ))}
-        </AnimatePresence>
+        {questions.map((question, index) => {
+          const isAnswered = userAnswers[index] !== undefined;
+          const isPinned = pinnedQuestions[index];
+          const isCurrent = index === currentQuestionIndex;
+          const isCorrect = isAnswered && question.correcta !== undefined && 
+                           userAnswers[index] === question.correcta;
+          const hasFeedback = feedback[index] || (question.id && feedback[question.id]);
+
+          return (
+            <div
+              key={index}
+              className={getCardClass(index)}
+              onClick={() => handleQuestionClick(index)}
+            >
+              {/* Pin Button */}
+              <button
+                onClick={(e) => handlePinToggle(e, index)}
+                className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs ${
+                  isPinned
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
+                } flex items-center justify-center transition-colors`}
+                title={isPinned ? 'Desfijar pregunta' : 'Fijar pregunta'}
+              >
+                <i className={isPinned ? 'fas fa-thumbtack' : 'far fa-thumbtack'}></i>
+              </button>
+
+              {/* Question Number */}
+              <div className="flex items-center justify-between mb-2">
+                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${getNumberClass(index)}`}>
+                  {index + 1}
+                </span>
+                
+                {/* Status Indicators */}
+                <div className="flex items-center space-x-1">
+                  {isAnswered && (
+                    <i className={`fas fa-check text-xs ${
+                      isSubmitted 
+                        ? isCorrect ? 'text-green-600' : 'text-red-600'
+                        : 'text-blue-600'
+                    }`}></i>
+                  )}
+                  {hasFeedback && (
+                    <i className="fas fa-lightbulb text-xs text-yellow-600"></i>
+                  )}
+                  {isCurrent && (
+                    <i className="fas fa-eye text-xs text-blue-600"></i>
+                  )}
+                </div>
+              </div>
+
+              {/* Question Preview */}
+              <div className="space-y-2">
+                <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed">
+                  {question.pregunta.substring(0, 80)}
+                  {question.pregunta.length > 80 ? '...' : ''}
+                </p>
+                
+                {/* Answer Preview */}
+                {isAnswered && (
+                  <div className="text-xs">
+                    <span className="text-gray-500">Respuesta: </span>
+                    <span className={`font-medium ${
+                      isSubmitted 
+                        ? isCorrect ? 'text-green-600' : 'text-red-600'
+                        : 'text-blue-600'
+                    }`}>
+                      {question.opciones?.[userAnswers[index]]?.substring(0, 30) || 'N/A'}
+                      {(question.opciones?.[userAnswers[index]]?.length || 0) > 30 ? '...' : ''}
+                    </span>
+                  </div>
+                )}
+
+                {/* Feedback Preview */}
+                {hasFeedback && isSubmitted && (
+                  <div className="text-xs">
+                    <span className="text-yellow-600 font-medium">
+                      <i className="fas fa-lightbulb mr-1"></i>
+                      Tiene retroalimentación
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-2xl font-bold text-gray-900">
-            {Object.keys(userAnswers).length}
+            {answeredCount}
           </div>
           <div className="text-sm text-gray-600">Contestadas</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-gray-900">
-            {questions.length - Object.keys(userAnswers).length}
+            {unansweredCount}
           </div>
           <div className="text-sm text-gray-600">Pendientes</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-purple-600">
-            {Object.keys(pinnedQuestions).length}
+            {pinnedCount}
           </div>
           <div className="text-sm text-gray-600">Fijadas</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-yellow-600">
-            {Object.keys(feedback).length}
+            {feedbackCount}
           </div>
           <div className="text-sm text-gray-600">Con feedback</div>
         </div>
