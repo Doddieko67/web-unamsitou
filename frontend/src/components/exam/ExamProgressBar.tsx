@@ -26,43 +26,62 @@ export const ExamProgressBar: React.FC<ExamProgressBarProps> = memo(({
     : 0;
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      {/* Progress Labels */}
-      <div className="flex justify-between text-sm text-gray-600">
-        <span>
-          Pregunta {currentQuestion + 1} de {totalQuestions}
-        </span>
-        <span>
-          {answeredQuestions} respondidas
-        </span>
+    <div className={`bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 ${className}`}>
+      {/* Header with Progress Info */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center">
+            <i className="fas fa-chart-line text-blue-600 text-sm"></i>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800">
+              📊 Progreso del Examen
+            </h3>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-bold text-blue-600">
+            {currentQuestion + 1}/{totalQuestions}
+          </div>
+          <div className="text-xs text-gray-600">preguntas</div>
+        </div>
       </div>
 
-      {/* Progress Bar Container */}
-      <div className="relative">
+      {/* Modern Progress Bar */}
+      <div className="relative mb-3">
         {/* Background Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-3">
-          {/* Answered Progress */}
+        <div className="w-full bg-gray-200 bg-opacity-60 rounded-full h-4 overflow-hidden">
+          {/* Answered Progress - Gradient */}
           <div
-            className="bg-green-500 h-3 rounded-full transition-all duration-300 ease-out"
+            className="bg-gradient-to-r from-green-400 to-emerald-500 h-4 rounded-full transition-all duration-500 ease-out relative"
             style={{ width: `${answeredPercentage}%` }}
-          />
+          >
+            {/* Shine effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+          </div>
           
           {/* Current Position Indicator */}
           <div
-            className="absolute top-0 h-3 w-1 bg-blue-600 rounded-full transition-all duration-300 ease-out"
+            className="absolute top-0 h-4 w-1 bg-blue-500 transition-all duration-500 ease-out shadow-lg"
             style={{ left: `${Math.max(0, progressPercentage - 0.5)}%` }}
           />
         </div>
       </div>
 
-      {/* Progress Stats */}
-      <div className="flex justify-between text-xs text-gray-500">
-        <span>
-          Progreso: {Math.round(progressPercentage)}%
-        </span>
-        <span>
-          Completadas: {Math.round(answeredPercentage)}%
-        </span>
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="bg-white bg-opacity-70 rounded-lg px-3 py-2">
+          <div className="text-sm font-bold text-gray-800">{answeredQuestions}</div>
+          <div className="text-xs text-gray-600">Respondidas</div>
+        </div>
+        <div className="bg-white bg-opacity-70 rounded-lg px-3 py-2">
+          <div className="text-sm font-bold text-blue-600">{Math.round(progressPercentage)}%</div>
+          <div className="text-xs text-gray-600">Progreso</div>
+        </div>
+        <div className="bg-white bg-opacity-70 rounded-lg px-3 py-2">
+          <div className="text-sm font-bold text-emerald-600">{Math.round(answeredPercentage)}%</div>
+          <div className="text-xs text-gray-600">Completado</div>
+        </div>
       </div>
     </div>
   );
