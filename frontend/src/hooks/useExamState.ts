@@ -93,16 +93,16 @@ export const useExamState = (examId: string): UseExamStateReturn => {
       if (!savedState) return null;
       
       const parsedState = JSON.parse(savedState);
-      console.log('Estado cargado de localStorage:', parsedState);
+      // Estado cargado de localStorage
       
       if (typeof parsedState !== 'object' || parsedState === null) {
-        console.error('Estado guardado inválido');
+        // Estado guardado inválido
         return null;
       }
       
       return parsedState;
     } catch (error) {
-      console.error('Error al cargar estado guardado:', error);
+      // Error al cargar estado guardado
       return null;
     }
   }, [examId]);
@@ -165,7 +165,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
       }
 
     } catch (error) {
-      console.error('Error loading exam:', error);
+      // Error loading exam
       setState(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Error loading exam',
@@ -227,7 +227,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
       fecha_fin: new Date().toISOString(),
     };
 
-    console.log('🚀 IMMEDIATE SAVE: Submitting exam with final state:', finalState);
+    // IMMEDIATE SAVE: Submitting exam with final state
 
     try {
       // Save to localStorage first
@@ -245,7 +245,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
 
       if (error) throw error;
 
-      console.log('✅ IMMEDIATE SAVE SUCCESS: Exam submitted and saved immediately');
+      // IMMEDIATE SAVE SUCCESS: Exam submitted and saved immediately
 
       // Clean up localStorage on success
       localStorage.removeItem(`examen_final_pending_${examId}`);
@@ -255,7 +255,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
       navigate(`/examen/${examId}`);
 
     } catch (error) {
-      console.error('❌ Error submitting exam:', error);
+      // Error submitting exam
       // Keep in localStorage for retry
       throw error; // Re-throw to handle in UI
     }
@@ -265,7 +265,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
   const suspendExam = useCallback(async (timeSpent: number) => {
     if (!state.exam || state.isSubmitted) return;
 
-    console.log('🚀 IMMEDIATE SAVE: Suspending exam with time spent:', timeSpent);
+    // IMMEDIATE SAVE: Suspending exam with time spent
 
     try {
       const { error } = await supabase
@@ -281,11 +281,11 @@ export const useExamState = (examId: string): UseExamStateReturn => {
 
       if (error) throw error;
 
-      console.log('✅ IMMEDIATE SAVE SUCCESS: Exam suspended and saved immediately');
+      // IMMEDIATE SAVE SUCCESS: Exam suspended and saved immediately
 
       navigate('/examenes');
     } catch (error) {
-      console.error('❌ Error suspending exam:', error);
+      // Error suspending exam
       throw error; // Re-throw to handle in UI
     }
   }, [state.exam, state.isSubmitted, examId, user?.id, navigate]);
@@ -294,7 +294,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
   const resetExam = useCallback(async () => {
     if (!state.exam || !user?.id) return;
 
-    console.log('🔄 RESET: Creating new exam instance');
+    // RESET: Creating new exam instance
 
     try {
       const { data: newExam, error } = await supabase
@@ -319,7 +319,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
         throw new Error('No se pudo crear el nuevo examen');
       }
 
-      console.log('✅ RESET SUCCESS: New exam created with ID:', newExam.id);
+      // RESET SUCCESS: New exam created with ID
 
       // Clean up localStorage for current exam
       localStorage.removeItem(`examen_estado_${examId}`);
@@ -328,7 +328,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
       // Navigate to new exam
       navigate(`/examen/${newExam.id}`);
     } catch (error) {
-      console.error('❌ Error resetting exam:', error);
+      // Error resetting exam
       throw error; // Re-throw to handle in UI
     }
   }, [state.exam, user?.id, examId, navigate]);

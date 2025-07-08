@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react"; // <-- Añadir useMemo
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { ExamButton } from "./ExamButton";
 import { Personalization } from "./Main/Personalization";
 import { QuestionConf } from "./Main/QuestionConf";
@@ -8,6 +8,7 @@ import { TimerConf } from "./TimerConf";
 import { PreviewableRecentExamCard } from "./Main/PreviewableExamRecents";
 import { supabase } from "../supabase.config";
 import { ExamenData } from "./Main/interfacesExam";
+import Swal from "sweetalert2";
 import { url_backend } from "../url_backend";
 
 export function ExamBasedOnHistory() {
@@ -49,9 +50,11 @@ export function ExamBasedOnHistory() {
     // Validación inicial (igual que antes)
     if (Object.keys(pinnedExams).length === 0) {
       // Usar selectedExams
-      alert(
-        "Por favor, selecciona al menos un examen anterior y un nivel de dificultad.",
-      );
+      Swal.fire({
+        icon: 'warning',
+        title: 'Selección incompleta',
+        text: 'Por favor, selecciona al menos un examen anterior.',
+      });
       return;
     }
     setIsGenerating(true);
@@ -69,10 +72,7 @@ export function ExamBasedOnHistory() {
       promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
     }
 
-    console.log(
-      "Prompt construido en Frontend (para generación basada en historia):",
-      promptText,
-    ); // Para depuración
+    // Prompt construido para generación basada en historia
 
     try {
       // Llama al backend, enviando el prompt como texto y otros parámetros relevantes
@@ -110,14 +110,16 @@ export function ExamBasedOnHistory() {
         );
       }
 
-      console.log("Nuevo examen generado y guardado con ID:", result.examId);
+      // Nuevo examen generado exitosamente
 
       navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del NUEVO examen
     } catch (error) {
-      console.error("Error en la llamada de generación:", error);
-      alert(
-        `Error al generar examen: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      // Error en la generación del examen
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al generar examen',
+        text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -165,7 +167,7 @@ export function ExamBasedOnHistory() {
         .eq("id", examId);
 
       if (examError) {
-        console.error("Error deleting exam:", examError);
+        // Error eliminando examen de la base de datos
         // Podrías revertir el estado de pin/seleccion si la eliminación falla catastróficamente
       } else {
         // 4. Eliminar del estado local si la DB tuvo éxito
@@ -174,7 +176,7 @@ export function ExamBasedOnHistory() {
         );
       }
     } catch (error) {
-      console.error("Error deleting exam:", error);
+      // Error eliminando examen
       // Podrías mostrar un mensaje de error al usuario
     } finally {
       // Si usaste un indicador de carga específico, restablece aquí

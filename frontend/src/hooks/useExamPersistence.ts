@@ -59,9 +59,9 @@ export const useExamPersistence = (
         JSON.stringify(stateToSave)
       );
 
-      console.log('Estado guardado en localStorage');
+      // Estado guardado en localStorage
     } catch (error) {
-      console.error('Error saving to localStorage:', error);
+      // Error guardando en localStorage
     }
   }, [examId, examData]);
 
@@ -86,19 +86,25 @@ export const useExamPersistence = (
   const saveProgress = useCallback(async (force = false) => {
     if (!examId) return;
 
-    // Prepare data for saving
+    // Prepare data for saving (include time data for actual save)
     const dataToSave: ExamProgressData = {
       tiempo_tomado_segundos: examData.tiempo_tomado_segundos,
       respuestas_usuario: examData.respuestas_usuario,
       questions_pinned: examData.questions_pinned,
     };
 
-    // Check for changes
-    const currentStateString = JSON.stringify(dataToSave);
+    // Check for changes in significant data only (for change detection)
+    const significantData = {
+      respuestas_usuario: examData.respuestas_usuario,
+      questions_pinned: examData.questions_pinned,
+      currentQuestionIndex: examData.currentQuestionIndex,
+      isSubmitted: examData.isSubmitted,
+    };
+    const currentStateString = JSON.stringify(significantData);
     const hasChanges = currentStateString !== lastSavedStateRef.current;
 
     if (!hasChanges && !force) {
-      console.log('📋 No hay cambios desde el último guardado, saltando sync...');
+      // No hay cambios significativos desde el último guardado
       return;
     }
 
@@ -109,7 +115,7 @@ export const useExamPersistence = (
     if (!navigator.onLine) {
       setSyncStatus('offline');
       setHasUnsavedChanges(true);
-      console.log('Offline: Estado guardado localmente');
+      // Offline: Estado guardado localmente
       return;
     }
 
@@ -124,9 +130,9 @@ export const useExamPersistence = (
       lastSavedStateRef.current = currentStateString;
       lastSyncTimeRef.current = new Date();
       
-      console.log('✅ Auto-save Supabase success');
+      // Auto-save Supabase success
     } catch (error) {
-      console.error('Error en auto-save:', error);
+      // Error en auto-save
       setSyncStatus('error');
       setHasUnsavedChanges(true);
     }
@@ -146,16 +152,30 @@ export const useExamPersistence = (
     localStorage.removeItem(`examen_final_pending_${examId}`);
   }, [examId]);
 
-  // Auto-save when data changes
+  // Auto-save when data changes (excluding time fields that change frequently)
   useEffect(() => {
-    const currentStateString = JSON.stringify(examData);
+    // Only track meaningful changes (answers, pins, question navigation)
+    const significantData = {
+      respuestas_usuario: examData.respuestas_usuario,
+      questions_pinned: examData.questions_pinned,
+      currentQuestionIndex: examData.currentQuestionIndex,
+      isSubmitted: examData.isSubmitted,
+    };
+    
+    const currentStateString = JSON.stringify(significantData);
     const hasChanges = currentStateString !== lastSavedStateRef.current;
 
     if (hasChanges) {
       setHasUnsavedChanges(true);
       debouncedSave();
     }
-  }, [examData, debouncedSave]);
+  }, [
+    examData.respuestas_usuario, 
+    examData.questions_pinned, 
+    examData.currentQuestionIndex, 
+    examData.isSubmitted, 
+    debouncedSave
+  ]);
 
   // Save before page unload
   useEffect(() => {
@@ -172,7 +192,7 @@ export const useExamPersistence = (
   // Handle online/offline status
   useEffect(() => {
     const handleOnline = () => {
-      console.log('Network status: Online');
+      // Network status: Online
       setSyncStatus('idle');
       
       // Try to sync pending changes
@@ -182,7 +202,7 @@ export const useExamPersistence = (
     };
 
     const handleOffline = () => {
-      console.log('Network status: Offline');
+      // Network status: Offline
       setSyncStatus('offline');
     };
 

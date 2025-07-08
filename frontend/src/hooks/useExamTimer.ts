@@ -45,7 +45,7 @@ export const useExamTimer = (
 
   // Initialize timer when time limit changes (new exam)
   useEffect(() => {
-    console.log('🕐 Timer: Initializing with time limit:', timeLimitSeconds, 'initial time spent:', initialTimeSpent);
+    // Timer: Initializing with time limit
     
     if (timeLimitSeconds && timeLimitSeconds > 0) {
       const timeSpent = initialTimeSpent || 0;
@@ -74,7 +74,7 @@ export const useExamTimer = (
   // Timer interval effect
   useEffect(() => {
     if (state.isRunning && state.timeLeft !== undefined && state.timeLeft > 0) {
-      console.log('🕐 Timer: Starting interval');
+      // Timer: Starting interval
       
       intervalRef.current = setInterval(() => {
         const now = Date.now();
@@ -91,7 +91,7 @@ export const useExamTimer = (
           
           // Call onTimeUp when time reaches zero
           if (isTimeUp && !prev.isTimeUp && onTimeUpRef.current) {
-            console.log('⏰ Timer: Time up! Calling onTimeUp');
+            // Timer: Time up! Calling onTimeUp
             setTimeout(() => onTimeUpRef.current?.(), 0);
           }
           
@@ -121,44 +121,56 @@ export const useExamTimer = (
   }, [state.isRunning, state.timeLeft, timeLimitSeconds]);
 
   const start = useCallback(() => {
-    console.log('🕐 Timer: Starting');
+    // Timer: Starting
     
     setState(prev => {
       if (prev.timeLeft === undefined || prev.timeLeft <= 0) {
-        console.log('🕐 Timer: Cannot start - no time left');
+        // Timer: Cannot start - no time left
         return prev;
       }
       
-      // If we're resuming from a pause, don't reset startTimeRef
-      if (!startTimeRef.current) {
-        startTimeRef.current = Date.now();
-      } else {
-        // Resuming: adjust start time to account for time already spent
-        const now = Date.now();
-        startTimeRef.current = now - (prev.timeSpent * 1000);
-      }
+      // When starting/resuming, set startTimeRef to current time
+      // The pausedTimeRef already contains the accumulated time spent
+      startTimeRef.current = Date.now();
       
       return { ...prev, isRunning: true };
     });
   }, []);
 
   const pause = useCallback(() => {
-    console.log('🕐 Timer: Pausing');
+    // Timer: Pausing
+    
+    // Clear the interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     
     setState(prev => {
       if (startTimeRef.current) {
         const now = Date.now();
         const elapsedSinceStart = Math.floor((now - startTimeRef.current) / 1000);
-        pausedTimeRef.current += elapsedSinceStart;
+        const newTotalTimeSpent = pausedTimeRef.current + elapsedSinceStart;
+        const newTimeLeft = Math.max(0, (timeLimitSeconds || 0) - newTotalTimeSpent);
+        
+        // Update pausedTimeRef with total time spent
+        pausedTimeRef.current = newTotalTimeSpent;
         startTimeRef.current = null;
+        
+        return { 
+          ...prev, 
+          isRunning: false,
+          timeSpent: newTotalTimeSpent,
+          timeLeft: newTimeLeft
+        };
       }
       
       return { ...prev, isRunning: false };
     });
-  }, []);
+  }, [timeLimitSeconds]);
 
   const stop = useCallback(() => {
-    console.log('🕐 Timer: Stopping');
+    // Timer: Stopping
     
     setState(prev => ({ ...prev, isRunning: false }));
     
@@ -171,7 +183,7 @@ export const useExamTimer = (
   }, []);
 
   const reset = useCallback((newTimeLimit: number) => {
-    console.log('🕐 Timer: Resetting with new time limit:', newTimeLimit);
+    // Timer: Resetting with new time limit
     
     // Clear interval
     if (intervalRef.current) {
