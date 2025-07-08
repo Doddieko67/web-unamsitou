@@ -34,7 +34,7 @@ export const ExamContainer: React.FC = () => {
   // Initialize timer
   const timer = useExamTimer(
     examState.exam?.tiempo_limite_segundos || 0,
-    examState.submitExam
+    () => examState.submitExam(timer.timeSpent) // Pass time spent on auto-submit
   );
 
   // Initialize persistence
@@ -217,6 +217,7 @@ export const ExamContainer: React.FC = () => {
                 isSubmitted={examState.isSubmitted}
                 onSubmit={examState.submitExam}
                 onSuspend={examState.suspendExam}
+                timeSpent={timer.timeSpent}
                 syncStatus={persistence.syncStatus}
               />
             </div>

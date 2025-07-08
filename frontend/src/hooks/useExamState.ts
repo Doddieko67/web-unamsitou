@@ -44,8 +44,8 @@ export interface ExamActions {
   setAnswer: (questionIndex: number, answerIndex: number) => void;
   togglePin: (questionIndex: number) => void;
   navigateToQuestion: (index: number) => void;
-  submitExam: () => Promise<void>;
-  suspendExam: () => Promise<void>;
+  submitExam: (timeSpent: number) => Promise<void>;
+  suspendExam: (timeSpent: number) => Promise<void>;
   loadExam: () => Promise<void>;
 }
 
@@ -213,18 +213,20 @@ export const useExamState = (examId: string): UseExamStateReturn => {
   }, [state.exam?.datos]);
 
   // Submit exam
-  const submitExam = useCallback(async () => {
+  const submitExam = useCallback(async (timeSpent: number) => {
     if (!state.exam || state.isSubmitted) return;
 
     setState(prev => ({ ...prev, isSubmitted: true }));
 
     const finalState = {
       estado: 'terminado' as const,
-      tiempo_tomado_segundos: 0, // This will be set by timer
+      tiempo_tomado_segundos: timeSpent, // Use actual time spent
       respuestas_usuario: userAnswersRef.current,
       questions_pinned: pinnedQuestionsRef.current,
       fecha_fin: new Date().toISOString(),
     };
+
+    console.log('🚀 IMMEDIATE SAVE: Submitting exam with final state:', finalState);
 
     try {
       // Save to localStorage first
@@ -233,7 +235,7 @@ export const useExamState = (examId: string): UseExamStateReturn => {
         JSON.stringify(finalState)
       );
 
-      // Save to Supabase
+      // Save to Supabase IMMEDIATELY
       const { error } = await supabase
         .from('examenes')
         .update(finalState)
@@ -241,6 +243,8 @@ export const useExamState = (examId: string): UseExamStateReturn => {
         .eq('user_id', user?.id);
 
       if (error) throw error;
+
+      console.log('✅ IMMEDIATE SAVE SUCCESS: Exam submitted and saved immediately');
 
       // Clean up localStorage on success
       localStorage.removeItem(`examen_final_pending_${examId}`);
@@ -250,21 +254,24 @@ export const useExamState = (examId: string): UseExamStateReturn => {
       navigate(`/examen/${examId}`);
 
     } catch (error) {
-      console.error('Error submitting exam:', error);
+      console.error('❌ Error submitting exam:', error);
       // Keep in localStorage for retry
+      throw error; // Re-throw to handle in UI
     }
   }, [state.exam, state.isSubmitted, examId, user?.id, navigate]);
 
   // Suspend exam
-  const suspendExam = useCallback(async () => {
+  const suspendExam = useCallback(async (timeSpent: number) => {
     if (!state.exam || state.isSubmitted) return;
+
+    console.log('🚀 IMMEDIATE SAVE: Suspending exam with time spent:', timeSpent);
 
     try {
       const { error } = await supabase
         .from('examenes')
         .update({
           estado: 'suspendido',
-          tiempo_tomado_segundos: 0, // This will be set by timer
+          tiempo_tomado_segundos: timeSpent, // Use actual time spent
           respuestas_usuario: userAnswersRef.current,
           questions_pinned: pinnedQuestionsRef.current,
         })
@@ -273,9 +280,12 @@ export const useExamState = (examId: string): UseExamStateReturn => {
 
       if (error) throw error;
 
+      console.log('✅ IMMEDIATE SAVE SUCCESS: Exam suspended and saved immediately');
+
       navigate('/examenes');
     } catch (error) {
-      console.error('Error suspending exam:', error);
+      console.error('❌ Error suspending exam:', error);
+      throw error; // Re-throw to handle in UI
     }
   }, [state.exam, state.isSubmitted, examId, user?.id, navigate]);
 

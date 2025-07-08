@@ -1,0 +1,673 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+
+% Configuración de página
+\geometry{margin=2.5cm}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Configuración de código
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% Configuración de títulos
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{50pt}{40pt}
+
+% Configuración de hipervínculos
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Manual Técnico - Sistema de Generación de Exámenes con IA},
+    pdfauthor={Equipo de Desarrollo},
+}
+
+\begin{document}
+
+% Página de título
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Huge\bfseries Manual Técnico}\\[0.5cm]
+    {\Large Sistema de Generación de Exámenes con IA}\\[2cm]
+    
+    % \includegraphics[width=0.3\textwidth]{logo.png}\\[1cm] % Opcional: agregar logo
+    
+    {\large\itshape Equipo de Desarrollo}\\[3cm]
+    
+    {\large Versión 1.0}\\[0.5cm]
+    {\large Junio 2025}
+    
+    \vfill
+\end{titlepage}
+
+% Tabla de contenidos
+\tableofcontents
+\newpage
+
+% Lista de figuras (opcional)
+\listoffigures
+\newpage
+
+% Lista de tablas (opcional)
+\listoftables
+\newpage
+
+\chapter{Introducción}
+
+\section{Propósito del Sistema}
+El Sistema de Generación de Exámenes con IA es una plataforma web diseñada para crear automáticamente exámenes personalizados utilizando inteligencia artificial. El sistema permite a los usuarios subir documentos, generar preguntas basadas en el contenido, realizar exámenes con temporizador y recibir retroalimentación detallada.
+
+\section{Alcance}
+\begin{itemize}
+    \item Generación automática de exámenes a partir de documentos
+    \item Sistema de autenticación de usuarios
+    \item Interfaz web responsive
+    \item Integración con Google Gemini AI
+    \item Almacenamiento en Supabase
+    \item Retroalimentación personalizada
+\end{itemize}
+
+\section{Audiencia}
+Este manual está dirigido a desarrolladores, administradores de sistema y personal técnico responsable del mantenimiento y desarrollo del sistema.
+
+\chapter{Arquitectura del Sistema}
+
+\section{Arquitectura General}
+El sistema sigue una arquitectura de tres capas:
+
+\begin{figure}[h]
+\centering
+\begin{verbatim}
++-----------------+    +-----------------+    +-----------------+
+|   Frontend      |----|    Backend      |----|   Supabase      |
+|   (React)       |    |   (Express)     |    |   (Database)    |
++-----------------+    +-----------------+    +-----------------+
+                               |
+                       +-----------------+
+                       |  Google Gemini  |
+                       |      AI         |
+                       +-----------------+
+\end{verbatim}
+\caption{Arquitectura del Sistema}
+\end{figure}
+
+\section{Patrón Arquitectónico}
+\begin{itemize}
+    \item \textbf{Frontend}: SPA (Single Page Application) con React
+    \item \textbf{Backend}: API RESTful con Express.js
+    \item \textbf{Base de Datos}: PostgreSQL (Supabase)
+    \item \textbf{Servicios Externos}: Google Gemini AI para generación de contenido
+\end{itemize}
+
+\chapter{Tecnologías Utilizadas}
+
+\section{Frontend}
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Tecnología} & \textbf{Versión/Descripción} \\
+\midrule
+React & 19.0.0 - Framework principal \\
+TypeScript & Tipado estático \\
+Vite & Build tool y dev server \\
+Tailwind CSS & Framework de estilos \\
+React Router & Enrutamiento \\
+Motion & Animaciones \\
+SweetAlert2 & Alertas y modales \\
+React Markdown & Renderizado de markdown \\
+KaTeX & Renderizado de fórmulas matemáticas \\
+\bottomrule
+\end{tabular}
+\caption{Tecnologías del Frontend}
+\end{table}
+
+\section{Backend}
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Tecnología} & \textbf{Descripción} \\
+\midrule
+Node.js & Runtime de JavaScript \\
+Express.js & Framework web \\
+Google GenAI & Integración con Gemini AI \\
+Supabase & Base de datos y autenticación \\
+Multer & Manejo de archivos \\
+CORS & Cross-Origin Resource Sharing \\
+dotenv & Variables de entorno \\
+\bottomrule
+\end{tabular}
+\caption{Tecnologías del Backend}
+\end{table}
+
+\section{Base de Datos}
+\begin{itemize}
+    \item \textbf{Supabase (PostgreSQL)}: Base de datos principal
+    \item \textbf{Autenticación}: Sistema de usuarios integrado
+\end{itemize}
+
+\chapter{Instalación y Configuración}
+
+\section{Requisitos Previos}
+\begin{itemize}
+    \item Node.js 18+
+    \item npm o yarn
+    \item Cuenta de Supabase
+    \item API Key de Google Gemini
+\end{itemize}
+
+\section{Instalación Frontend}
+\begin{lstlisting}[language=bash]
+cd frontend
+npm install
+\end{lstlisting}
+
+\section{Instalación Backend}
+\begin{lstlisting}[language=bash]
+cd backend
+npm install
+\end{lstlisting}
+
+\section{Variables de Entorno}
+
+\subsection{Frontend (.env)}
+\begin{lstlisting}[language=bash]
+VITE_SUPABASE_URL=tu_supabase_url
+VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
+VITE_BACKEND_URL=http://localhost:3001
+\end{lstlisting}
+
+\subsection{Backend (.env)}
+\begin{lstlisting}[language=bash]
+GEMINI_API_KEY=tu_gemini_api_key
+SUPABASE_URL=tu_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
+PORT=3001
+\end{lstlisting}
+
+\chapter{Estructura del Proyecto}
+
+\section{Frontend}
+\begin{lstlisting}
+frontend/
++-- src/
+    +-- API/
+        +-- Gemini.tsx
+    +-- components/
+        +-- Main/
+        +-- Examen/
+        +-- ...
+    +-- context/
+        +-- AuthContext.tsx
+    +-- pages/
+        +-- Login.tsx
+        +-- Examenes.tsx
+        +-- ...
+    +-- routers/
+        +-- routes.tsx
+    +-- ...
++-- public/
++-- package.json
++-- vite.config.ts
+\end{lstlisting}
+
+\section{Backend}
+\begin{lstlisting}
+backend/
++-- src/
+    +-- index.js          # Servidor principal
+    +-- reqAuthMiddleware.js
+    +-- reqSupabase.js
+    +-- local.js
+    +-- analize.js
+    +-- ...
++-- package.json
++-- supabase.config.js
+\end{lstlisting}
+
+\chapter{Componentes Principales}
+
+\section{Frontend Components}
+
+\subsection{AuthContext}
+\begin{itemize}
+    \item \textbf{Propósito}: Manejo global del estado de autenticación
+    \item \textbf{Ubicación}: \texttt{src/context/AuthContext.tsx}
+    \item \textbf{Funcionalidades}:
+    \begin{itemize}
+        \item Login/logout de usuarios
+        \item Verificación de estado de sesión
+        \item Protección de rutas
+    \end{itemize}
+\end{itemize}
+
+\subsection{ExamenPage}
+\begin{itemize}
+    \item \textbf{Propósito}: Interfaz principal para realizar exámenes
+    \item \textbf{Ubicación}: \texttt{src/Examen/ExamenPage.tsx}
+    \item \textbf{Funcionalidades}:
+    \begin{itemize}
+        \item Renderizado de preguntas
+        \item Timer de examen
+        \item Selección de respuestas
+        \item Envío de resultados
+    \end{itemize}
+\end{itemize}
+
+\subsection{Navbar}
+\begin{itemize}
+    \item \textbf{Propósito}: Navegación principal
+    \item \textbf{Ubicación}: \texttt{src/components/Navbar.tsx}
+    \item \textbf{Funcionalidades}:
+    \begin{itemize}
+        \item Enlaces de navegación
+        \item Estado de autenticación
+        \item Menú responsivo
+    \end{itemize}
+\end{itemize}
+
+\section{Backend Modules}
+
+\subsection{Authentication Middleware}
+\begin{itemize}
+    \item \textbf{Propósito}: Verificación de tokens de usuario
+    \item \textbf{Ubicación}: \texttt{src/reqAuthMiddleware.js}
+    \item \textbf{Función}: \texttt{getUserFromRequest()}
+\end{itemize}
+
+\subsection{Supabase Integration}
+\begin{itemize}
+    \item \textbf{Propósito}: Operaciones de base de datos
+    \item \textbf{Ubicación}: \texttt{src/reqSupabase.js}
+    \item \textbf{Funciones principales}:
+    \begin{itemize}
+        \item \texttt{CreateAuthExamUser()}
+        \item \texttt{CreateAuthFeedback()}
+        \item \texttt{verifyAuthExamUser()}
+    \end{itemize}
+\end{itemize}
+
+\chapter{API Endpoints}
+
+\section{Generación de Exámenes}
+
+\subsection{POST /api/upload\_files}
+\begin{itemize}
+    \item \textbf{Descripción}: Genera examen a partir de archivos subidos
+    \item \textbf{Autenticación}: Requerida
+    \item \textbf{Body}:
+\end{itemize}
+
+\begin{lstlisting}
+{
+  "prompt": "string",
+  "tiempo_limite_segundos": "number"
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Archivos}: Multipart/form-data
+    \item \textbf{Respuesta}: Objeto examen creado
+\end{itemize}
+
+\subsection{POST /api/generate-content}
+\begin{itemize}
+    \item \textbf{Descripción}: Genera examen a partir de prompt de texto
+    \item \textbf{Autenticación}: Requerida
+    \item \textbf{Body}:
+\end{itemize}
+
+\begin{lstlisting}
+{
+  "prompt": "string",
+  "dificultad": "easy|medium|hard",
+  "tiempo_limite_segundos": "number"
+}
+\end{lstlisting}
+
+\subsection{POST /api/generate-content-based-on-history}
+\begin{itemize}
+    \item \textbf{Descripción}: Genera examen basado en historial de usuario
+    \item \textbf{Autenticación}: Requerida
+    \item \textbf{Body}:
+\end{itemize}
+
+\begin{lstlisting}
+{
+  "exams_id": ["array_of_exam_ids"],
+  "prompt": "string",
+  "tiempo_limite_segundos": "number"
+}
+\end{lstlisting}
+
+\section{Retroalimentación}
+
+\subsection{POST /api/generate-feedback}
+\begin{itemize}
+    \item \textbf{Descripción}: Genera retroalimentación personalizada
+    \item \textbf{Autenticación}: Requerida
+    \item \textbf{Body}:
+\end{itemize}
+
+\begin{lstlisting}
+{
+  "examen_id": "string"
+}
+\end{lstlisting}
+
+\chapter{Base de Datos}
+
+\section{Estructura de Tablas}
+
+\subsection{Tabla: users}
+\begin{lstlisting}
+- id (uuid, primary key)
+- email (varchar)
+- created_at (timestamp)
+- updated_at (timestamp)
+\end{lstlisting}
+
+\subsection{Tabla: exams}
+\begin{lstlisting}
+- id (uuid, primary key)
+- user_id (uuid, foreign key)
+- titulo (varchar)
+- descripcion (text)
+- preguntas (jsonb)
+- dificultad (varchar)
+- numero_preguntas (integer)
+- tiempo_limite (integer)
+- created_at (timestamp)
+\end{lstlisting}
+
+\subsection{Tabla: exam\_results}
+\begin{lstlisting}
+- id (uuid, primary key)
+- exam_id (uuid, foreign key)
+- user_id (uuid, foreign key)
+- respuestas (jsonb)
+- puntaje (integer)
+- tiempo_empleado (integer)
+- completed_at (timestamp)
+\end{lstlisting}
+
+\subsection{Tabla: feedback}
+\begin{lstlisting}
+- id (uuid, primary key)
+- exam_id (uuid, foreign key)
+- user_id (uuid, foreign key)
+- feedback_data (jsonb)
+- created_at (timestamp)
+\end{lstlisting}
+
+\chapter{Integración con IA}
+
+\section{Google Gemini AI}
+
+\subsection{Modelos Utilizados}
+\begin{itemize}
+    \item \textbf{gemini-2.0-flash}: Para retroalimentación y exámenes fáciles
+    \item \textbf{gemini-2.5-pro-exp-03-25}: Para exámenes complejos y análisis avanzado
+\end{itemize}
+
+\subsection{Prompt Engineering}
+El sistema utiliza instrucciones estructuradas para generar contenido consistente:
+
+\begin{lstlisting}
+const systemInstruction = `
+Analiza el contenido y crea un examen con la siguiente estructura JSON:
+{
+  "dato": [
+    {
+      "id": 1,
+      "pregunta": "Pregunta del examen",
+      "opciones": ["opcion1", "opcion2", "opcion3", "opcion4"],
+      "correcta": 0
+    }
+  ],
+  "titulo": "Titulo del examen",
+  "numero_preguntas": 5,
+  "descripcion": "Descripcion del contenido",
+  "dificultad": "easy|medium|hard|mixed"
+}
+`;
+\end{lstlisting}
+
+\subsection{Procesamiento de Archivos}
+\begin{itemize}
+    \item Soporte para múltiples formatos de documento
+    \item Extracción de contenido para análisis
+    \item Limpieza automática de archivos temporales
+\end{itemize}
+
+\chapter{Funcionalidades del Sistema}
+
+\section{Gestión de Usuarios}
+\begin{itemize}
+    \item Registro y autenticación
+    \item Perfiles de usuario
+    \item Historial de exámenes
+    \item Estadísticas personalizadas
+\end{itemize}
+
+\section{Generación de Exámenes}
+\begin{itemize}
+    \item A partir de documentos subidos
+    \item Basado en prompts de texto
+    \item Utilizando historial previo
+    \item Configuración de dificultad y tiempo
+\end{itemize}
+
+\section{Realización de Exámenes}
+\begin{itemize}
+    \item Interfaz intuitiva de preguntas
+    \item Timer configurable
+    \item Navegación entre preguntas
+    \item Guardado automático de progreso
+\end{itemize}
+
+\section{Retroalimentación}
+\begin{itemize}
+    \item Análisis detallado por pregunta
+    \item Explicaciones de respuestas correctas
+    \item Identificación de áreas de mejora
+    \item Retroalimentación personalizada con IA
+\end{itemize}
+
+\section{Historial y Estadísticas}
+\begin{itemize}
+    \item Registro de exámenes completados
+    \item Métricas de rendimiento
+    \item Análisis de progreso
+    \item Logros y metas
+\end{itemize}
+
+\chapter{Configuración de Entorno}
+
+\section{Desarrollo}
+
+\subsection{Frontend}
+\begin{lstlisting}[language=bash]
+cd frontend
+npm run dev
+\end{lstlisting}
+
+\begin{itemize}
+    \item Puerto: 5173 (Vite default)
+    \item Hot reload activado
+    \item DevTools habilitadas
+\end{itemize}
+
+\subsection{Backend}
+\begin{lstlisting}[language=bash]
+cd backend
+node src/index.js
+\end{lstlisting}
+
+\begin{itemize}
+    \item Puerto: 3001
+    \item CORS configurado para desarrollo
+\end{itemize}
+
+\section{Producción}
+
+\subsection{Build Frontend}
+\begin{lstlisting}[language=bash]
+cd frontend
+npm run build
+\end{lstlisting}
+
+\subsection{Variables de Entorno de Producción}
+\begin{itemize}
+    \item Configurar URLs de produccion
+    \item Usar HTTPS
+    \item Configurar CORS específico
+    \item Habilitar logs de produccion
+\end{itemize}
+
+\chapter{Despliegue}
+
+\section{Frontend (Hostinger)}
+\begin{lstlisting}[language=bash]
+npm run build
+# Subir carpeta dist/ al hosting
+\end{lstlisting}
+
+\section{Backend}
+\begin{lstlisting}[language=bash]
+# En servidor de produccion
+git clone [repositorio]
+cd backend
+npm install --production
+pm2 start src/index.js --name "exam-backend"
+\end{lstlisting}
+
+\section{Base de Datos}
+\begin{itemize}
+    \item Configurar Supabase en produccion
+    \item Migrar esquemas si es necesario
+    \item Configurar backups automáticos
+\end{itemize}
+
+\chapter{Mantenimiento}
+
+\section{Logs}
+\begin{itemize}
+    \item Revisar logs de aplicacion regularmente
+    \item Monitorear errores de IA
+    \item Verificar uso de cuotas de API
+\end{itemize}
+
+\section{Base de Datos}
+\begin{itemize}
+    \item Backup regular de datos
+    \item Limpieza de archivos temporales
+    \item Optimización de consultas
+\end{itemize}
+
+\section{Actualizaciones}
+\begin{itemize}
+    \item Dependencias de Node.js
+    \item Versiones de React
+    \item APIs de Google Gemini
+\end{itemize}
+
+\chapter{Solución de Problemas}
+
+\section{Errores Comunes}
+
+\subsection{Error de API Key de Gemini}
+\begin{lstlisting}
+Error: Falta la variable de entorno GEMINI_API_KEY
+\end{lstlisting}
+
+\textbf{Solución}: Verificar que la variable esté configurada en \texttt{.env}
+
+\subsection{Error de CORS}
+\begin{lstlisting}
+Access to fetch blocked by CORS policy
+\end{lstlisting}
+
+\textbf{Solución}: Verificar configuracion de CORS en backend
+
+\subsection{Error de Autenticación Supabase}
+\begin{lstlisting}
+Invalid JWT token
+\end{lstlisting}
+
+\textbf{Solución}: Verificar configuracion de Supabase y tokens
+
+\section{Monitoreo}
+
+\subsection{Métricas Importantes}
+\begin{itemize}
+    \item Tiempo de respuesta de API
+    \item Tasa de errores de generación
+    \item Uso de cuota de Gemini AI
+    \item Carga de base de datos
+\end{itemize}
+
+\subsection{Herramientas Recomendadas}
+\begin{itemize}
+    \item Logs de aplicacion
+    \item Métricas de Supabase
+    \item Google Cloud Console (para Gemini)
+\end{itemize}
+
+\chapter{Conclusión}
+
+Este manual técnico proporciona una guía completa para la comprensión, instalación, configuracion y mantenimiento del Sistema de Generación de Exámenes con IA. Para actualizaciones y modificaciones, consultar el repositorio del proyecto y mantener actualizada la documentación.
+
+\vspace{1cm}
+
+\noindent\textbf{Versión del Manual}: 1.0\\
+\textbf{Fecha}: Junio 2025\\
+\textbf{Desarrollado por}: Equipo de Desarrollo
+
+\end{document}
