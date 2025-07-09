@@ -92,6 +92,7 @@ export function QuestionConf({
                     : "var(--theme-success-light)",
                   borderColor: "var(--theme-success)",
                   color: isSelected ? "white" : "var(--theme-success-dark)",
+                  cursor: "pointer",
                   "--tw-ring-color": "var(--theme-success)",
                 } as any
               }
@@ -127,6 +128,7 @@ export function QuestionConf({
                 backgroundColor: "var(--theme-info)",
                 color: "white",
                 border: "none",
+                cursor: "pointer",
               }}
               disabled={questionCount <= 5}
             >
@@ -164,6 +166,7 @@ export function QuestionConf({
                 backgroundColor: "var(--theme-info)",
                 color: "white",
                 border: "none",
+                cursor: "pointer",
               }}
               disabled={questionCount >= 128}
             >

@@ -1,4 +1,5 @@
-import 'vitest/globals';
+/// <reference types="vitest" />
+/// <reference types="vitest/globals" />
 
 declare global {
   const vi: typeof import('vitest').vi;

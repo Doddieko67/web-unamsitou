@@ -1,4 +1,4 @@
-import React, { useState, useCallback, DragEvent, useMemo, memo } from "react";
+import React, { useState, useCallback, DragEvent, useMemo, memo, useEffect } from "react";
 import { Personalization } from "./Main/Personalization";
 import { useAuthStore } from "../stores/authStore";
 import { useNavigate } from "react-router";
@@ -28,12 +28,67 @@ export const ExamQuestions = memo(function ExamQuestions() {
   // Estados para configuración de IA
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
   const [isApiValid, setIsApiValid] = useState<boolean>(false);
+  
+  // Estado para previsualización de archivos
+  const [filePreviews, setFilePreviews] = useState<{[key: string]: string | null}>({});
+  
+  // Estado para progreso de carga
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'error'>('idle');
 
   // --- Handlers ---
   const handleDeleteFile = (indexToDelete: number) => {
+    const fileToDelete = files[indexToDelete];
+    if (fileToDelete) {
+      // Remover preview del archivo
+      setFilePreviews(prev => {
+        const newPreviews = { ...prev };
+        delete newPreviews[fileToDelete.name];
+        return newPreviews;
+      });
+    }
+    
     const updatedFiles = files.filter((_, index) => index !== indexToDelete);
     setFiles(updatedFiles);
   };
+
+  // Función para generar previsualización de archivos
+  const generatePreview = useCallback((file: File) => {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setFilePreviews(prev => ({
+            ...prev,
+            [file.name]: e.target?.result as string
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    } else if (file.type === 'application/pdf') {
+      // Para PDFs, mostramos metadata básica según límites de Gemini API
+      const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+      const warningMsg = file.size > 20 * 1024 * 1024 ? ' (Usará File API)' : ' (Inline)';
+      setFilePreviews(prev => ({
+        ...prev,
+        [file.name]: `PDF • ${sizeInMB} MB${warningMsg} • ${new Date(file.lastModified).toLocaleDateString()}`
+      }));
+    } else if (file.type.startsWith('text/') || file.type === 'text/plain' || file.type === 'text/markdown' || file.type === 'text/html') {
+      // Para archivos de texto, leemos las primeras líneas
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          const text = e.target.result as string;
+          const firstLines = text.split('\n').slice(0, 3).join('\n');
+          setFilePreviews(prev => ({
+            ...prev,
+            [file.name]: firstLines.length > 100 ? firstLines.substring(0, 100) + '...' : firstLines
+          }));
+        }
+      };
+      reader.readAsText(file);
+    }
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -41,10 +96,77 @@ export const ExamQuestions = memo(function ExamQuestions() {
       setFiles((prevFiles) => {
         // Convert new files to array
         const newFilesArray: File[] = Array.from(newFiles);
+        
+        // Check file limits based on Gemini API documentation  
+        const currentFilesCount = prevFiles ? prevFiles.length : 0;
+        const totalFiles = currentFilesCount + newFilesArray.length;
+        
+        // No specific file count limit in Gemini API, but limited by context window
+        // Setting reasonable limit of 20 files to prevent context overflow
+        if (totalFiles > 20) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Límite de archivos excedido',
+            text: `Máximo 20 archivos recomendado para evitar límites del contexto. Tienes ${currentFilesCount} archivos e intentas agregar ${newFilesArray.length} más.`,
+            confirmButtonColor: '#3085d6'
+          });
+          return prevFiles || [];
+        }
+        
+        // Check file size and format based on Gemini API specifications
+        const validFiles: File[] = [];
+        for (const file of newFilesArray) {
+          // Check file size according to Gemini API limits
+          let maxSize = 50 * 1024 * 1024; // 50MB default (File API)
+          let sizeMessage = '50MB';
+          
+          if (file.type === 'application/pdf') {
+            // PDFs can be up to 50MB via File API, 20MB for inline
+            maxSize = 50 * 1024 * 1024; // Using File API limit
+            sizeMessage = '50MB';
+          }
+          
+          if (file.size > maxSize) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Archivo demasiado grande',
+              text: `El archivo "${file.name}" excede el límite de ${sizeMessage} establecido por Gemini API`,
+              confirmButtonColor: '#3085d6'
+            });
+            continue;
+          }
+          
+          // Check file format - Gemini API primarily supports PDFs for document vision
+          const allowedTypes = [
+            'application/pdf',
+            'image/jpeg', 
+            'image/jpg', 
+            'image/png',
+            'text/plain',
+            'text/markdown',
+            'text/html'
+          ];
+          
+          if (!allowedTypes.includes(file.type)) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Formato no soportado',
+              text: `El archivo "${file.name}" no es compatible. Gemini API soporta principalmente PDFs para visión de documentos, e imágenes/texto para otros casos.`,
+              confirmButtonColor: '#3085d6'
+            });
+            continue;
+          }
+          
+          validFiles.push(file);
+        }
+        
+        // Generar previsualización para archivos válidos
+        validFiles.forEach(file => generatePreview(file));
+        
         if (prevFiles) {
-          return [...prevFiles, ...newFilesArray];
+          return [...prevFiles, ...validFiles];
         } else {
-          return newFilesArray;
+          return validFiles;
         }
       });
     }
@@ -74,15 +196,82 @@ export const ExamQuestions = memo(function ExamQuestions() {
       setFiles((prevFiles) => {
         // Convert new files to array
         const newFilesArray: File[] = Array.from(newFiles);
+        
+        // Check file limits based on Gemini API documentation  
+        const currentFilesCount = prevFiles ? prevFiles.length : 0;
+        const totalFiles = currentFilesCount + newFilesArray.length;
+        
+        // No specific file count limit in Gemini API, but limited by context window
+        // Setting reasonable limit of 20 files to prevent context overflow
+        if (totalFiles > 20) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Límite de archivos excedido',
+            text: `Máximo 20 archivos recomendado para evitar límites del contexto. Tienes ${currentFilesCount} archivos e intentas agregar ${newFilesArray.length} más.`,
+            confirmButtonColor: '#3085d6'
+          });
+          return prevFiles || [];
+        }
+        
+        // Check file size and format based on Gemini API specifications
+        const validFiles: File[] = [];
+        for (const file of newFilesArray) {
+          // Check file size according to Gemini API limits
+          let maxSize = 50 * 1024 * 1024; // 50MB default (File API)
+          let sizeMessage = '50MB';
+          
+          if (file.type === 'application/pdf') {
+            // PDFs can be up to 50MB via File API, 20MB for inline
+            maxSize = 50 * 1024 * 1024; // Using File API limit
+            sizeMessage = '50MB';
+          }
+          
+          if (file.size > maxSize) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Archivo demasiado grande',
+              text: `El archivo "${file.name}" excede el límite de ${sizeMessage} establecido por Gemini API`,
+              confirmButtonColor: '#3085d6'
+            });
+            continue;
+          }
+          
+          // Check file format - Gemini API primarily supports PDFs for document vision
+          const allowedTypes = [
+            'application/pdf',
+            'image/jpeg', 
+            'image/jpg', 
+            'image/png',
+            'text/plain',
+            'text/markdown',
+            'text/html'
+          ];
+          
+          if (!allowedTypes.includes(file.type)) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Formato no soportado',
+              text: `El archivo "${file.name}" no es compatible. Gemini API soporta principalmente PDFs para visión de documentos, e imágenes/texto para otros casos.`,
+              confirmButtonColor: '#3085d6'
+            });
+            continue;
+          }
+          
+          validFiles.push(file);
+        }
+        
+        // Generar previsualización para archivos válidos
+        validFiles.forEach(file => generatePreview(file));
+        
         if (prevFiles) {
-          return [...prevFiles, ...newFilesArray];
+          return [...prevFiles, ...validFiles];
         } else {
-          return newFilesArray;
+          return validFiles;
         }
       });
       // Archivos soltados procesados
     }
-  }, []);
+  }, [generatePreview]);
 
   const handleFineTuningChange = useCallback((text: string) => {
     setFineTuning(text);
@@ -115,6 +304,8 @@ export const ExamQuestions = memo(function ExamQuestions() {
     }
 
     setIsLoading(true);
+    setUploadStatus('uploading');
+    setUploadProgress(0);
 
     let requestBody: FormData | null = null;
 
@@ -129,8 +320,14 @@ export const ExamQuestions = memo(function ExamQuestions() {
     if (files.length > 0) {
       // Preparando FormData para archivos
       const formData = new FormData();
+      
+      // Simular progreso de preparación
+      setUploadProgress(20);
+      
       for (let i = 0; i < files.length; i++) {
         formData.append("fuentes", files[i]);
+        // Simular progreso incremental
+        setUploadProgress(20 + (i + 1) * (30 / files.length));
       }
 
       formData.append("prompt", promptText);
@@ -141,10 +338,16 @@ export const ExamQuestions = memo(function ExamQuestions() {
       formData.append("model", selectedModel);
       requestBody = formData;
       // FormData preparado
+      
+      setUploadProgress(50);
+      setUploadStatus('processing');
     }
     // Preparando JSON para texto
 
     try {
+      // Simular progreso de envío
+      setUploadProgress(60);
+      
       const response = await fetch(`${url_backend}/api/upload_files`, {
         method: "POST",
         headers: {
@@ -152,6 +355,9 @@ export const ExamQuestions = memo(function ExamQuestions() {
         },
         body: requestBody,
       });
+
+      // Simular progreso de procesamiento
+      setUploadProgress(80);
 
       if (!response.ok) {
         let errorMsg = `Error del servidor: ${response.status}`;
@@ -170,7 +376,12 @@ export const ExamQuestions = memo(function ExamQuestions() {
       const result = await response.json();
       // Respuesta de generación desde contenido procesada
 
+      // Completar progreso
+      setUploadProgress(100);
+      setUploadStatus('completed');
+
       if (!result.examId) {
+        setUploadStatus('error');
         Swal.fire({
           icon: "error",
           title: "La respuesta del servidor no contenia un ID de examen valido",
@@ -186,6 +397,8 @@ export const ExamQuestions = memo(function ExamQuestions() {
       navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del examen
     } catch (error) {
       // Error al generar desde contenido
+      setUploadStatus('error');
+      setUploadProgress(0);
       Swal.fire({
         icon: 'error',
         title: 'Error al generar examen',
@@ -193,6 +406,10 @@ export const ExamQuestions = memo(function ExamQuestions() {
       });
     } finally {
       setIsLoading(false);
+      setTimeout(() => {
+        setUploadStatus('idle');
+        setUploadProgress(0);
+      }, 2000);
     }
   };
 
@@ -203,18 +420,27 @@ export const ExamQuestions = memo(function ExamQuestions() {
   const fileTypeIcons: FileTypeIcons = {
     "application/pdf": "fa-file-pdf bg-red-100 text-red-600",
     "image/": "fa-image bg-blue-100 text-blue-600",
-    "video/": "fa-video bg-green-100 text-green-600",
+    "text/plain": "fa-file-alt bg-gray-100 text-gray-600",
+    "text/markdown": "fa-file-code bg-purple-100 text-purple-600",
+    "text/html": "fa-file-code bg-orange-100 text-orange-600",
   };
 
   // Function to determine the appropriate icon class based on file type
   function getFileIconClass(fileType: string): string {
+    // Check exact matches first
+    if (fileTypeIcons[fileType]) {
+      return fileTypeIcons[fileType];
+    }
+    
+    // Check pattern matches
     for (const typePattern in fileTypeIcons) {
       if (fileType.startsWith(typePattern)) {
         return fileTypeIcons[typePattern];
       }
     }
+    
     // Default icon if no match is found:
-    return "fa-file bg-gray-200 text-gray-600"; // Or some other default
+    return "fa-file bg-gray-200 text-gray-600";
   }
 
   // Determina si el botón de generar debe estar deshabilitado (memoizado)
@@ -337,6 +563,17 @@ export const ExamQuestions = memo(function ExamQuestions() {
                   >
                     o
                   </p>
+                  <div className="mb-4">
+                    <p className="text-xs mb-2" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Límites: <span className="font-semibold">Máximo 20 archivos</span>, <span className="font-semibold">50MB por archivo</span>
+                    </p>
+                    <p className="text-xs mb-1" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Formatos: <span className="font-semibold">PDF (recomendado), JPG, PNG, TXT</span>
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--theme-warning-dark)' }}>
+                      💡 PDFs: Máximo 1,000 páginas. Asegúrate de que estén bien orientados y sean legibles
+                    </p>
+                  </div>
                   <label
                     htmlFor="file-upload"
                     className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
@@ -412,7 +649,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
                     style={{ backgroundColor: 'var(--theme-info-dark)' }}
                   ></div>
                   <div className="text-sm">
-                    <strong>Solo archivos:</strong> Sube PDFs, imágenes de libros, presentaciones
+                    <strong>Solo archivos:</strong> PDFs (mejor soporte), imágenes, archivos de texto
                   </div>
                 </div>
                 
@@ -488,43 +725,78 @@ export const ExamQuestions = memo(function ExamQuestions() {
                 {Array.from(files).map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 rounded-xl border transition-all duration-300 hover:scale-[1.02]"
+                    className="p-3 rounded-xl border transition-all duration-300 hover:scale-[1.02]"
                     style={{
                       backgroundColor: 'var(--theme-bg-secondary)',
                       borderColor: 'var(--theme-border-primary)'
                     }}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div 
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFileIconClass(file.type)}`}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div 
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFileIconClass(file.type)}`}
+                        >
+                          <i className="fas fa-file text-sm"></i>
+                        </div>
+                        <div className="flex-1">
+                          <p 
+                            className="font-medium text-sm"
+                            style={{ color: 'var(--theme-text-primary)' }}
+                          >
+                            {file.name}
+                          </p>
+                          <p 
+                            className="text-xs"
+                            style={{ color: 'var(--theme-text-secondary)' }}
+                          >
+                            {(file.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteFile(index)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+                        style={{
+                          backgroundColor: 'var(--theme-error-light)',
+                          color: 'var(--theme-error-dark)'
+                        }}
                       >
-                        <i className="fas fa-file text-sm"></i>
-                      </div>
-                      <div>
-                        <p 
-                          className="font-medium text-sm"
-                          style={{ color: 'var(--theme-text-primary)' }}
-                        >
-                          {file.name}
-                        </p>
-                        <p 
-                          className="text-xs"
-                          style={{ color: 'var(--theme-text-secondary)' }}
-                        >
-                          {(file.size / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
+                        <i className="fas fa-times text-xs"></i>
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleDeleteFile(index)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
-                      style={{
-                        backgroundColor: 'var(--theme-error-light)',
-                        color: 'var(--theme-error-dark)'
-                      }}
-                    >
-                      <i className="fas fa-times text-xs"></i>
-                    </button>
+                    
+                    {/* Previsualización del archivo */}
+                    {filePreviews[file.name] && (
+                      <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--theme-border-primary)' }}>
+                        {file.type.startsWith('image/') ? (
+                          <img 
+                            src={filePreviews[file.name] || ''} 
+                            alt={file.name}
+                            className="max-w-full h-20 object-cover rounded-lg"
+                            style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+                          />
+                        ) : (
+                          <div 
+                            className="text-xs p-2 rounded-lg"
+                            style={{ 
+                              backgroundColor: 'var(--theme-bg-tertiary)',
+                              color: 'var(--theme-text-secondary)'
+                            }}
+                          >
+                            {file.type === 'application/pdf' ? (
+                              <div className="flex items-center space-x-2">
+                                <i className="fas fa-file-pdf text-red-500"></i>
+                                <span>{filePreviews[file.name]}</span>
+                              </div>
+                            ) : (
+                              <div className="font-mono whitespace-pre-wrap">
+                                {filePreviews[file.name]}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -697,8 +969,35 @@ export const ExamQuestions = memo(function ExamQuestions() {
                   }}
                 >
                   <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                  <span className="font-semibold">Procesando contenido...</span>
+                  <span className="font-semibold">
+                    {uploadStatus === 'uploading' && 'Subiendo archivos...'}
+                    {uploadStatus === 'processing' && 'Procesando contenido...'}
+                    {uploadStatus === 'completed' && 'Generando examen...'}
+                  </span>
                 </div>
+                
+                {/* Barra de progreso */}
+                <div className="w-full max-w-md mx-auto">
+                  <div 
+                    className="w-full bg-gray-200 rounded-full h-2 mb-2"
+                    style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+                  >
+                    <div 
+                      className="h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${uploadProgress}%`,
+                        backgroundColor: 'var(--theme-success)' 
+                      }}
+                    />
+                  </div>
+                  <p 
+                    className="text-xs"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
+                    {uploadProgress}% completado
+                  </p>
+                </div>
+                
                 <p 
                   className="text-sm"
                   style={{ color: 'var(--theme-text-secondary)' }}

@@ -1,8 +1,36 @@
-import { useState, useCallback, useEffect, memo } from "react";
+import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { useAuthStore } from "../../stores/authStore";
 import { GeminiService } from "../../services/geminiService";
+import { ApiKeyService } from "../../services/apiKeyService";
 import { GEMINI_MODELS, DEFAULT_MODEL, GeminiModel } from "../../constants/geminiModels";
 import Swal from "sweetalert2";
+
+// Función debounce personalizada
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): T & { cancel: () => void } {
+  let timeoutId: NodeJS.Timeout | null = null;
+  
+  const debouncedFunction = function (...args: Parameters<T>) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  } as T & { cancel: () => void };
+  
+  debouncedFunction.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+  
+  return debouncedFunction;
+}
 
 interface AIConfigurationProps {
   selectedModel: string;
@@ -27,7 +55,7 @@ export const AIConfiguration = memo(function AIConfiguration({
   const [isLoadingApiStatus, setIsLoadingApiStatus] = useState<boolean>(true);
   const [apiKeyPreview, setApiKeyPreview] = useState<string | null>(null);
 
-  // Función para validar API key
+  // Función para validar API key con debounce
   const handleApiKeyChange = useCallback(async (key: string) => {
     setApiKey(key);
     onApiValidChange(false);
@@ -51,10 +79,10 @@ export const AIConfiguration = memo(function AIConfiguration({
     setIsValidatingApi(true);
     
     try {
-      // Validar API key con el backend
-      const response = await GeminiService.validateApiKey(key);
+      // Validar API key con el backend usando ApiKeyService
+      const response = await ApiKeyService.validateApiKey(key);
       
-      if (response.success && response.data?.isValid) {
+      if (response.success && response.isValid) {
         onApiValidChange(true);
         
         Swal.fire({
@@ -91,6 +119,29 @@ export const AIConfiguration = memo(function AIConfiguration({
     }
   }, [session, onApiValidChange]);
 
+  // Debounce para la validación
+  const debouncedValidation = useCallback(
+    debounce(handleApiKeyChange, 1000), // Esperar 1 segundo después de que el usuario termine de escribir
+    [handleApiKeyChange]
+  );
+
+  // Función para manejar el cambio de input
+  const handleInputChange = useCallback((key: string) => {
+    setApiKey(key);
+    onApiValidChange(false);
+    
+    // Cancelar validación anterior
+    debouncedValidation.cancel?.();
+    
+    // Verificación básica de formato
+    if (!key || key.length < 20 || !key.startsWith('AIza')) {
+      return;
+    }
+    
+    // Programar nueva validación
+    debouncedValidation(key);
+  }, [debouncedValidation, onApiValidChange]);
+
   // Función para guardar API key
   const handleSaveApiKey = useCallback(async () => {
     if (!apiKey || !isApiValid) {
@@ -115,7 +166,8 @@ export const AIConfiguration = memo(function AIConfiguration({
     }
     
     try {
-      const response = await GeminiService.saveApiKey(apiKey);
+      // Usar ApiKeyService en lugar de GeminiService
+      const response = await ApiKeyService.saveApiKey(apiKey);
       
       if (response.success) {
         Swal.fire({
@@ -150,7 +202,7 @@ export const AIConfiguration = memo(function AIConfiguration({
     }
   }, [apiKey, isApiValid, session]);
 
-  // Cargar estado de API key al montar el componente
+  // Cargar estado de API key al montar el componente (solo una vez)
   useEffect(() => {
     const loadApiKeyStatus = async () => {
       // Solo cargar si el usuario está autenticado
@@ -162,34 +214,38 @@ export const AIConfiguration = memo(function AIConfiguration({
       setIsLoadingApiStatus(true);
       
       try {
-        const response = await GeminiService.getApiKeyStatus();
+        // Usar ApiKeyService en lugar de GeminiService - NO MÁS LLAMADAS AL BACKEND
+        const response = await ApiKeyService.getApiKeyStatus();
         
         if (response.success && response.data?.hasApiKey) {
           onApiValidChange(response.data.isValid);
           setApiKeyPreview(response.data.apiKeyPreview || null);
+        } else {
+          onApiValidChange(false);
+          setApiKeyPreview(null);
         }
       } catch (error) {
         console.error('Error cargando estado de API key:', error);
+        onApiValidChange(false);
+        setApiKeyPreview(null);
       } finally {
         setIsLoadingApiStatus(false);
       }
     };
     
-    loadApiKeyStatus();
-  }, [session, onApiValidChange]);
+    // Solo cargar una vez al montar el componente si hay sesión
+    if (session?.access_token) {
+      loadApiKeyStatus();
+    } else {
+      setIsLoadingApiStatus(false);
+    }
+  }, [session?.access_token, onApiValidChange]); // Solo escuchar cambios en el token
 
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Authentication Warning */}
       {!session?.access_token && (
-        <div 
-          className="p-4 rounded-xl border-2 border-dashed"
-          style={{ 
-            borderColor: 'var(--theme-warning)',
-            backgroundColor: 'var(--theme-warning-light)',
-            color: 'var(--theme-warning-dark)'
-          }}
-        >
+        <div className="auth-warning">
           <div className="flex items-center space-x-2 mb-2">
             <i className="fas fa-exclamation-triangle"></i>
             <span className="text-sm font-medium">Autenticación requerida</span>
@@ -202,22 +258,12 @@ export const AIConfiguration = memo(function AIConfiguration({
       
       {/* Model Selection */}
       <div>
-        <label 
-          className="block text-sm font-medium mb-3"
-          style={{ color: 'var(--theme-text-secondary)' }}
-        >
+        <label className="api-key-label">
           Modelo de IA
         </label>
         <div className="grid grid-cols-1 gap-3">
           {!isApiValid ? (
-            <div 
-              className="p-4 text-center rounded-xl border-2 border-dashed"
-              style={{ 
-                borderColor: 'var(--theme-border-primary)',
-                backgroundColor: 'var(--theme-bg-secondary)',
-                color: 'var(--theme-text-secondary)'
-              }}
-            >
+            <div className="models-locked">
               <i className="fas fa-lock text-2xl mb-2"></i>
               <div className="text-sm font-medium mb-1">Modelos no disponibles</div>
               <div className="text-xs opacity-80">
@@ -232,15 +278,9 @@ export const AIConfiguration = memo(function AIConfiguration({
               <button
                 key={model.name}
                 onClick={() => onModelChange(model.name)}
-                className={`p-3 rounded-xl border-2 text-left transition-all duration-300 ${
-                  selectedModel === model.name ? 'ring-2 ring-offset-2' : ''
+                className={`model-button ${
+                  selectedModel === model.name ? 'selected ring-2 ring-offset-2' : ''
                 }`}
-                style={{
-                  backgroundColor: selectedModel === model.name ? 'var(--primary)' : 'var(--theme-bg-secondary)',
-                  borderColor: 'var(--primary)',
-                  color: selectedModel === model.name ? 'white' : 'var(--theme-text-primary)',
-                  '--tw-ring-color': 'var(--primary)'
-                } as any}
               >
                 <div className="font-semibold text-sm">{model.displayName}</div>
                 <div className="text-xs opacity-80 mt-1">
@@ -254,38 +294,56 @@ export const AIConfiguration = memo(function AIConfiguration({
       
       {/* API Key Input */}
       <div>
-        <label 
-          className="block text-sm font-medium mb-3"
-          style={{ color: 'var(--theme-text-secondary)' }}
-        >
+        <label className="api-key-label">
           API Key de Google
         </label>
         <div className="space-y-2">
           {/* Mostrar preview de API key guardada */}
           {apiKeyPreview && !apiKey && (
-            <div 
-              className="p-3 rounded-xl border-2 mb-3"
-              style={{
-                backgroundColor: 'var(--theme-success-light)',
-                borderColor: 'var(--theme-success)',
-                color: 'var(--theme-success-dark)'
-              }}
-            >
+            <div className="api-key-preview">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <i className="fas fa-check-circle"></i>
                   <span className="text-sm font-medium">API Key configurada: {apiKeyPreview}</span>
                 </div>
                 <button
-                  onClick={() => {
-                    setApiKeyPreview(null);
-                    onApiValidChange(false);
+                  onClick={async () => {
+                    const result = await Swal.fire({
+                      icon: 'warning',
+                      title: '¿Cambiar API Key?',
+                      text: 'Esto eliminará tu API key actual. ¿Estás seguro?',
+                      showCancelButton: true,
+                      confirmButtonColor: '#d33',
+                      cancelButtonColor: '#3085d6',
+                      confirmButtonText: 'Sí, cambiar',
+                      cancelButtonText: 'Cancelar'
+                    });
+
+                    if (result.isConfirmed) {
+                      try {
+                        const response = await ApiKeyService.deleteApiKey();
+                        if (response.success) {
+                          setApiKeyPreview(null);
+                          onApiValidChange(false);
+                          Swal.fire({
+                            icon: 'success',
+                            title: 'API Key eliminada',
+                            text: 'Puedes ingresar una nueva API key',
+                            timer: 2000,
+                            showConfirmButton: false
+                          });
+                        }
+                      } catch (error) {
+                        Swal.fire({
+                          icon: 'error',
+                          title: 'Error',
+                          text: 'Error al eliminar la API key',
+                          confirmButtonColor: '#d33'
+                        });
+                      }
+                    }
                   }}
-                  className="text-xs px-2 py-1 rounded hover:bg-opacity-80 transition-colors"
-                  style={{
-                    backgroundColor: 'var(--theme-success)',
-                    color: 'white'
-                  }}
+                  className="api-key-button change"
                 >
                   Cambiar
                 </button>
@@ -299,25 +357,17 @@ export const AIConfiguration = memo(function AIConfiguration({
               <input
                 type="password"
                 value={apiKey}
-                onChange={(e) => handleApiKeyChange(e.target.value)}
+                onChange={(e) => handleInputChange(e.target.value)}
                 placeholder="AIza..."
-                className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 pr-12"
-                style={{
-                  backgroundColor: 'var(--theme-bg-secondary)',
-                  borderColor: isApiValid ? 'var(--theme-success)' : 'var(--theme-border-primary)',
-                  color: 'var(--theme-text-primary)'
-                }}
+                className={`api-key-input ${isApiValid ? 'valid' : 'invalid'}`}
                 disabled={isValidatingApi}
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-4">
                 {isValidatingApi ? (
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" style={{ color: 'var(--theme-info)' }}></div>
+                  <div className="api-key-spinner"></div>
                 ) : apiKey && (
                   <i 
-                    className={`fas ${isApiValid ? 'fa-check-circle' : 'fa-exclamation-circle'}`}
-                    style={{ 
-                      color: isApiValid ? 'var(--theme-success)' : 'var(--theme-error)' 
-                    }}
+                    className={`fas ${isApiValid ? 'fa-check-circle' : 'fa-exclamation-circle'} api-key-status-icon ${isApiValid ? 'valid' : 'invalid'}`}
                   />
                 )}
               </div>
@@ -325,22 +375,14 @@ export const AIConfiguration = memo(function AIConfiguration({
           )}
           
           <div className="flex items-center justify-between">
-            <p 
-              className="text-xs"
-              style={{ color: 'var(--theme-text-secondary)' }}
-            >
+            <p className="api-key-help-text">
               Obtén tu API key en Google AI Studio
             </p>
             <div className="flex items-center space-x-2">
               {apiKey && isApiValid && (
                 <button
                   onClick={handleSaveApiKey}
-                  className="inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105"
-                  style={{
-                    backgroundColor: 'var(--theme-success)',
-                    color: 'white',
-                    textDecoration: 'none'
-                  }}
+                  className="api-key-button save"
                 >
                   <i className="fas fa-save"></i>
                   <span>Guardar</span>
@@ -350,12 +392,7 @@ export const AIConfiguration = memo(function AIConfiguration({
                 href="https://youtu.be/RVGbLSVFtIk?si=svQg0FVLtHrFYcap&t=21"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105"
-                style={{
-                  backgroundColor: 'var(--theme-info-light)',
-                  color: 'var(--theme-info-dark)',
-                  textDecoration: 'none'
-                }}
+                className="api-key-button tutorial"
               >
                 <i className="fab fa-youtube"></i>
                 <span>Ver tutorial</span>
