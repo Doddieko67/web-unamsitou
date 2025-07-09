@@ -1,4 +1,5 @@
 import React, { useState, useCallback, DragEvent, useMemo, memo, useEffect } from "react";
+import { Document, Page, pdfjs } from 'react-pdf';
 import { Personalization } from "./Main/Personalization";
 import { useAuthStore } from "../stores/authStore";
 import { useNavigate } from "react-router";
@@ -8,6 +9,9 @@ import { url_backend } from "../url_backend";
 import { DEFAULT_EXAM_CONFIG } from "../constants/examConstants";
 import { AIConfiguration } from "./shared/AIConfiguration";
 import { DEFAULT_MODEL } from "../constants/geminiModels";
+
+// Configurar PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 // Tipo para la dificultad (puede ser null si quieres un estado inicial sin selección)
 // type GeneralDifficulty = "mixed" | "easy" | "medium" | "hard";
@@ -35,6 +39,11 @@ export const ExamQuestions = memo(function ExamQuestions() {
   // Estado para progreso de carga
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'error'>('idle');
+  
+  // Estados para modal de previsualización
+  const [selectedPreview, setSelectedPreview] = useState<{file: File, type: 'image' | 'pdf'} | null>(null);
+  const [imageLoadErrors, setImageLoadErrors] = useState<{[key: string]: boolean}>({});
+  const [imageDimensions, setImageDimensions] = useState<{[key: string]: {width: number, height: number}}>({});
 
   // --- Handlers ---
   const handleDeleteFile = (indexToDelete: number) => {
@@ -55,23 +64,67 @@ export const ExamQuestions = memo(function ExamQuestions() {
   // Función para generar previsualización de archivos
   const generatePreview = useCallback((file: File) => {
     if (file.type.startsWith('image/')) {
+      // Calculate estimated tokens based on Gemini API documentation
+      const estimateTokens = (width: number, height: number) => {
+        // Based on Gemini API: ≤384px = 258 tokens, larger images are tiled
+        const baseTokens = 258;
+        if (width <= 384 && height <= 384) return baseTokens;
+        
+        // Calculate tiles for larger images (768x768 per tile)
+        const tilesX = Math.ceil(width / 768);
+        const tilesY = Math.ceil(height / 768);
+        return tilesX * tilesY * baseTokens;
+      };
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          const img = new Image();
+          img.onload = () => {
+            const estimatedTokens = estimateTokens(img.width, img.height);
+            
+            // Store image dimensions
+            setImageDimensions(prev => ({
+              ...prev,
+              [file.name]: { width: img.width, height: img.height }
+            }));
+            
+            setFilePreviews(prev => ({
+              ...prev,
+              [file.name]: e.target?.result as string,
+              [`${file.name}_tokens`]: `~${estimatedTokens} tokens`,
+              [`${file.name}_dimensions`]: `${img.width}×${img.height}px`
+            }));
+          };
+          
+          img.onerror = () => {
+            setImageLoadErrors(prev => ({ ...prev, [file.name]: true }));
+          };
+          
+          img.src = e.target.result as string;
+        }
+      };
+      reader.readAsDataURL(file);
+    } else if (file.type === 'application/pdf') {
+      // Para PDFs, generamos preview de la primera página
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
           setFilePreviews(prev => ({
             ...prev,
-            [file.name]: e.target?.result as string
+            [file.name]: e.target?.result as string,
+            [`${file.name}_type`]: 'pdf'
           }));
         }
       };
       reader.readAsDataURL(file);
-    } else if (file.type === 'application/pdf') {
-      // Para PDFs, mostramos metadata básica según límites de Gemini API
+      
+      // También agregamos metadata
       const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
       const warningMsg = file.size > 20 * 1024 * 1024 ? ' (Usará File API)' : ' (Inline)';
       setFilePreviews(prev => ({
         ...prev,
-        [file.name]: `PDF • ${sizeInMB} MB${warningMsg} • ${new Date(file.lastModified).toLocaleDateString()}`
+        [`${file.name}_metadata`]: `PDF • ${sizeInMB} MB${warningMsg} • ${new Date(file.lastModified).toLocaleDateString()}`
       }));
     } else if (file.type.startsWith('text/') || file.type === 'text/plain' || file.type === 'text/markdown' || file.type === 'text/html') {
       // Para archivos de texto, leemos las primeras líneas
@@ -101,13 +154,28 @@ export const ExamQuestions = memo(function ExamQuestions() {
         const currentFilesCount = prevFiles ? prevFiles.length : 0;
         const totalFiles = currentFilesCount + newFilesArray.length;
         
-        // No specific file count limit in Gemini API, but limited by context window
-        // Setting reasonable limit of 20 files to prevent context overflow
+        // Check combined limits based on file types
+        const currentImageCount = prevFiles ? prevFiles.filter(f => f.type.startsWith('image/')).length : 0;
+        const newImageCount = newFilesArray.filter(f => f.type.startsWith('image/')).length;
+        const totalImageCount = currentImageCount + newImageCount;
+        
+        // Gemini API supports up to 3,600 images per request, but we set reasonable limit
+        if (totalImageCount > 50) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Límite de imágenes excedido',
+            text: `Máximo 50 imágenes recomendado para evitar límites del contexto. Tienes ${currentImageCount} imágenes e intentas agregar ${newImageCount} más.`,
+            confirmButtonColor: '#3085d6'
+          });
+          return prevFiles || [];
+        }
+        
+        // General file limit for non-images
         if (totalFiles > 20) {
           Swal.fire({
             icon: 'warning',
             title: 'Límite de archivos excedido',
-            text: `Máximo 20 archivos recomendado para evitar límites del contexto. Tienes ${currentFilesCount} archivos e intentas agregar ${newFilesArray.length} más.`,
+            text: `Máximo 20 archivos total recomendado. Tienes ${currentFilesCount} archivos e intentas agregar ${newFilesArray.length} más.`,
             confirmButtonColor: '#3085d6'
           });
           return prevFiles || [];
@@ -136,12 +204,17 @@ export const ExamQuestions = memo(function ExamQuestions() {
             continue;
           }
           
-          // Check file format - Gemini API primarily supports PDFs for document vision
+          // Check file format - Based on official Gemini API documentation
           const allowedTypes = [
             'application/pdf',
+            // Image formats supported by Gemini API
             'image/jpeg', 
             'image/jpg', 
             'image/png',
+            'image/webp',
+            'image/heic',
+            'image/heif',
+            // Text formats 
             'text/plain',
             'text/markdown',
             'text/html'
@@ -151,10 +224,29 @@ export const ExamQuestions = memo(function ExamQuestions() {
             Swal.fire({
               icon: 'warning',
               title: 'Formato no soportado',
-              text: `El archivo "${file.name}" no es compatible. Gemini API soporta principalmente PDFs para visión de documentos, e imágenes/texto para otros casos.`,
+              text: `El archivo "${file.name}" no es compatible. Formatos soportados: PDF, imágenes (JPG, PNG, WEBP, HEIC, HEIF), texto (TXT, MD, HTML).`,
               confirmButtonColor: '#3085d6'
             });
             continue;
+          }
+          
+          // Additional validation for images - check total inline size
+          if (file.type.startsWith('image/')) {
+            const currentTotalSize = prevFiles 
+              ? prevFiles.reduce((total, f) => total + f.size, 0) 
+              : 0;
+            const newTotalSize = currentTotalSize + file.size;
+            
+            // Gemini API limit: 20MB total for inline images + text
+            if (newTotalSize > 15 * 1024 * 1024) { // 15MB to leave space for text
+              Swal.fire({
+                icon: 'warning',
+                title: 'Límite de tamaño total excedido',
+                text: `El tamaño total de archivos inline no puede exceder 15MB (límite de Gemini API). Tamaño actual: ${(newTotalSize / 1024 / 1024).toFixed(1)}MB`,
+                confirmButtonColor: '#3085d6'
+              });
+              continue;
+            }
           }
           
           validFiles.push(file);
@@ -201,13 +293,28 @@ export const ExamQuestions = memo(function ExamQuestions() {
         const currentFilesCount = prevFiles ? prevFiles.length : 0;
         const totalFiles = currentFilesCount + newFilesArray.length;
         
-        // No specific file count limit in Gemini API, but limited by context window
-        // Setting reasonable limit of 20 files to prevent context overflow
+        // Check combined limits based on file types
+        const currentImageCount = prevFiles ? prevFiles.filter(f => f.type.startsWith('image/')).length : 0;
+        const newImageCount = newFilesArray.filter(f => f.type.startsWith('image/')).length;
+        const totalImageCount = currentImageCount + newImageCount;
+        
+        // Gemini API supports up to 3,600 images per request, but we set reasonable limit
+        if (totalImageCount > 50) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Límite de imágenes excedido',
+            text: `Máximo 50 imágenes recomendado para evitar límites del contexto. Tienes ${currentImageCount} imágenes e intentas agregar ${newImageCount} más.`,
+            confirmButtonColor: '#3085d6'
+          });
+          return prevFiles || [];
+        }
+        
+        // General file limit for non-images
         if (totalFiles > 20) {
           Swal.fire({
             icon: 'warning',
             title: 'Límite de archivos excedido',
-            text: `Máximo 20 archivos recomendado para evitar límites del contexto. Tienes ${currentFilesCount} archivos e intentas agregar ${newFilesArray.length} más.`,
+            text: `Máximo 20 archivos total recomendado. Tienes ${currentFilesCount} archivos e intentas agregar ${newFilesArray.length} más.`,
             confirmButtonColor: '#3085d6'
           });
           return prevFiles || [];
@@ -236,12 +343,17 @@ export const ExamQuestions = memo(function ExamQuestions() {
             continue;
           }
           
-          // Check file format - Gemini API primarily supports PDFs for document vision
+          // Check file format - Based on official Gemini API documentation
           const allowedTypes = [
             'application/pdf',
+            // Image formats supported by Gemini API
             'image/jpeg', 
             'image/jpg', 
             'image/png',
+            'image/webp',
+            'image/heic',
+            'image/heif',
+            // Text formats 
             'text/plain',
             'text/markdown',
             'text/html'
@@ -251,10 +363,29 @@ export const ExamQuestions = memo(function ExamQuestions() {
             Swal.fire({
               icon: 'warning',
               title: 'Formato no soportado',
-              text: `El archivo "${file.name}" no es compatible. Gemini API soporta principalmente PDFs para visión de documentos, e imágenes/texto para otros casos.`,
+              text: `El archivo "${file.name}" no es compatible. Formatos soportados: PDF, imágenes (JPG, PNG, WEBP, HEIC, HEIF), texto (TXT, MD, HTML).`,
               confirmButtonColor: '#3085d6'
             });
             continue;
+          }
+          
+          // Additional validation for images - check total inline size
+          if (file.type.startsWith('image/')) {
+            const currentTotalSize = prevFiles 
+              ? prevFiles.reduce((total, f) => total + f.size, 0) 
+              : 0;
+            const newTotalSize = currentTotalSize + file.size;
+            
+            // Gemini API limit: 20MB total for inline images + text
+            if (newTotalSize > 15 * 1024 * 1024) { // 15MB to leave space for text
+              Swal.fire({
+                icon: 'warning',
+                title: 'Límite de tamaño total excedido',
+                text: `El tamaño total de archivos inline no puede exceder 15MB (límite de Gemini API). Tamaño actual: ${(newTotalSize / 1024 / 1024).toFixed(1)}MB`,
+                confirmButtonColor: '#3085d6'
+              });
+              continue;
+            }
           }
           
           validFiles.push(file);
@@ -419,7 +550,12 @@ export const ExamQuestions = memo(function ExamQuestions() {
 
   const fileTypeIcons: FileTypeIcons = {
     "application/pdf": "fa-file-pdf bg-red-100 text-red-600",
-    "image/": "fa-image bg-blue-100 text-blue-600",
+    "image/jpeg": "fa-image bg-blue-100 text-blue-600",
+    "image/jpg": "fa-image bg-blue-100 text-blue-600", 
+    "image/png": "fa-image bg-green-100 text-green-600",
+    "image/webp": "fa-image bg-purple-100 text-purple-600",
+    "image/heic": "fa-image bg-orange-100 text-orange-600",
+    "image/heif": "fa-image bg-orange-100 text-orange-600",
     "text/plain": "fa-file-alt bg-gray-100 text-gray-600",
     "text/markdown": "fa-file-code bg-purple-100 text-purple-600",
     "text/html": "fa-file-code bg-orange-100 text-orange-600",
@@ -487,7 +623,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
         </div>
       </div>
       {/* File Upload Grid Area - Spans full width */}
-      <div className="col-span-full">
+      <div className="grid-personalization">
         <div 
           className="config-card"
           style={{
@@ -523,12 +659,14 @@ export const ExamQuestions = memo(function ExamQuestions() {
           </div>
           
           <div className="card-content">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* File Upload Section */}
-              <div>
-                <h4 className="font-medium mb-4" style={{ color: 'var(--theme-text-primary)' }}>
-                  Subir Archivos
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-stretch">
+              {/* File Upload Section - Fusionado */}
+              <div className="space-y-4 flex flex-col">
+                <h4 className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                  Subir Archivos {files.length > 0 && `(${files.length})`}
                 </h4>
+                
+                {/* Upload Area */}
                 <div
                   className={`border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 ${
                     isDraggingOver ? "animate-pulse" : ""
@@ -563,29 +701,34 @@ export const ExamQuestions = memo(function ExamQuestions() {
                   >
                     o
                   </p>
-                  <div className="mb-4">
-                    <p className="text-xs mb-2" style={{ color: 'var(--theme-text-secondary)' }}>
-                      Límites: <span className="font-semibold">Máximo 20 archivos</span>, <span className="font-semibold">50MB por archivo</span>
-                    </p>
-                    <p className="text-xs mb-1" style={{ color: 'var(--theme-text-secondary)' }}>
-                      Formatos: <span className="font-semibold">PDF (recomendado), JPG, PNG, TXT</span>
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--theme-warning-dark)' }}>
-                      💡 PDFs: Máximo 1,000 páginas. Asegúrate de que estén bien orientados y sean legibles
-                    </p>
+                  <div className="flex items-center justify-center space-x-4">
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+                      style={{
+                        background: 'var(--theme-gradient-purple)',
+                        color: 'white',
+                        boxShadow: 'var(--theme-shadow-sm)'
+                      }}
+                    >
+                      <i className="fas fa-folder-open"></i>
+                      <span>Seleccionar archivos</span>
+                    </label>
+                    {files.length > 0 && (
+                      <button
+                        onClick={() => setFiles([])}
+                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+                        style={{
+                          backgroundColor: 'var(--theme-error-light)',
+                          color: 'var(--theme-error-dark)',
+                          border: `1px solid var(--theme-error)`
+                        }}
+                      >
+                        <i className="fas fa-trash"></i>
+                        <span>Limpiar todo</span>
+                      </button>
+                    )}
                   </div>
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'var(--theme-gradient-purple)',
-                      color: 'white',
-                      boxShadow: 'var(--theme-shadow-sm)'
-                    }}
-                  >
-                    <i className="fas fa-folder-open"></i>
-                    <span>Seleccionar archivos</span>
-                  </label>
                   <input
                     id="file-upload"
                     type="file"
@@ -594,216 +737,258 @@ export const ExamQuestions = memo(function ExamQuestions() {
                     onChange={handleFileChange}
                   />
                 </div>
-              </div>
-              
-              {/* Text Input Section */}
-              <div>
-                <h4 className="font-medium mb-4" style={{ color: 'var(--theme-text-primary)' }}>
-                  Pegar Texto Directamente
-                </h4>
-                <textarea
-                  className="w-full h-40 px-4 py-3 rounded-xl border-2 transition-all duration-300 resize-none"
-                  style={{
-                    backgroundColor: 'var(--theme-bg-secondary)',
-                    borderColor: pastedText.trim() ? 'var(--theme-success)' : 'var(--theme-border-primary)',
-                    color: 'var(--theme-text-primary)'
-                  }}
-                  placeholder="Pega aquí el contenido del material de estudio, libros, artículos, notas de clase..."
-                  value={pastedText}
-                  onChange={handleTextChange}
-                />
-                <p className="text-xs mt-2" style={{ color: 'var(--theme-text-secondary)' }}>
-                  Puedes pegar texto desde PDFs, artículos web, documentos de Word, etc.
-                </p>
-              </div>
-            </div>
-            
-            {/* Help Section */}
-            <div 
-              className="mt-6 p-4 rounded-xl border"
-              style={{
-                backgroundColor: 'var(--theme-info-light)',
-                borderColor: 'var(--theme-info)'
-              }}
-            >
-              <div className="flex items-center justify-center space-x-3 mb-3">
-                <i 
-                  className="fas fa-lightbulb text-xl"
-                  style={{ color: 'var(--theme-info-dark)' }}
-                ></i>
-                <h5 
-                  className="font-medium"
-                  style={{ color: 'var(--theme-info-dark)' }}
-                >
-                  Consejos de uso:
-                </h5>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div 
-                  className="flex items-center space-x-2"
-                  style={{ color: 'var(--theme-info-dark)' }}
-                >
-                  <div 
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: 'var(--theme-info-dark)' }}
-                  ></div>
-                  <div className="text-sm">
-                    <strong>Solo archivos:</strong> PDFs (mejor soporte), imágenes, archivos de texto
-                  </div>
-                </div>
-                
-                <div 
-                  className="flex items-center space-x-2"
-                  style={{ color: 'var(--theme-info-dark)' }}
-                >
-                  <div 
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: 'var(--theme-info-dark)' }}
-                  ></div>
-                  <div className="text-sm">
-                    <strong>Solo texto:</strong> Pega contenido copiado de cualquier fuente
-                  </div>
-                </div>
-                
-                <div 
-                  className="flex items-center space-x-2"
-                  style={{ color: 'var(--theme-info-dark)' }}
-                >
-                  <div 
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: 'var(--theme-info-dark)' }}
-                  ></div>
-                  <div className="text-sm">
-                    <strong>Ambos:</strong> Combina archivos + texto adicional para más contexto
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* File List Grid Area */}
-      {files && files.length > 0 && (
-        <div className="grid-questions">
-          <div 
-            className="config-card"
-            style={{
-              backgroundColor: 'var(--theme-bg-primary)',
-              borderColor: 'var(--theme-border-primary)',
-              boxShadow: 'var(--theme-shadow-md)'
-            }}
-          >
-            <div className="card-header">
-              <div 
-                className="card-icon"
-                style={{ backgroundColor: 'var(--theme-info-light)' }}
-              >
-                <i 
-                  className="fas fa-file-alt text-lg"
-                  style={{ color: 'var(--theme-info)' }}
-                ></i>
-              </div>
-              <div className="card-header-text">
-                <h3 
-                  className="card-title"
-                  style={{ color: 'var(--theme-text-primary)' }}
-                >
-                  📋 Archivos Seleccionados
-                </h3>
-                <p 
-                  className="card-subtitle"
-                  style={{ color: 'var(--theme-text-secondary)' }}
-                >
-                  {files.length} archivo{files.length !== 1 ? 's' : ''} listo{files.length !== 1 ? 's' : ''} para procesar
-                </p>
-              </div>
-            </div>
-            
-            <div className="card-content">
-              <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
-                {Array.from(files).map((file, index) => (
-                  <div
-                    key={index}
-                    className="p-3 rounded-xl border transition-all duration-300 hover:scale-[1.02]"
-                    style={{
-                      backgroundColor: 'var(--theme-bg-secondary)',
-                      borderColor: 'var(--theme-border-primary)'
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div 
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFileIconClass(file.type)}`}
-                        >
-                          <i className="fas fa-file text-sm"></i>
-                        </div>
-                        <div className="flex-1">
-                          <p 
-                            className="font-medium text-sm"
-                            style={{ color: 'var(--theme-text-primary)' }}
-                          >
-                            {file.name}
-                          </p>
-                          <p 
-                            className="text-xs"
-                            style={{ color: 'var(--theme-text-secondary)' }}
-                          >
-                            {(file.size / 1024).toFixed(1)} KB
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteFile(index)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+
+                {/* Files List - Integrado directamente */}
+                {files && files.length > 0 && (
+                  <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+                    {Array.from(files).map((file, index) => (
+                      <div
+                        key={index}
+                        className="p-3 rounded-xl border transition-all duration-300 hover:scale-[1.02]"
                         style={{
-                          backgroundColor: 'var(--theme-error-light)',
-                          color: 'var(--theme-error-dark)'
+                          backgroundColor: 'var(--theme-bg-tertiary)',
+                          borderColor: 'var(--theme-border-primary)'
                         }}
                       >
-                        <i className="fas fa-times text-xs"></i>
-                      </button>
-                    </div>
-                    
-                    {/* Previsualización del archivo */}
-                    {filePreviews[file.name] && (
-                      <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--theme-border-primary)' }}>
-                        {file.type.startsWith('image/') ? (
-                          <img 
-                            src={filePreviews[file.name] || ''} 
-                            alt={file.name}
-                            className="max-w-full h-20 object-cover rounded-lg"
-                            style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
-                          />
-                        ) : (
-                          <div 
-                            className="text-xs p-2 rounded-lg"
-                            style={{ 
-                              backgroundColor: 'var(--theme-bg-tertiary)',
-                              color: 'var(--theme-text-secondary)'
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-3 flex-1">
+                            <div 
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${getFileIconClass(file.type)}`}
+                            >
+                              <i className="fas fa-file text-xs"></i>
+                            </div>
+                            <div className="flex-1">
+                              <p 
+                                className="font-medium text-sm"
+                                style={{ color: 'var(--theme-text-primary)' }}
+                              >
+                                {file.name}
+                              </p>
+                              <p 
+                                className="text-xs"
+                                style={{ color: 'var(--theme-text-secondary)' }}
+                              >
+                                {(file.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteFile(index)}
+                            className="w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+                            style={{
+                              backgroundColor: 'var(--theme-error-light)',
+                              color: 'var(--theme-error-dark)'
                             }}
                           >
-                            {file.type === 'application/pdf' ? (
-                              <div className="flex items-center space-x-2">
-                                <i className="fas fa-file-pdf text-red-500"></i>
-                                <span>{filePreviews[file.name]}</span>
+                            <i className="fas fa-times text-xs"></i>
+                          </button>
+                        </div>
+                        
+                        {/* Previsualización del archivo */}
+                        {filePreviews[file.name] && (
+                          <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--theme-border-primary)' }}>
+                            {file.type.startsWith('image/') ? (
+                              <div>
+                                <div className="relative group">
+                                  {imageLoadErrors[file.name] ? (
+                                    <div 
+                                      className="w-full h-16 flex items-center justify-center rounded-lg border-2 border-dashed"
+                                      style={{ 
+                                        borderColor: 'var(--theme-error)',
+                                        backgroundColor: 'var(--theme-error-light)'
+                                      }}
+                                    >
+                                      <div className="text-center">
+                                        <i className="fas fa-exclamation-triangle text-sm mb-1" style={{ color: 'var(--theme-error)' }}></i>
+                                        <p className="text-xs" style={{ color: 'var(--theme-error-dark)' }}>Error al cargar</p>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <img 
+                                        src={filePreviews[file.name] || ''} 
+                                        alt={file.name}
+                                        className="max-w-full h-16 object-cover rounded-lg mb-2 cursor-pointer transition-all duration-300 hover:shadow-lg"
+                                        style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
+                                        onClick={() => setSelectedPreview({file, type: 'image'})}
+                                      />
+                                      <div 
+                                        className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 rounded-lg transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+                                        onClick={() => setSelectedPreview({file, type: 'image'})}
+                                      >
+                                        <i className="fas fa-search-plus text-white text-sm"></i>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  {filePreviews[`${file.name}_dimensions`] && (
+                                    <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                                      📐 {filePreviews[`${file.name}_dimensions`]}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : file.type === 'application/pdf' ? (
+                              <div>
+                                <div className="relative group">
+                                  <div 
+                                    className="w-full h-16 bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-300 hover:shadow-lg"
+                                    style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
+                                    onClick={() => setSelectedPreview({file, type: 'pdf'})}
+                                  >
+                                    <div className="text-center">
+                                      <i className="fas fa-file-pdf text-lg mb-1 text-red-500"></i>
+                                      <p className="text-xs font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                                        Click para ver
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div 
+                                    className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 rounded-lg transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
+                                    onClick={() => setSelectedPreview({file, type: 'pdf'})}
+                                  >
+                                    <i className="fas fa-eye text-white text-sm"></i>
+                                  </div>
+                                </div>
+                                
+                                {filePreviews[`${file.name}_metadata`] && (
+                                  <p className="text-xs mt-2" style={{ color: 'var(--theme-text-secondary)' }}>
+                                    {filePreviews[`${file.name}_metadata`]}
+                                  </p>
+                                )}
                               </div>
                             ) : (
-                              <div className="font-mono whitespace-pre-wrap">
-                                {filePreviews[file.name]}
+                              <div 
+                                className="text-xs p-2 rounded-lg"
+                                style={{ 
+                                  backgroundColor: 'var(--theme-bg-secondary)',
+                                  color: 'var(--theme-text-secondary)'
+                                }}
+                              >
+                                <div className="font-mono whitespace-pre-wrap">
+                                  {filePreviews[file.name]}
+                                </div>
                               </div>
                             )}
                           </div>
                         )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                )}
+              </div>
+              
+              {/* Text Input Section */}
+              <div className="flex flex-col space-y-4 h-full">
+                <h4 className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                  Pegar Texto Directamente
+                </h4>
+                <div className="flex-1 flex flex-col">
+                  <textarea
+                    className="w-full h-full px-4 py-3 rounded-xl border-2 transition-all duration-300 resize-none"
+                    style={{
+                      backgroundColor: 'var(--theme-bg-secondary)',
+                      borderColor: pastedText.trim() ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                      color: 'var(--theme-text-primary)',
+                      minHeight: '200px'
+                    }}
+                    placeholder="Pega aquí el contenido del material de estudio, libros, artículos, notas de clase..."
+                    value={pastedText}
+                    onChange={handleTextChange}
+                  />
+                </div>
+                <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                  Puedes pegar texto desde PDFs, artículos web, documentos de Word, etc.
+                </p>
+              </div>
+            </div>
+            
+            {/* Límites y Validaciones Section */}
+            <div 
+              className="mt-6 p-4 rounded-xl border"
+              style={{
+                backgroundColor: 'var(--theme-warning-light)',
+                borderColor: 'var(--theme-warning)'
+              }}
+            >
+              <div className="flex items-center justify-center space-x-3 mb-3">
+                <i 
+                  className="fas fa-exclamation-triangle text-xl"
+                  style={{ color: 'var(--theme-warning-dark)' }}
+                ></i>
+                <h5 
+                  className="font-medium"
+                  style={{ color: 'var(--theme-warning-dark)' }}
+                >
+                  Límites y Validaciones:
+                </h5>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div 
+                    className="flex items-center space-x-2"
+                    style={{ color: 'var(--theme-warning-dark)' }}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                    ></div>
+                    <div className="text-sm">
+                      <strong>Archivos:</strong> Máximo 20 archivos, 50 imágenes
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className="flex items-center space-x-2"
+                    style={{ color: 'var(--theme-warning-dark)' }}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                    ></div>
+                    <div className="text-sm">
+                      <strong>Tamaño:</strong> 50MB por archivo, 15MB total inline
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div 
+                    className="flex items-center space-x-2"
+                    style={{ color: 'var(--theme-warning-dark)' }}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                    ></div>
+                    <div className="text-sm">
+                      <strong>Formatos:</strong> PDF, JPG, PNG, WEBP, HEIC, HEIF, TXT, MD, HTML
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className="flex items-center space-x-2"
+                    style={{ color: 'var(--theme-warning-dark)' }}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                    ></div>
+                    <div className="text-sm">
+                      <strong>PDFs:</strong> Máximo 1,000 páginas, orientación correcta
+                    </div>
+                  </div>
+                </div>
+                
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+
 
       {/* Timer Grid Area */}
       <div className="grid-timer">
@@ -854,7 +1039,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
       </div>
 
       {/* Instructions Grid Area */}
-      <div className="grid-difficulty">
+      <div className="grid-questions">
         <div 
           className="config-card"
           style={{
@@ -1108,6 +1293,158 @@ export const ExamQuestions = memo(function ExamQuestions() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Previsualización */}
+      {selectedPreview && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedPreview(null)}
+        >
+          <div 
+            className="max-w-4xl max-h-[90vh] w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
+            style={{ backgroundColor: 'var(--theme-bg-primary)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del Modal */}
+            <div 
+              className="flex items-center justify-between p-4 border-b"
+              style={{ borderColor: 'var(--theme-border-primary)' }}
+            >
+              <div className="flex items-center space-x-3">
+                <div 
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFileIconClass(selectedPreview.file.type)}`}
+                >
+                  <i className={`fas ${selectedPreview.type === 'pdf' ? 'fa-file-pdf' : 'fa-image'} text-sm`}></i>
+                </div>
+                <div>
+                  <h3 
+                    className="font-semibold text-lg"
+                    style={{ color: 'var(--theme-text-primary)' }}
+                  >
+                    {selectedPreview.file.name}
+                  </h3>
+                  <p 
+                    className="text-sm"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
+                    {(selectedPreview.file.size / 1024 / 1024).toFixed(2)} MB
+                    {selectedPreview.type === 'image' && imageDimensions[selectedPreview.file.name] && 
+                      ` • ${imageDimensions[selectedPreview.file.name].width}×${imageDimensions[selectedPreview.file.name].height}px`
+                    }
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPreview(null)}
+                className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+                style={{
+                  backgroundColor: 'var(--theme-error-light)',
+                  color: 'var(--theme-error-dark)'
+                }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Contenido del Modal */}
+            <div className="p-4 max-h-[70vh] overflow-auto">
+              {selectedPreview.type === 'image' ? (
+                <div className="text-center">
+                  <img 
+                    src={filePreviews[selectedPreview.file.name] || ''} 
+                    alt={selectedPreview.file.name}
+                    className="max-w-full max-h-[60vh] mx-auto rounded-lg shadow-lg"
+                    style={{ backgroundColor: 'var(--theme-bg-tertiary)' }}
+                  />
+                  
+                  {/* Información de la imagen */}
+                  <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--theme-bg-secondary)' }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="text-center">
+                        <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Dimensiones</p>
+                        <p style={{ color: 'var(--theme-text-secondary)' }}>
+                          {filePreviews[`${selectedPreview.file.name}_dimensions`] || 'Calculando...'}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Formato</p>
+                        <p style={{ color: 'var(--theme-text-secondary)' }}>
+                          {selectedPreview.file.type.split('/')[1].toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Document
+                    file={selectedPreview.file}
+                    onLoadSuccess={({ numPages }) => {
+                      setFilePreviews(prev => ({
+                        ...prev,
+                        [`${selectedPreview.file.name}_pages`]: `${numPages} páginas`
+                      }));
+                    }}
+                    onLoadError={(error) => {
+                      console.error('Error loading PDF:', error);
+                    }}
+                    loading={
+                      <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                          <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          <p style={{ color: 'var(--theme-text-secondary)' }}>Cargando PDF...</p>
+                        </div>
+                      </div>
+                    }
+                    error={
+                      <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                          <i className="fas fa-exclamation-triangle text-red-500 text-2xl mb-2"></i>
+                          <p style={{ color: 'var(--theme-error)' }}>Error al cargar PDF</p>
+                          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>
+                            Verifique que el archivo no esté corrupto
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <Page 
+                      pageNumber={1} 
+                      width={Math.min(600, window.innerWidth - 100)}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  </Document>
+                  
+                  {/* Información del PDF */}
+                  <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--theme-bg-secondary)' }}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="text-center">
+                        <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Páginas</p>
+                        <p style={{ color: 'var(--theme-text-secondary)' }}>
+                          {filePreviews[`${selectedPreview.file.name}_pages`] || 'Calculando...'}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Tamaño</p>
+                        <p style={{ color: 'var(--theme-text-secondary)' }}>
+                          {(selectedPreview.file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Procesamiento</p>
+                        <p style={{ color: selectedPreview.file.size > 20 * 1024 * 1024 ? 'var(--theme-warning-dark)' : 'var(--theme-success-dark)' }}>
+                          {selectedPreview.file.size > 20 * 1024 * 1024 ? 'File API' : 'Inline'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
