@@ -4,13 +4,24 @@ import Joi from 'joi';
 export const schemas = {
   uploadFiles: Joi.object({
     prompt: Joi.string().min(1).max(10000).required(),
-    tiempo_limite_segundos: Joi.number().integer().min(60).max(7200).required()
+    tiempo_limite_segundos: Joi.alternatives().try(
+      Joi.number().integer().min(60).max(7200),
+      Joi.string().pattern(/^\d+$/).custom((value, helpers) => {
+        const num = parseInt(value, 10);
+        if (num < 60 || num > 7200) {
+          return helpers.error('number.min');
+        }
+        return num;
+      })
+    ).required(),
+    model: Joi.string().valid('gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash').optional()
   }),
 
   generateContent: Joi.object({
     prompt: Joi.string().min(1).max(10000).required(),
     dificultad: Joi.string().valid('easy', 'medium', 'hard', 'mixed').required(),
     tiempo_limite_segundos: Joi.number().integer().min(60).max(7200).required(),
+    modelo: Joi.string().valid('gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash').optional(),
     exams_id: Joi.array().items(Joi.string().uuid()).optional(),
     materias_seleccionadas: Joi.array().items(Joi.object({
       name: Joi.string().required(),
@@ -27,7 +38,8 @@ export const schemas = {
   generateContentBasedOnHistory: Joi.object({
     exams_id: Joi.array().items(Joi.string().uuid()).min(1).required(),
     prompt: Joi.string().min(1).max(10000).required(),
-    tiempo_limite_segundos: Joi.number().integer().min(60).max(7200).required()
+    tiempo_limite_segundos: Joi.number().integer().min(60).max(7200).required(),
+    model: Joi.string().valid('gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash').optional()
   })
 };
 

@@ -10,7 +10,6 @@ import { useExamNavigation } from '../../hooks/useExamNavigation';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { useFeedbackGeneration } from '../../hooks/useFeedbackGeneration';
 import { useOfflineMode } from '../../hooks/useOfflineMode';
-import { usePerformanceMetrics } from '../../hooks/usePerformanceMetrics';
 
 // Components
 import { ExamTimerDisplay } from './ExamTimerDisplay';
@@ -20,7 +19,6 @@ import { ExamActionButtons } from './ExamActionButtons';
 import { ExamSearchFilter } from './ExamSearchFilter';
 import { ExamQuestionCards } from './ExamQuestionCards';
 import { OfflineIndicator } from './OfflineIndicator';
-import { PerformanceDashboard } from './PerformanceDashboard';
 import { QuestionSelector } from '../../Examen/QuestionSelector';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { LoadingSpinner } from '../LoadingSpinner';
@@ -47,8 +45,6 @@ export const ExamContainer: React.FC = () => {
   // Initialize offline mode
   const offlineState = useOfflineMode();
   
-  // Initialize performance monitoring
-  const performanceMetrics = usePerformanceMetrics();
   
   // Initialize timer
   const timer = useBasicTimer(
@@ -595,11 +591,6 @@ export const ExamContainer: React.FC = () => {
           </div>
         </main>
 
-        {/* Performance Dashboard (Development Only) */}
-        <PerformanceDashboard
-          metrics={performanceMetrics}
-          onExportReport={performanceMetrics.getMetricsReport}
-        />
       </div>
     </ErrorBoundary>
   );

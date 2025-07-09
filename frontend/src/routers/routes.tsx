@@ -7,7 +7,6 @@ import { PublicRoute } from "../components/PublicRoute";
 const Home = lazy(() => import("../pages/home"));
 const Main = lazy(() => import("../pages/Inicio").then(module => ({ default: module.Main })));
 const Examenes = lazy(() => import("../pages/Examenes").then(module => ({ default: module.Examenes })));
-const Estadisticas = lazy(() => import("../pages/Estadisticas").then(module => ({ default: module.Estadisticas })));
 const NotFound = lazy(() => import("../pages/NotFound").then(module => ({ default: module.NotFound })));
 const Login = lazy(() => import("../pages/Login").then(module => ({ default: module.Login })));
 const Contacto = lazy(() => import("../pages/Contacto").then(module => ({ default: module.Contacto })));
@@ -51,7 +50,6 @@ export function MyRoutes() {
         <Route path="/inicio" element={<ProtectedRoute><Main /></ProtectedRoute>} />
         <Route path="/examen/:examId" element={<ProtectedRoute><ExamContainerWrapper /></ProtectedRoute>} />
         <Route path="/examenes" element={<ProtectedRoute><Examenes /></ProtectedRoute>} />
-        <Route path="/estadisticas" element={<ProtectedRoute><Estadisticas /></ProtectedRoute>} />
         <Route path="/mi-perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         
         

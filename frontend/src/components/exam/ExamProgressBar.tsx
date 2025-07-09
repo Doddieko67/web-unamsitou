@@ -40,7 +40,7 @@ export const ExamProgressBar: React.FC<ExamProgressBarProps> = memo(({
             className="w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300"
             style={{ backgroundColor: 'var(--primary)' }}
           >
-            <i className="fas fa-chart-line text-white text-sm"></i>
+            <i className="fas fa-tasks text-white text-sm"></i>
           </div>
           <div>
             <h3 

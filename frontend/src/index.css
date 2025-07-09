@@ -21,6 +21,7 @@
     /* Text Colors */
     --theme-text-primary: #1e293b;
     --theme-text-secondary: #475569;
+    --theme-text-tertiary: #9ca3af;
     --theme-text-muted: #64748b;
     --theme-text-accent: #6366f1;
     
@@ -71,7 +72,8 @@
     /* Text Colors */
     --theme-text-primary: #f8fafc;
     --theme-text-secondary: #e2e8f0;
-    --theme-text-muted: #cbd5e1;
+    --theme-text-tertiary: #cbd5e1;
+    --theme-text-muted: #94a3b8;
     --theme-text-accent: #818cf8;
     
     /* Border Colors */
@@ -977,4 +979,15 @@ textarea {
 /* Apply fade-in animation to all grid items */
 .exam-config-grid > div {
     animation: fade-in 0.6s ease-out both;
+}
+
+/* Number input arrow removal for QuestionConf */
+.number-input-no-arrows::-webkit-outer-spin-button,
+.number-input-no-arrows::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-input-no-arrows[type=number] {
+    -moz-appearance: textfield;
 }

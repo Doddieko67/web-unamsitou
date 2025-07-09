@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo, memo } from "react";
-import { ExamButton } from "../ExamButton";
 import { DifficultExam } from "./DifficultExam";
 // import { Materias } from "./Materias"; // Ya no necesario
 import { Personalization } from "./Personalization";
@@ -9,6 +8,8 @@ import { useAuthStore } from "../../stores/authStore";
 import { TimerConf } from "../TimerConf";
 import { url_backend } from "../../url_backend";
 import { DEFAULT_EXAM_CONFIG } from "../../constants/examConstants";
+import { DEFAULT_MODEL } from "../../constants/geminiModels";
+import { AIConfiguration } from "../shared/AIConfiguration";
 
 // Importar SweetAlert2
 import Swal from "sweetalert2";
@@ -32,8 +33,7 @@ export const ExamConf = memo(function ExamConf() {
   const [second, setSecond] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_SECOND);
   
   // Estados para configuración de IA
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash');
-  const [apiKey, setApiKey] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
   const [isApiValid, setIsApiValid] = useState<boolean>(false);
 
   // --- Handlers ---
@@ -54,24 +54,43 @@ export const ExamConf = memo(function ExamConf() {
     setSelectedModel(model);
   }, []);
 
-  const handleApiKeyChange = useCallback((key: string) => {
-    setApiKey(key);
-    // Verificación básica de API key (formato de Google API)
-    const isValidFormat = key.length > 20 && key.startsWith('AIza');
-    setIsApiValid(isValidFormat);
+  const handleApiValidChange = useCallback((isValid: boolean) => {
+    setIsApiValid(isValid);
   }, []);
+
+
 
   // Handler principal para generar el examen
   const handleGenerateExam = async () => {
     // --- Validación Inicial con Swal ---
     if (!fineTuning.trim() || selectedDifficulty === null || !isApiValid) {
+      let errorMessage = "Por favor, completa: ";
+      const missing = [];
+      
+      if (!fineTuning.trim()) missing.push("tema del examen");
+      if (selectedDifficulty === null) missing.push("dificultad");
+      if (!isApiValid) missing.push("API key válida");
+      
+      errorMessage += missing.join(", ");
+      
       Swal.fire({
         icon: "warning",
         title: "Configuración Incompleta",
-        text: "Por favor, completa el tema del examen, selecciona la dificultad y configura una API key válida.",
-        confirmButtonColor: "#3085d6", // Color azul estándar de Swal
+        text: errorMessage,
+        confirmButtonColor: "#3085d6",
       });
-      return; // Detiene la ejecución si la validación falla
+      return;
+    }
+    
+    // --- Validación adicional para evitar error 400 ---
+    if (selectedDifficulty === null) {
+      Swal.fire({
+        icon: "error",
+        title: "Error de Validación",
+        text: "La dificultad no puede estar vacía. Selecciona una dificultad.",
+        confirmButtonColor: "#d33",
+      });
+      return;
     }
 
     setIsGenerating(true); // Habilita el indicador de carga
@@ -91,18 +110,13 @@ export const ExamConf = memo(function ExamConf() {
       //   promptText += `El examen tiene un tiempo límite de ${hour} horas, ${minute} minutos y ${second} segundos.\n`;
       // }
 
-      // Preparar el payload
+      // Preparar el payload que coincida exactamente con el backend
       const requestPayload = {
-        prompt: promptText, // Envía el prompt de texto construido
-        dificultad: selectedDifficulty, // Envía la dificultad como dato estructurado si el backend lo necesita
-        tiempo_limite_segundos: tiempoLimiteSegundos, // Envía el tiempo límite
-        tema_principal: fineTuning.trim(), // Envía el tema principal desde personalización
-        cantidad_preguntas: questionCount, // Envía la cantidad de preguntas
-        contenido_detallado: fineTuning.trim(), // Envía el contenido detallado
-        // Puedes añadir más datos estructurados si tu backend los espera
+        prompt: promptText, // REQUERIDO: prompt de texto construido
+        dificultad: selectedDifficulty, // REQUERIDO: debe ser string, no null
+        tiempo_limite_segundos: tiempoLimiteSegundos, // REQUERIDO: tiempo límite en segundos
+        modelo: selectedModel, // OPCIONAL: modelo seleccionado
       };
-
-      // Payload preparado para el backend
 
       // --- Llama al backend para generar el examen ---
       const response = await fetch(
@@ -125,7 +139,11 @@ export const ExamConf = memo(function ExamConf() {
         // Intenta leer el mensaje de error del cuerpo de la respuesta si está disponible
         const errorBody = await response.json().catch(() => null); // Intenta parsear JSON, ignora errores si no es JSON
         
-        // Error del backend se manejará en el UI
+        // Log para debug del error 400
+        if (response.status === 400) {
+          console.error('Error 400 - Datos enviados:', requestPayload);
+          console.error('Error 400 - Respuesta del servidor:', errorBody);
+        }
         
         const errorMessage =
           errorBody?.error || errorBody?.message ||
@@ -318,7 +336,7 @@ export const ExamConf = memo(function ExamConf() {
               style={{ backgroundColor: 'var(--theme-warning-light)' }}
             >
               <i 
-                className="fas fa-chart-bar text-lg"
+                className="fas fa-cog text-lg"
                 style={{ color: 'var(--theme-warning)' }}
               ></i>
             </div>
@@ -473,100 +491,13 @@ export const ExamConf = memo(function ExamConf() {
               </p>
             </div>
           </div>
-          
           <div className="card-content">
-            <div className="space-y-6">
-              {/* Model Selection */}
-              <div>
-                <label 
-                  className="block text-sm font-medium mb-3"
-                  style={{ color: 'var(--theme-text-secondary)' }}
-                >
-                  Modelo de IA
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'].map((model) => (
-                    <button
-                      key={model}
-                      onClick={() => handleModelChange(model)}
-                      className={`p-3 rounded-xl border-2 text-left transition-all duration-300 ${
-                        selectedModel === model ? 'ring-2 ring-offset-2' : ''
-                      }`}
-                      style={{
-                        backgroundColor: selectedModel === model ? 'var(--primary)' : 'var(--theme-bg-secondary)',
-                        borderColor: 'var(--primary)',
-                        color: selectedModel === model ? 'white' : 'var(--theme-text-primary)',
-                        '--tw-ring-color': 'var(--primary)'
-                      } as any}
-                    >
-                      <div className="font-semibold text-sm">{model}</div>
-                      <div className="text-xs opacity-80 mt-1">
-                        {model.includes('flash') ? 'Rápido y eficiente' : 
-                         model.includes('pro') ? 'Mayor capacidad' : 'Modelo estándar'}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* API Key Input */}
-              <div>
-                <label 
-                  className="block text-sm font-medium mb-3"
-                  style={{ color: 'var(--theme-text-secondary)' }}
-                >
-                  API Key de Google
-                </label>
-                <div className="space-y-2">
-                  <div className="relative">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => handleApiKeyChange(e.target.value)}
-                      placeholder="AIza..."
-                      className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 pr-12"
-                      style={{
-                        backgroundColor: 'var(--theme-bg-secondary)',
-                        borderColor: isApiValid ? 'var(--theme-success)' : 'var(--theme-border-primary)',
-                        color: 'var(--theme-text-primary)'
-                      }}
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                      {apiKey && (
-                        <i 
-                          className={`fas ${isApiValid ? 'fa-check-circle' : 'fa-exclamation-circle'}`}
-                          style={{ 
-                            color: isApiValid ? 'var(--theme-success)' : 'var(--theme-error)' 
-                          }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p 
-                      className="text-xs"
-                      style={{ color: 'var(--theme-text-secondary)' }}
-                    >
-                      Obtén tu API key en Google AI Studio
-                    </p>
-                    <a
-                      href="https://youtu.be/RVGbLSVFtIk?si=svQg0FVLtHrFYcap&t=21"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105"
-                      style={{
-                        backgroundColor: 'var(--theme-info-light)',
-                        color: 'var(--theme-info-dark)',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      <i className="fab fa-youtube"></i>
-                      <span>Ver tutorial</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AIConfiguration
+              selectedModel={selectedModel}
+              onModelChange={handleModelChange}
+              isApiValid={isApiValid}
+              onApiValidChange={handleApiValidChange}
+            />
           </div>
         </div>
       </div>
@@ -607,7 +538,7 @@ export const ExamConf = memo(function ExamConf() {
               </div>
             ) : (
               <div className="space-y-6 text-center">
-                {/* Statistics Summary */}
+                {/* Configuration Summary */}
                 <div className="space-y-4">
                   <h4 
                     className="text-lg font-bold"
