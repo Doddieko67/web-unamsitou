@@ -12,6 +12,10 @@ const Data = [
     title: "Mis Examenes",
     path: "/examenes",
   },
+  {
+    title: "Estadísticas",
+    path: "/estadisticas",
+  },
 ];
 
 export function NavBar() {
