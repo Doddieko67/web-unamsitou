@@ -92,7 +92,7 @@ export const CONTENT_ICONS = {
   SUBJECT: "fas fa-book",
   QUESTION: "fas fa-question-circle",
   TIMER: "fas fa-clock",
-  DIFFICULTY: "fas fa-chart-bar",
+  DIFFICULTY: "fas fa-layer-group",
   SETTINGS: "fas fa-cog",
   ROBOT: "fas fa-robot",
   SUCCESS: "fas fa-check-circle",

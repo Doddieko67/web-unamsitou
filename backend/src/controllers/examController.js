@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import logger from "../utils/logger.js";
 import { ExamService } from "../services/examService.js";
+import { GeminiService } from "../services/geminiService.js";
 import { content_documents, delete_documents } from "../local.js";
 import { processExamsSelected } from "../analize.js";
 
@@ -23,18 +24,37 @@ export class ExamController {
         hasFiles: !!req.files 
       });
 
-      const { prompt, tiempo_limite_segundos } = req.body;
+      const { prompt, tiempo_limite_segundos, model } = req.body;
       const name_file = req.files;
       const user_id = req.user.id;
       const targetDirectory = req.targetDirectory;
+      
+      // Convertir tiempo_limite_segundos a number si viene como string
+      const tiempoLimiteSegundos = typeof tiempo_limite_segundos === 'string' 
+        ? parseInt(tiempo_limite_segundos, 10) 
+        : tiempo_limite_segundos;
+
+      // Usar el modelo seleccionado por el usuario, con fallback a gemini-2.5-flash
+      const selectedModel = model || "gemini-2.5-flash";
+      
+      // Validar que el modelo sea uno de los permitidos
+      const modelosPermitidos = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+      if (!modelosPermitidos.includes(selectedModel)) {
+        logger.error('Modelo no permitido', { 
+          modelo: selectedModel,
+          userId: user_id,
+          modelosPermitidos 
+        });
+        return res.status(400).json({
+          error: `Modelo ${selectedModel} no permitido. Usa uno de: ${modelosPermitidos.join(', ')}`
+        });
+      }
 
       const content = await content_documents(prompt, targetDirectory);
       logger.debug('Contenido de documentos procesado', { 
         contentLength: content.length,
         userId: user_id 
       });
-
-      const model = "gemini-2.5-pro-exp-03-25";
       const systemInstruction = `lees y analizas todo,
         creas el titulo general del examen, la dificultad de acuerdo,
         al contenido que se te presento, tienes que hacer el mismo examen
@@ -65,8 +85,20 @@ export class ExamController {
           "dificultad": "easy"
         }`;
 
-      const response = await ai.models.generateContent({
-        model: model,
+      // Obtener la API key del usuario
+      const userApiKey = await GeminiService.getUserApiKey(user_id);
+      if (!userApiKey.success) {
+        logger.error('Usuario no tiene API key configurada', { userId: user_id });
+        return res.status(400).json({
+          error: 'Debes configurar una API key de Gemini válida antes de generar exámenes'
+        });
+      }
+
+      // Crear cliente con la API key del usuario
+      const userAI = new GoogleGenAI({ apiKey: userApiKey.apiKey });
+
+      const response = await userAI.models.generateContent({
+        model: selectedModel,
         contents: content,
         config: { systemInstruction }
       });
@@ -90,13 +122,14 @@ export class ExamController {
         datos: examenData.dato,
         dificultad: examenData.dificultad,
         numero_preguntas: examenData.numero_preguntas,
-        tiempo_limite_segundos: tiempo_limite_segundos
+        tiempo_limite_segundos: tiempoLimiteSegundos
       });
 
       logger.info('Examen creado exitosamente', { 
         userId: user_id,
         titulo: examenData.titulo,
         numeroPreguntas: examenData.numero_preguntas,
+        modelo: selectedModel,
         examId: examCreated.id
       });
 
@@ -123,13 +156,28 @@ export class ExamController {
     try {
       logger.info('Generando contenido', { 
         userId: req.user.id,
-        dificultad: req.body.dificultad 
+        dificultad: req.body.dificultad,
+        modelo: req.body.modelo 
       });
 
-      const { exams_id, prompt, dificultad, tiempo_limite_segundos } = req.body;
+      const { exams_id, prompt, dificultad, tiempo_limite_segundos, modelo } = req.body;
       const user_id = req.user.id;
 
-      const model = dificultad === "easy" ? "gemini-2.0-flash" : "gemini-2.5-pro-exp-03-25";
+      // Usar el modelo seleccionado por el usuario, con fallback a gemini-2.5-flash
+      const model = modelo || "gemini-2.5-flash";
+      
+      // Validar que el modelo sea uno de los permitidos
+      const modelosPermitidos = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+      if (!modelosPermitidos.includes(model)) {
+        logger.error('Modelo no permitido', { 
+          modelo: model,
+          userId: user_id,
+          modelosPermitidos 
+        });
+        return res.status(400).json({
+          error: `Modelo ${model} no permitido. Usa uno de: ${modelosPermitidos.join(', ')}`
+        });
+      }
       
       const systemInstruction = `lees y analizas todo,
         creas el titulo general del examen y un conjunto de preguntas con sus opciones
@@ -154,7 +202,19 @@ export class ExamController {
           "descripcion": "Ecuaciones lineales, ecuaciones cuadráticas, conversión de temperaturas."
         }`;
 
-      const response = await ai.models.generateContent({
+      // Obtener la API key del usuario
+      const userApiKey = await GeminiService.getUserApiKey(user_id);
+      if (!userApiKey.success) {
+        logger.error('Usuario no tiene API key configurada', { userId: user_id });
+        return res.status(400).json({
+          error: 'Debes configurar una API key de Gemini válida antes de generar exámenes'
+        });
+      }
+
+      // Crear cliente con la API key del usuario
+      const userAI = new GoogleGenAI({ apiKey: userApiKey.apiKey });
+
+      const response = await userAI.models.generateContent({
         model: model,
         contents: prompt,
         config: { systemInstruction }
@@ -183,6 +243,7 @@ export class ExamController {
         userId: user_id,
         titulo: examenData.titulo,
         dificultad: dificultad,
+        modelo: model,
         examId: examCreated.id
       });
 
@@ -267,8 +328,20 @@ export class ExamController {
         Usa solo texto plano (no JSON, no markdown). Todo en español.
       `;
 
+      // Obtener la API key del usuario para generar feedback
+      const userApiKey = await GeminiService.getUserApiKey(user_id);
+      if (!userApiKey.success) {
+        logger.error('Usuario no tiene API key configurada para feedback', { userId: user_id });
+        return res.status(400).json({
+          error: 'Debes configurar una API key de Gemini válida antes de generar feedback'
+        });
+      }
+
+      // Crear cliente con la API key del usuario
+      const userAI = new GoogleGenAI({ apiKey: userApiKey.apiKey });
+
       const model = "gemini-2.0-flash";
-      const response = await ai.models.generateContent({
+      const response = await userAI.models.generateContent({
         model: model,
         contents: promptData,
         config: { systemInstruction }
@@ -320,8 +393,24 @@ export class ExamController {
         examsCount: req.body.exams_id.length 
       });
 
-      const { exams_id, prompt, tiempo_limite_segundos } = req.body;
+      const { exams_id, prompt, tiempo_limite_segundos, model } = req.body;
       const user_id = req.user.id;
+
+      // Usar el modelo seleccionado por el usuario, con fallback a gemini-2.5-flash
+      const selectedModel = model || "gemini-2.5-flash";
+      
+      // Validar que el modelo sea uno de los permitidos
+      const modelosPermitidos = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"];
+      if (!modelosPermitidos.includes(selectedModel)) {
+        logger.error('Modelo no permitido', { 
+          modelo: selectedModel,
+          userId: user_id,
+          modelosPermitidos 
+        });
+        return res.status(400).json({
+          error: `Modelo ${selectedModel} no permitido. Usa uno de: ${modelosPermitidos.join(', ')}`
+        });
+      }
 
       const examenesProcesados = await processExamsSelected(user_id, exams_id);
       
@@ -334,8 +423,6 @@ export class ExamController {
           error: "Error al procesar exámenes seleccionados" 
         });
       }
-
-      const model = "gemini-2.5-pro-exp-03-25";
       const systemInstruction = `El usuario escogio los examenes y quiere que hagas
         un nuevo examen para mejorar y aprender de los errores que cometió en los examenes anteriores.
         Creas el titulo adecuado del examen abarcando los temas de los examenes procesados, la
@@ -362,8 +449,20 @@ export class ExamController {
           "dificultad": "easy"
         }`;
 
-      const response = await ai.models.generateContent({
-        model: model,
+      // Obtener la API key del usuario
+      const userApiKey = await GeminiService.getUserApiKey(user_id);
+      if (!userApiKey.success) {
+        logger.error('Usuario no tiene API key configurada', { userId: user_id });
+        return res.status(400).json({
+          error: 'Debes configurar una API key de Gemini válida antes de generar exámenes'
+        });
+      }
+
+      // Crear cliente con la API key del usuario
+      const userAI = new GoogleGenAI({ apiKey: userApiKey.apiKey });
+
+      const response = await userAI.models.generateContent({
+        model: selectedModel,
         contents: [prompt, examenesProcesados],
         config: { systemInstruction }
       });
@@ -391,6 +490,7 @@ export class ExamController {
         userId: user_id,
         titulo: examenData.titulo,
         dificultad: examenData.dificultad,
+        modelo: selectedModel,
         examId: examCreated.id
       });
 

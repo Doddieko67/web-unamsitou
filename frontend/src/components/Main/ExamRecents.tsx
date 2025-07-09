@@ -1033,7 +1033,7 @@ export function ExamRecents() {
         </div>
       )}
       
-      {/* Statistics - Theme Aware */}
+      {/* Summary - Theme Aware */}
       {!isLoading && !error && hasExams && (
         <div 
           className="mt-6 pt-6 border-t"

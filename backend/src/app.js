@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import examRoutes from "./routes/examRoutes.js";
+import geminiRoutes from "./routes/geminiRoutes.js";
 import { 
   securityHeaders, 
   generalLimiter, 
@@ -26,6 +27,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Configurar CORS
 const allowedOrigins = [
   "http://localhost:5173", // Desarrollo frontend
+  "http://localhost:5174", // Desarrollo frontend (puerto alternativo)
+  "http://localhost:5175", // Desarrollo frontend (puerto alternativo 2)
   "http://localhost:3000", // Fallback
   process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -52,6 +55,7 @@ app.use(cors(corsOptions));
 
 // Rutas
 app.use('/api', examRoutes);
+app.use('/api/gemini', geminiRoutes);
 
 // Ruta de salud
 app.get('/', (req, res) => {
