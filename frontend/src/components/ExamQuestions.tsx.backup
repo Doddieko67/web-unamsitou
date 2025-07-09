@@ -58,14 +58,10 @@ export const ExamQuestions = memo(function ExamQuestions() {
   // Estados para navegación entre archivos
   const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
   
-  // Estado para el sistema de paneles deslizantes
-  const [activePanel, setActivePanel] = useState<'files' | 'text'>('files');
+  // Estado para el slider cinemático
+  const [activeSlide, setActiveSlide] = useState<'files' | 'text'>('files');
 
   // --- Handlers ---
-  const handlePanelSwitch = (panel: 'files' | 'text') => {
-    setActivePanel(panel);
-  };
-
   const handleDeleteFile = (indexToDelete: number) => {
     const fileToDelete = files[indexToDelete];
     if (fileToDelete) {
@@ -812,108 +808,94 @@ export const ExamQuestions = memo(function ExamQuestions() {
           </div>
           
           <div className="card-content">
-            {/* Sliding Panels System */}
-            <div className="sliding-panels-container">
-              {/* Files Panel */}
-              <div 
-                className={`sliding-panel ${activePanel === 'files' ? 'primary' : 'secondary left'}`}
-                onClick={() => handlePanelSwitch('files')}
-              >
-                <div className="panel-content">
-                  <div className="panel-header">
-                    <div className="flex items-center flex-1">
-                      <div 
-                        className="panel-icon"
-                        style={{ backgroundColor: 'var(--theme-success-light)' }}
-                      >
-                        <i 
-                          className="fas fa-file-upload text-xl"
-                          style={{ color: 'var(--theme-success)' }}
-                        />
-                      </div>
-                      <div>
-                        <h3 className="panel-title" style={{ color: 'var(--theme-text-primary)' }}>
-                          Subir Archivos {files.length > 0 && `(${files.length})`}
-                        </h3>
-                        <p className="panel-subtitle" style={{ color: 'var(--theme-text-secondary)' }}>
-                          PDFs, imágenes y documentos
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Límites y Validaciones en el header */}
-                    {activePanel === 'files' && (
-                      <div 
-                        className="p-3 rounded-lg border flex-shrink-0"
-                        style={{
-                          backgroundColor: 'var(--theme-warning-light)',
-                          borderColor: 'var(--theme-warning)',
-                          maxWidth: '280px'
-                        }}
-                      >
-                        <div className="flex items-center space-x-2 mb-2">
-                          <i 
-                            className="fas fa-exclamation-triangle text-sm"
-                            style={{ color: 'var(--theme-warning-dark)' }}
-                          />
-                          <h6 
-                            className="font-medium text-xs"
-                            style={{ color: 'var(--theme-warning-dark)' }}
-                          >
-                            Límites y Validaciones:
-                          </h6>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <div className="text-xs" style={{ color: 'var(--theme-warning-dark)' }}>
-                            <strong>Archivos:</strong> Máx 20 archivos, 50 imágenes
-                          </div>
-                          <div className="text-xs" style={{ color: 'var(--theme-warning-dark)' }}>
-                            <strong>Formatos:</strong> PDF, JPG, PNG, WEBP, TXT, MD
-                          </div>
-                        </div>
-                      </div>
-                    )}
+            {/* Slider Cinemático - Meditación del Tibet ✨ */}
+            <div className="flex flex-col md:flex-row gap-4 h-full">
+              {/* Botones de navegación para móvil */}
+              <div className="flex md:hidden w-full">
+                <button
+                  onClick={() => setActiveSlide('files')}
+                  className={`flex-1 py-3 px-4 rounded-l-xl border-2 flex items-center justify-center space-x-2 transition-all duration-300 ${
+                    activeSlide === 'files' ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                  }`}
+                  style={{
+                    backgroundColor: activeSlide === 'files' ? 'var(--theme-success-light)' : 'var(--theme-bg-secondary)',
+                    borderColor: activeSlide === 'files' ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                    color: activeSlide === 'files' ? 'var(--theme-success-dark)' : 'var(--theme-text-secondary)'
+                  }}
+                >
+                  <i className="fas fa-file-upload"></i>
+                  <span className="text-sm font-medium">Archivos</span>
+                </button>
+                <button
+                  onClick={() => setActiveSlide('text')}
+                  className={`flex-1 py-3 px-4 rounded-r-xl border-2 border-l-0 flex items-center justify-center space-x-2 transition-all duration-300 ${
+                    activeSlide === 'text' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                  }`}
+                  style={{
+                    backgroundColor: activeSlide === 'text' ? 'var(--theme-info-light)' : 'var(--theme-bg-secondary)',
+                    borderColor: activeSlide === 'text' ? 'var(--theme-info)' : 'var(--theme-border-primary)',
+                    color: activeSlide === 'text' ? 'var(--theme-info-dark)' : 'var(--theme-text-secondary)'
+                  }}
+                >
+                  <i className="fas fa-file-alt"></i>
+                  <span className="text-sm font-medium">Texto</span>
+                </button>
+              </div>
+              
+              {/* Slider Cinemático para desktop */}
+              <div className="hidden md:block flex-1 h-full relative" style={{ minHeight: '400px' }}>
+                <div className="slider-container">
+                  {/* Slide de Subir Archivos */}
+                  <div 
+                    className={`slider-slide ${activeSlide === 'files' ? 'primary' : 'secondary'}`}
+                    onClick={() => setActiveSlide('files')}
+                  >
+                    <div className="slider-content">
+                      <div className="slider-indicator"></div>
+                      <h3 className="slider-title">
+                        <i className="fas fa-file-upload mr-2"></i>
+                        Subir Archivos {files.length > 0 && `(${files.length})`}
+                      </h3>
+                      <div className="slider-body space-y-4">
+                    <h4 className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                      Subir Archivos {files.length > 0 && `(${files.length})`}
+                    </h4>
+                
+                {/* Upload Area */}
+                <div
+                  className={`border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 ${
+                    isDraggingOver ? "animate-pulse" : ""
+                  }`}
+                  style={{
+                    borderColor: isDraggingOver ? 'var(--primary)' : 'var(--theme-border-secondary)',
+                    backgroundColor: isDraggingOver ? 'var(--theme-info-light)' : 'var(--theme-bg-secondary)'
+                  }}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <div className="flex justify-center mb-4">
+                    <i
+                      className={`fas fa-file-upload text-3xl transition-all duration-300 ${
+                        isDraggingOver ? "animate-bounce" : ""
+                      }`}
+                      style={{ 
+                        color: isDraggingOver ? 'var(--primary)' : 'var(--theme-text-secondary)' 
+                      }}
+                    ></i>
                   </div>
-                  
-                  <div className="panel-body">
-                    {activePanel === 'files' && (
-                      <div className="space-y-4 flex flex-col h-full">
-                        {/* Upload Area */}
-                        <div
-                          className={`border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 ${
-                            isDraggingOver ? "animate-pulse" : ""
-                          }`}
-                          style={{
-                            borderColor: isDraggingOver ? 'var(--primary)' : 'var(--theme-border-secondary)',
-                            backgroundColor: isDraggingOver ? 'var(--theme-info-light)' : 'var(--theme-bg-secondary)'
-                          }}
-                          onDragOver={handleDragOver}
-                          onDragLeave={handleDragLeave}
-                          onDrop={handleDrop}
-                        >
-                          <div className="flex justify-center mb-4">
-                            <i
-                              className={`fas fa-file-upload text-3xl transition-all duration-300 ${
-                                isDraggingOver ? "animate-bounce" : ""
-                              }`}
-                              style={{ 
-                                color: isDraggingOver ? 'var(--primary)' : 'var(--theme-text-secondary)' 
-                              }}
-                            ></i>
-                          </div>
-                          <h5 
-                            className="text-base font-medium mb-2"
-                            style={{ color: 'var(--theme-text-primary)' }}
-                          >
-                            Arrastra archivos aquí
-                          </h5>
-                          <div className="flex items-center justify-center space-x-4">
-                            <label
-                              htmlFor="file-upload"
-                              className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
-                              style={{
-                                background: 'var(--theme-gradient-purple)',
+                  <h5 
+                    className="text-base font-medium mb-2"
+                    style={{ color: 'var(--theme-text-primary)' }}
+                  >
+                    Arrastra archivos aquí
+                  </h5>
+                  <div className="flex items-center justify-center space-x-4">
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+                      style={{
+                        background: 'var(--theme-gradient-purple)',
                         color: 'white',
                         boxShadow: 'var(--theme-shadow-sm)'
                       }}
@@ -947,7 +929,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
 
                 {/* Files List - Integrado directamente */}
                 {files && files.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+                  <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
                     {Array.from(files).map((file, index) => (
                       <div
                         key={index}
@@ -1085,66 +1067,364 @@ export const ExamQuestions = memo(function ExamQuestions() {
                     ))}
                   </div>
                 )}
+                  
+                        {/* Límites y Validaciones Section */}
+                        {activeSlide === 'files' && (
+                          <div 
+                            className="mt-4 p-4 rounded-xl border"
+                            style={{
+                              backgroundColor: 'var(--theme-warning-light)',
+                              borderColor: 'var(--theme-warning)'
+                            }}
+                          >
+                            <div className="flex items-center justify-center space-x-3 mb-3">
+                              <i 
+                                className="fas fa-exclamation-triangle text-xl"
+                                style={{ color: 'var(--theme-warning-dark)' }}
+                              ></i>
+                              <h5 
+                                className="font-medium"
+                                style={{ color: 'var(--theme-warning-dark)' }}
+                              >
+                                Límites y Validaciones:
+                              </h5>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div 
+                                  className="flex items-center space-x-2"
+                                  style={{ color: 'var(--theme-warning-dark)' }}
+                                >
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                                  ></div>
+                                  <div className="text-sm">
+                                    <strong>Archivos:</strong> Máximo 20 archivos, 50 imágenes
+                                  </div>
+                                </div>
+                                
+                                <div 
+                                  className="flex items-center space-x-2"
+                                  style={{ color: 'var(--theme-warning-dark)' }}
+                                >
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                                  ></div>
+                                  <div className="text-sm">
+                                    <strong>Tamaño:</strong> 50MB por archivo, 15MB total inline
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div 
+                                  className="flex items-center space-x-2"
+                                  style={{ color: 'var(--theme-warning-dark)' }}
+                                >
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                                  ></div>
+                                  <div className="text-sm">
+                                    <strong>Formatos:</strong> PDF, JPG, PNG, WEBP, HEIC, HEIF, TXT, MD, HTML
+                                  </div>
+                                </div>
+                                
+                                <div 
+                                  className="flex items-center space-x-2"
+                                  style={{ color: 'var(--theme-warning-dark)' }}
+                                >
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                                  ></div>
+                                  <div className="text-sm">
+                                    <strong>PDFs:</strong> Máximo 1,000 páginas, orientación correcta
+                                  </div>
+                                </div>
+                              </div>
+                              
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    
-                  </div>
-                </div>
-              </div>
-              
-              {/* Text Panel */}
-              <div 
-                className={`sliding-panel ${activePanel === 'text' ? 'primary' : 'secondary right'}`}
-                onClick={() => handlePanelSwitch('text')}
-              >
-                <div className="panel-content">
-                  <div className="panel-header">
-                    <div 
-                      className="panel-icon"
-                      style={{ backgroundColor: 'var(--theme-info-light)' }}
-                    >
-                      <i 
-                        className="fas fa-edit text-xl"
-                        style={{ color: 'var(--theme-info)' }}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="panel-title" style={{ color: 'var(--theme-text-primary)' }}>
-                        Pegar Texto Directamente
-                      </h3>
-                      <p className="panel-subtitle" style={{ color: 'var(--theme-text-secondary)' }}>
-                        Artículos, notas de clase, documentos
-                      </p>
                     </div>
                   </div>
                   
-                  <div className="panel-body">
-                    {activePanel === 'text' && (
-                      <div className="flex flex-col space-y-4 h-full">
-                        <div className="flex-1 flex flex-col">
-                          <textarea
-                            className="w-full h-full px-4 py-3 rounded-xl border-2 transition-all duration-300 resize-none"
+                  {/* Slide de Pegar Texto */}
+                  <div 
+                    className={`slider-slide ${activeSlide === 'text' ? 'primary' : 'secondary'}`}
+                    onClick={() => setActiveSlide('text')}
+                  >
+                    <div className="slider-content">
+                      <div className="slider-indicator"></div>
+                      <h3 className="slider-title">
+                        <i className="fas fa-file-alt mr-2"></i>
+                        Pegar Texto Directamente
+                      </h3>
+                      <div className="slider-body space-y-4">
+              ) : (
+                <>
+                  {/* Botón para cambiar a archivos */}
+                  <div className="flex-shrink-0 flex items-center">
+                    <button
+                      onClick={() => handleSectionChange('files')}
+                      className="accordion-button accordion-button-lateral w-12 h-full min-h-[200px] rounded-xl border-2 flex flex-col items-center justify-center space-y-2 group"
+                      style={{
+                        backgroundColor: 'var(--theme-bg-secondary)',
+                        borderColor: 'var(--theme-border-primary)',
+                        color: 'var(--theme-text-secondary)'
+                      }}
+                      title="Cambiar a Subir Archivos"
+                    >
+                      <i className="fas fa-file-upload text-xl group-hover:text-green-500 transition-colors"></i>
+                      <span className="text-xs font-medium transform -rotate-90 whitespace-nowrap group-hover:text-green-500 transition-colors">Archivos</span>
+                    </button>
+                  </div>
+                  
+                  {/* Pegar Texto Expandido */}
+                  <div className={`accordion-section expanded accordion-content accordion-transition flex flex-col space-y-4 ${animationState === 'idle' ? 'accordion-fade-in' : ''} ${animationState === 'transitioning' ? 'transitioning' : ''}`}>
+                    <h4 className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                      Pegar Texto Directamente
+                    </h4>
+                    <div className="flex-1 flex flex-col">
+                      <textarea
+                        className="w-full h-full px-4 py-3 rounded-xl border-2 transition-all duration-300 resize-none"
+                        style={{
+                          backgroundColor: 'var(--theme-bg-secondary)',
+                          borderColor: pastedText.trim() ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                          color: 'var(--theme-text-primary)',
+                          minHeight: '200px'
+                        }}
+                        placeholder="Pega aquí el contenido del material de estudio, libros, artículos, notas de clase..."
+                        value={pastedText}
+                        onChange={handleTextChange}
+                      />
+                    </div>
+                    <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Puedes pegar texto desde PDFs, artículos web, documentos de Word, etc.
+                    </p>
+                  </div>
+                </>
+              )}
+              </div>
+              
+              {/* Contenido móvil */}
+              <div className="flex md:hidden flex-1">
+                {expandedSection === 'files' ? (
+                  <div className="w-full space-y-4 flex flex-col">
+                    <h4 className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                      Subir Archivos {files.length > 0 && `(${files.length})`}
+                    </h4>
+                    
+                    {/* Upload Area - Móvil */}
+                    <div
+                      className={`border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 ${
+                        isDraggingOver ? "animate-pulse" : ""
+                      }`}
+                      style={{
+                        borderColor: isDraggingOver ? 'var(--primary)' : 'var(--theme-border-secondary)',
+                        backgroundColor: isDraggingOver ? 'var(--theme-info-light)' : 'var(--theme-bg-secondary)'
+                      }}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
+                      <div className="flex justify-center mb-4">
+                        <i
+                          className={`fas fa-file-upload text-3xl transition-all duration-300 ${
+                            isDraggingOver ? "animate-bounce" : ""
+                          }`}
+                          style={{ 
+                            color: isDraggingOver ? 'var(--primary)' : 'var(--theme-text-secondary)' 
+                          }}
+                        ></i>
+                      </div>
+                      <h5 
+                        className="text-base font-medium mb-2"
+                        style={{ color: 'var(--theme-text-primary)' }}
+                      >
+                        Arrastra archivos aquí
+                      </h5>
+                      <div className="flex flex-col items-center space-y-2">
+                        <label
+                          htmlFor="file-upload-mobile"
+                          className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+                          style={{
+                            background: 'var(--theme-gradient-purple)',
+                            color: 'white'
+                          }}
+                        >
+                          <i className="fas fa-folder-open"></i>
+                          <span>Seleccionar archivos</span>
+                        </label>
+                        <input
+                          id="file-upload-mobile"
+                          type="file"
+                          className="hidden"
+                          multiple
+                          onChange={handleFileChange}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Files List - Móvil */}
+                    {files && files.length > 0 && (
+                      <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar max-h-60">
+                        {Array.from(files).map((file, index) => (
+                          <div
+                            key={index}
+                            className="p-3 rounded-xl border transition-all duration-300"
                             style={{
-                              backgroundColor: 'var(--theme-bg-secondary)',
-                              borderColor: pastedText.trim() ? 'var(--theme-success)' : 'var(--theme-border-primary)',
-                              color: 'var(--theme-text-primary)',
-                              minHeight: '300px'
+                              backgroundColor: 'var(--theme-bg-tertiary)',
+                              borderColor: 'var(--theme-border-primary)'
                             }}
-                            placeholder="Pega aquí el contenido del material de estudio, libros, artículos, notas de clase..."
-                            value={pastedText}
-                            onChange={handleTextChange}
-                          />
-                        </div>
-                        <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
-                          Puedes pegar texto desde PDFs, artículos web, documentos de Word, etc.
-                        </p>
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center space-x-3 flex-1">
+                                <div 
+                                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${getFileIconClass(file.type)}`}
+                                >
+                                  <i className="fas fa-file text-xs"></i>
+                                </div>
+                                <div className="flex-1">
+                                  <p 
+                                    className="font-medium text-sm"
+                                    style={{ color: 'var(--theme-text-primary)' }}
+                                  >
+                                    {file.name}
+                                  </p>
+                                  <p 
+                                    className="text-xs"
+                                    style={{ color: 'var(--theme-text-secondary)' }}
+                                  >
+                                    {(file.size / 1024).toFixed(1)} KB
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteFile(index)}
+                                className="w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+                                style={{
+                                  backgroundColor: 'var(--theme-error-light)',
+                                  color: 'var(--theme-error-dark)'
+                                }}
+                              >
+                                <i className="fas fa-times text-xs"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
+                    
+                    {/* Límites y Validaciones Section - Móvil */}
+                    <div 
+                      className="mt-4 p-4 rounded-xl border"
+                      style={{
+                        backgroundColor: 'var(--theme-warning-light)',
+                        borderColor: 'var(--theme-warning)'
+                      }}
+                    >
+                      <div className="flex items-center justify-center space-x-3 mb-3">
+                        <i 
+                          className="fas fa-exclamation-triangle text-xl"
+                          style={{ color: 'var(--theme-warning-dark)' }}
+                        ></i>
+                        <h5 
+                          className="font-medium"
+                          style={{ color: 'var(--theme-warning-dark)' }}
+                        >
+                          Límites y Validaciones:
+                        </h5>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 gap-4">
+                          <div 
+                            className="flex items-center space-x-2"
+                            style={{ color: 'var(--theme-warning-dark)' }}
+                          >
+                            <div 
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                            ></div>
+                            <div className="text-sm">
+                              <strong>Archivos:</strong> Máximo 20 archivos, 50 imágenes
+                            </div>
+                          </div>
+                          
+                          <div 
+                            className="flex items-center space-x-2"
+                            style={{ color: 'var(--theme-warning-dark)' }}
+                          >
+                            <div 
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                            ></div>
+                            <div className="text-sm">
+                              <strong>Tamaño:</strong> 50MB por archivo, 15MB total inline
+                            </div>
+                          </div>
+                          
+                          <div 
+                            className="flex items-center space-x-2"
+                            style={{ color: 'var(--theme-warning-dark)' }}
+                          >
+                            <div 
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                            ></div>
+                            <div className="text-sm">
+                              <strong>Formatos:</strong> PDF, JPG, PNG, WEBP, HEIC, HEIF, TXT, MD, HTML
+                            </div>
+                          </div>
+                          
+                          <div 
+                            className="flex items-center space-x-2"
+                            style={{ color: 'var(--theme-warning-dark)' }}
+                          >
+                            <div 
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: 'var(--theme-warning-dark)' }}
+                            ></div>
+                            <div className="text-sm">
+                              <strong>PDFs:</strong> Máximo 1,000 páginas, orientación correcta
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="w-full flex flex-col space-y-4">
+                    <h4 className="font-medium" style={{ color: 'var(--theme-text-primary)' }}>
+                      Pegar Texto Directamente
+                    </h4>
+                    <div className="flex-1 flex flex-col">
+                      <textarea
+                        className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 resize-none"
+                        style={{
+                          backgroundColor: 'var(--theme-bg-secondary)',
+                          borderColor: pastedText.trim() ? 'var(--theme-success)' : 'var(--theme-border-primary)',
+                          color: 'var(--theme-text-primary)',
+                          height: '200px'
+                        }}
+                        placeholder="Pega aquí el contenido del material de estudio, libros, artículos, notas de clase..."
+                        value={pastedText}
+                        onChange={handleTextChange}
+                      />
+                    </div>
+                    <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                      Puedes pegar texto desde PDFs, artículos web, documentos de Word, etc.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-            
           </div>
         </div>
       </div>
