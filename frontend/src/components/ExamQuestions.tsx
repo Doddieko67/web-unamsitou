@@ -1043,7 +1043,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
                                   <div 
                                     className="w-full h-16 bg-gray-100 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-300 hover:shadow-lg"
                                     style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
-                                    onClick={() => setSelectedPreview({file, type: 'pdf'})}
+                                    onClick={() => openPreview(file, 'pdf')}
                                   >
                                     <div className="text-center">
                                       <i className="fas fa-file-pdf text-lg mb-1 text-red-500"></i>
@@ -1054,7 +1054,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
                                   </div>
                                   <div 
                                     className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 rounded-lg transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
-                                    onClick={() => setSelectedPreview({file, type: 'pdf'})}
+                                    onClick={() => openPreview(file, 'pdf')}
                                   >
                                     <i className="fas fa-eye text-white text-sm"></i>
                                   </div>
