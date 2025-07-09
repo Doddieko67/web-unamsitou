@@ -11,7 +11,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "zev": "./zen-dev.sh",
+    "den": "./zen-dev.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",

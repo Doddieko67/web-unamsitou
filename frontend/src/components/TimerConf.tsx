@@ -126,6 +126,7 @@ export function TimerConf({
                   backgroundColor: colors.bg,
                   borderColor: colors.border,
                   color: colors.text,
+                  cursor: 'pointer',
                   '--tw-ring-color': colors.border
                 } as any}
               >
@@ -163,7 +164,8 @@ export function TimerConf({
               style={{
                 backgroundColor: 'var(--theme-error-light)',
                 color: 'var(--theme-error-dark)',
-                border: `2px solid var(--theme-error)`
+                border: `2px solid var(--theme-error)`,
+                cursor: 'pointer'
               }}
               disabled={totalSeconds <= 0}
               aria-label="Reducir 5 minutos"
@@ -186,7 +188,8 @@ export function TimerConf({
               style={{
                 backgroundColor: 'var(--theme-success-light)',
                 color: 'var(--theme-success-dark)',
-                border: `2px solid var(--theme-success)`
+                border: `2px solid var(--theme-success)`,
+                cursor: 'pointer'
               }}
               disabled={totalSeconds >= 12 * 3600}
               aria-label="Agregar 5 minutos"

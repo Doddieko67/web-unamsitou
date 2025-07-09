@@ -6,6 +6,11 @@ import { resolve } from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
@@ -17,6 +22,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Source map configuration
+    sourcemap: false, // Desactiva source maps en producción para evitar warnings
     // Configuración de code splitting
     rollupOptions: {
       output: {
@@ -51,6 +58,8 @@ export default defineConfig({
       'zustand',
       '@supabase/supabase-js',
     ],
+    // Forzar re-bundling para evitar problemas de cache con Tailwind CSS v4
+    force: true,
   },
   // Variables de entorno
   define: {
@@ -61,6 +70,10 @@ export default defineConfig({
     port: 5173,
     open: true,
     cors: true,
+    // Mejorar timing de inicialización para Tailwind CSS v4
+    warmup: {
+      clientFiles: ['./src/index.css', './src/**/*.{tsx,ts,jsx,js}'],
+    },
   },
   // Preview server configuration
   preview: {

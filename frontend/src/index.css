@@ -981,6 +981,106 @@ textarea {
     animation: fade-in 0.6s ease-out both;
 }
 
+/* API Key Management Components */
+.auth-warning {
+    @apply p-4 rounded-xl border-2 border-dashed;
+    border-color: var(--theme-warning);
+    background-color: var(--theme-warning-light);
+    color: var(--theme-warning-dark);
+}
+
+.models-locked {
+    @apply p-4 text-center rounded-xl border-2 border-dashed;
+    border-color: var(--theme-border-primary);
+    background-color: var(--theme-bg-secondary);
+    color: var(--theme-text-secondary);
+}
+
+.model-button {
+    @apply p-3 rounded-xl border-2 text-left transition-all duration-300;
+    border-color: var(--primary);
+    cursor: pointer;
+}
+
+.model-button:not(.selected) {
+    background-color: var(--theme-bg-secondary);
+    color: var(--theme-text-primary);
+}
+
+.model-button.selected {
+    background-color: var(--primary);
+    color: white;
+}
+
+.api-key-preview {
+    @apply p-3 rounded-xl border-2 mb-3;
+    background-color: var(--theme-success-light);
+    border-color: var(--theme-success);
+    color: var(--theme-success-dark);
+}
+
+.api-key-input {
+    @apply w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 pr-12;
+    background-color: var(--theme-bg-secondary);
+    color: var(--theme-text-primary);
+}
+
+.api-key-input.valid {
+    border-color: var(--theme-success);
+}
+
+.api-key-input.invalid {
+    border-color: var(--theme-border-primary);
+}
+
+.api-key-label {
+    @apply block text-sm font-medium mb-3;
+    color: var(--theme-text-secondary);
+}
+
+.api-key-help-text {
+    @apply text-xs;
+    color: var(--theme-text-secondary);
+}
+
+.api-key-button {
+    @apply inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-lg transition-all duration-200 hover:scale-105;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.api-key-button.save {
+    background-color: var(--theme-success);
+    color: white;
+}
+
+.api-key-button.tutorial {
+    background-color: var(--theme-info-light);
+    color: var(--theme-info-dark);
+}
+
+.api-key-button.change {
+    background-color: var(--theme-success);
+    color: white;
+}
+
+.api-key-button.change:hover {
+    background-color: var(--theme-success-dark);
+}
+
+.api-key-spinner {
+    @apply w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin;
+    color: var(--theme-info);
+}
+
+.api-key-status-icon.valid {
+    color: var(--theme-success);
+}
+
+.api-key-status-icon.invalid {
+    color: var(--theme-error);
+}
+
 /* Number input arrow removal for QuestionConf */
 .number-input-no-arrows::-webkit-outer-spin-button,
 .number-input-no-arrows::-webkit-inner-spin-button {
@@ -990,4 +1090,13 @@ textarea {
 
 .number-input-no-arrows[type=number] {
     -moz-appearance: textfield;
+}
+
+/* Global cursor pointer for interactive elements */
+button {
+  cursor: pointer !important;
+}
+
+.btn, .subject-chip, .exam-card, .tab-active, .stats-card {
+  cursor: pointer;
 }

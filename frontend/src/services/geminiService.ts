@@ -38,6 +38,32 @@ export interface ModelsResponse {
 
 class GeminiServiceClass {
   private baseUrl = `${url_backend}/api/gemini`;
+  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutos
+
+  /**
+   * Obtiene datos del cache si están disponibles y no han expirado
+   */
+  private getCachedData<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < cached.ttl) {
+      return cached.data;
+    }
+    // Limpiar cache expirado
+    this.cache.delete(key);
+    return null;
+  }
+
+  /**
+   * Guarda datos en cache
+   */
+  private setCachedData<T>(key: string, data: T, ttl: number = this.DEFAULT_TTL): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+  }
 
   /**
    * Obtiene el token de autorización
@@ -122,6 +148,11 @@ class GeminiServiceClass {
         body: JSON.stringify({ apiKey }),
       });
 
+      // Limpiar cache cuando se guarda una nueva API key
+      if (response.success) {
+        this.cache.clear();
+      }
+
       return response;
     } catch (error) {
       console.error('Error guardando API key:', error);
@@ -136,8 +167,22 @@ class GeminiServiceClass {
    * Obtiene el estado de la API key del usuario
    */
   async getApiKeyStatus(): Promise<ApiKeyStatusResponse> {
+    const cacheKey = 'api-key-status';
+    
+    // Verificar cache primero
+    const cachedData = this.getCachedData<ApiKeyStatusResponse>(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+    
     try {
       const response = await this.makeRequest<ApiKeyStatusResponse>('/get-api-key');
+      
+      // Guardar en cache solo si es exitoso
+      if (response.success) {
+        this.setCachedData(cacheKey, response, 2 * 60 * 1000); // 2 minutos para API key status
+      }
+      
       return response;
     } catch (error) {
       console.error('Error obteniendo estado de API key:', error);
