@@ -1,5 +1,8 @@
 import React, { useState, useCallback, DragEvent, useMemo, memo, useEffect } from "react";
-import { Document, Page, pdfjs } from 'react-pdf';
+import { Viewer, Worker } from '@react-pdf-viewer/core';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { Personalization } from "./Main/Personalization";
 import { useAuthStore } from "../stores/authStore";
 import { useNavigate } from "react-router";
@@ -10,8 +13,7 @@ import { DEFAULT_EXAM_CONFIG } from "../constants/examConstants";
 import { AIConfiguration } from "./shared/AIConfiguration";
 import { DEFAULT_MODEL } from "../constants/geminiModels";
 
-// Configurar PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// PDF functionality using @react-pdf-viewer/core - Modern implementation
 
 // Tipo para la dificultad (puede ser null si quieres un estado inicial sin selección)
 // type GeneralDifficulty = "mixed" | "easy" | "medium" | "hard";
@@ -20,6 +22,14 @@ export const ExamQuestions = memo(function ExamQuestions() {
   // --- Estados del Componente ---
   const navigate = useNavigate();
   const [pastedText, setPastedText] = useState<string>("");
+  
+  // Plugin de layout por defecto con configuración personalizada
+  const defaultLayoutPluginInstance = defaultLayoutPlugin({
+    sidebarTabs: (defaultTabs) => [
+      defaultTabs[0], // Thumbnails
+      defaultTabs[1], // Bookmarks
+    ],
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const [fineTuning, setFineTuning] = useState<string>("");
@@ -44,15 +54,31 @@ export const ExamQuestions = memo(function ExamQuestions() {
   const [selectedPreview, setSelectedPreview] = useState<{file: File, type: 'image' | 'pdf'} | null>(null);
   const [imageLoadErrors, setImageLoadErrors] = useState<{[key: string]: boolean}>({});
   const [imageDimensions, setImageDimensions] = useState<{[key: string]: {width: number, height: number}}>({});
+  
+  // Estados para navegación entre archivos
+  const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
 
   // --- Handlers ---
   const handleDeleteFile = (indexToDelete: number) => {
     const fileToDelete = files[indexToDelete];
     if (fileToDelete) {
-      // Remover preview del archivo
+      // Remover preview del archivo y limpiar Object URLs
       setFilePreviews(prev => {
         const newPreviews = { ...prev };
-        delete newPreviews[fileToDelete.name];
+        const previewUrl = prev[fileToDelete.name];
+        
+        // Si es un Object URL (PDFs), liberarlo
+        if (previewUrl && typeof previewUrl === 'string' && previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrl);
+        }
+        
+        // Remover todas las entradas relacionadas con este archivo
+        Object.keys(prev).forEach(key => {
+          if (key.startsWith(fileToDelete.name)) {
+            delete newPreviews[key];
+          }
+        });
+        
         return newPreviews;
       });
     }
@@ -106,25 +132,27 @@ export const ExamQuestions = memo(function ExamQuestions() {
       };
       reader.readAsDataURL(file);
     } else if (file.type === 'application/pdf') {
-      // Para PDFs, generamos preview de la primera página
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setFilePreviews(prev => ({
-            ...prev,
-            [file.name]: e.target?.result as string,
-            [`${file.name}_type`]: 'pdf'
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
+      // PDF preview usando @react-pdf-viewer/core
+      const pdfUrl = URL.createObjectURL(file);
       
-      // También agregamos metadata
-      const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
-      const warningMsg = file.size > 20 * 1024 * 1024 ? ' (Usará File API)' : ' (Inline)';
       setFilePreviews(prev => ({
         ...prev,
-        [`${file.name}_metadata`]: `PDF • ${sizeInMB} MB${warningMsg} • ${new Date(file.lastModified).toLocaleDateString()}`
+        [file.name]: pdfUrl,
+        [`${file.name}_type`]: 'pdf'
+      }));
+      
+      // Metadata del archivo
+      const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+      const processingMode = file.size > 20 * 1024 * 1024 ? 'File API' : 'Inline';
+      const lastModified = new Date(file.lastModified).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      
+      setFilePreviews(prev => ({
+        ...prev,
+        [`${file.name}_metadata`]: `PDF • ${sizeInMB} MB • ${processingMode} • ${lastModified}`
       }));
     } else if (file.type.startsWith('text/') || file.type === 'text/plain' || file.type === 'text/markdown' || file.type === 'text/html') {
       // Para archivos de texto, leemos las primeras líneas
@@ -142,6 +170,124 @@ export const ExamQuestions = memo(function ExamQuestions() {
       reader.readAsText(file);
     }
   }, []);
+
+  // Función para obtener archivos con preview (imágenes y PDFs)
+  const getPreviewableFiles = useMemo(() => {
+    return files.filter(file => 
+      file.type.startsWith('image/') || file.type === 'application/pdf'
+    );
+  }, [files]);
+
+  // Función para navegar entre archivos
+  const navigateToFile = useCallback((direction: 'prev' | 'next') => {
+    if (!selectedPreview) return;
+    
+    const previewableFiles = getPreviewableFiles;
+    const currentIndex = previewableFiles.findIndex(f => f.name === selectedPreview.file.name);
+    
+    if (currentIndex === -1) return;
+    
+    let newIndex;
+    if (direction === 'prev') {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : previewableFiles.length - 1;
+    } else {
+      newIndex = currentIndex < previewableFiles.length - 1 ? currentIndex + 1 : 0;
+    }
+    
+    const newFile = previewableFiles[newIndex];
+    const newType = newFile.type.startsWith('image/') ? 'image' : 'pdf';
+    
+    // Si es un PDF, regenerar el Object URL para asegurar que se cargue correctamente
+    if (newType === 'pdf') {
+      // Limpiar el URL anterior si existe
+      const oldPdfUrl = filePreviews[newFile.name];
+      if (oldPdfUrl && typeof oldPdfUrl === 'string' && oldPdfUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(oldPdfUrl);
+      }
+      
+      // Crear un nuevo Object URL
+      const newPdfUrl = URL.createObjectURL(newFile);
+      
+      setFilePreviews(prev => ({
+        ...prev,
+        [newFile.name]: newPdfUrl,
+        [`${newFile.name}_type`]: 'pdf'
+      }));
+    }
+    
+    setSelectedPreview({ file: newFile, type: newType as 'image' | 'pdf' });
+    setCurrentFileIndex(newIndex);
+  }, [selectedPreview, getPreviewableFiles, filePreviews]);
+
+  // Función para abrir preview con navegación
+  const openPreview = useCallback((file: File, type: 'image' | 'pdf') => {
+    const previewableFiles = getPreviewableFiles;
+    const fileIndex = previewableFiles.findIndex(f => f.name === file.name);
+    
+    // Si es un PDF, asegurar que tiene un Object URL válido
+    if (type === 'pdf') {
+      const existingPdfUrl = filePreviews[file.name];
+      if (!existingPdfUrl || !existingPdfUrl.startsWith('blob:')) {
+        // Crear un nuevo Object URL
+        const newPdfUrl = URL.createObjectURL(file);
+        
+        setFilePreviews(prev => ({
+          ...prev,
+          [file.name]: newPdfUrl,
+          [`${file.name}_type`]: 'pdf'
+        }));
+      }
+    }
+    
+    setSelectedPreview({ file, type });
+    setCurrentFileIndex(fileIndex);
+  }, [getPreviewableFiles, filePreviews]);
+
+  // Manejo de teclas para navegación
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (!selectedPreview) return;
+    
+    switch (event.key) {
+      case 'ArrowLeft':
+        event.preventDefault();
+        navigateToFile('prev');
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        navigateToFile('next');
+        break;
+      case 'Escape':
+        event.preventDefault();
+        setSelectedPreview(null);
+        break;
+    }
+  }, [selectedPreview, navigateToFile]);
+
+  // Agregar event listeners para navegación con teclado
+  useEffect(() => {
+    if (selectedPreview) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [selectedPreview, handleKeyDown]);
+
+  // Cleanup effect for PDF Object URLs
+  useEffect(() => {
+    return () => {
+      // Limpiar Object URLs de PDFs al desmontar
+      Object.entries(filePreviews).forEach(([key]) => {
+        if (key.includes('_type') && filePreviews[key] === 'pdf') {
+          const fileName = key.replace('_type', '');
+          const pdfUrl = filePreviews[fileName];
+          if (pdfUrl && typeof pdfUrl === 'string' && pdfUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(pdfUrl);
+          }
+        }
+      });
+    };
+  }, [filePreviews]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -695,12 +841,6 @@ export const ExamQuestions = memo(function ExamQuestions() {
                   >
                     Arrastra archivos aquí
                   </h5>
-                  <p 
-                    className="text-sm mb-4"
-                    style={{ color: 'var(--theme-text-secondary)' }}
-                  >
-                    o
-                  </p>
                   <div className="flex items-center justify-center space-x-4">
                     <label
                       htmlFor="file-upload"
@@ -810,11 +950,11 @@ export const ExamQuestions = memo(function ExamQuestions() {
                                         alt={file.name}
                                         className="max-w-full h-16 object-cover rounded-lg mb-2 cursor-pointer transition-all duration-300 hover:shadow-lg"
                                         style={{ backgroundColor: 'var(--theme-bg-secondary)' }}
-                                        onClick={() => setSelectedPreview({file, type: 'image'})}
+                                        onClick={() => openPreview(file, 'image')}
                                       />
                                       <div 
                                         className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 rounded-lg transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer"
-                                        onClick={() => setSelectedPreview({file, type: 'image'})}
+                                        onClick={() => openPreview(file, 'image')}
                                       >
                                         <i className="fas fa-search-plus text-white text-sm"></i>
                                       </div>
@@ -1334,16 +1474,57 @@ export const ExamQuestions = memo(function ExamQuestions() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedPreview(null)}
-                className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
-                style={{
-                  backgroundColor: 'var(--theme-error-light)',
-                  color: 'var(--theme-error-dark)'
-                }}
-              >
-                <i className="fas fa-times"></i>
-              </button>
+              
+              {/* Navegación y botón de cerrar */}
+              <div className="flex items-center space-x-2">
+                {/* Botones de navegación si hay más de un archivo */}
+                {getPreviewableFiles.length > 1 && (
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => navigateToFile('prev')}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+                      style={{
+                        backgroundColor: 'var(--theme-bg-secondary)',
+                        color: 'var(--theme-text-primary)'
+                      }}
+                      title="Archivo anterior"
+                    >
+                      <i className="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <span 
+                      className="text-xs px-2 py-1 rounded"
+                      style={{ 
+                        backgroundColor: 'var(--theme-bg-tertiary)',
+                        color: 'var(--theme-text-secondary)'
+                      }}
+                    >
+                      {currentFileIndex + 1} / {getPreviewableFiles.length}
+                    </span>
+                    <button
+                      onClick={() => navigateToFile('next')}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+                      style={{
+                        backgroundColor: 'var(--theme-bg-secondary)',
+                        color: 'var(--theme-text-primary)'
+                      }}
+                      title="Archivo siguiente"
+                    >
+                      <i className="fas fa-chevron-right text-xs"></i>
+                    </button>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => setSelectedPreview(null)}
+                  className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+                  style={{
+                    backgroundColor: 'var(--theme-error-light)',
+                    color: 'var(--theme-error-dark)'
+                  }}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
             </div>
 
             {/* Contenido del Modal */}
@@ -1375,54 +1556,40 @@ export const ExamQuestions = memo(function ExamQuestions() {
                     </div>
                   </div>
                 </div>
-              ) : (
+              ) : selectedPreview.type === 'pdf' ? (
                 <div className="text-center">
-                  <Document
-                    file={selectedPreview.file}
-                    onLoadSuccess={({ numPages }) => {
-                      setFilePreviews(prev => ({
-                        ...prev,
-                        [`${selectedPreview.file.name}_pages`]: `${numPages} páginas`
-                      }));
-                    }}
-                    onLoadError={(error) => {
-                      console.error('Error loading PDF:', error);
-                    }}
-                    loading={
-                      <div className="flex items-center justify-center h-64">
-                        <div className="text-center">
-                          <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                          <p style={{ color: 'var(--theme-text-secondary)' }}>Cargando PDF...</p>
-                        </div>
+                  {/* PDF Preview usando @react-pdf-viewer/core */}
+                  <div className="w-full max-w-4xl mx-auto">
+                    <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                      <div 
+                        className="pdf-viewer-container"
+                        style={{ 
+                          height: '600px',
+                          border: '1px solid var(--theme-border-primary)',
+                          borderRadius: '12px',
+                          backgroundColor: 'var(--theme-bg-primary)',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        <Viewer
+                          key={selectedPreview.file.name}
+                          fileUrl={filePreviews[selectedPreview.file.name] || ''}
+                          plugins={[defaultLayoutPluginInstance]}
+                          theme={{
+                            theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
+                          }}
+                        />
                       </div>
-                    }
-                    error={
-                      <div className="flex items-center justify-center h-64">
-                        <div className="text-center">
-                          <i className="fas fa-exclamation-triangle text-red-500 text-2xl mb-2"></i>
-                          <p style={{ color: 'var(--theme-error)' }}>Error al cargar PDF</p>
-                          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>
-                            Verifique que el archivo no esté corrupto
-                          </p>
-                        </div>
-                      </div>
-                    }
-                  >
-                    <Page 
-                      pageNumber={1} 
-                      width={Math.min(600, window.innerWidth - 100)}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                    />
-                  </Document>
+                    </Worker>
+                  </div>
                   
                   {/* Información del PDF */}
                   <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--theme-bg-secondary)' }}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div className="text-center">
-                        <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Páginas</p>
+                        <p className="font-semibold" style={{ color: 'var(--theme-text-primary)' }}>Formato</p>
                         <p style={{ color: 'var(--theme-text-secondary)' }}>
-                          {filePreviews[`${selectedPreview.file.name}_pages`] || 'Calculando...'}
+                          Documento PDF
                         </p>
                       </div>
                       <div className="text-center">
@@ -1440,8 +1607,100 @@ export const ExamQuestions = memo(function ExamQuestions() {
                     </div>
                   </div>
                 </div>
+              ) : (
+                <div className="text-center">
+                  {/* Fallback para otros tipos de archivo */}
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                      <i 
+                        className="fas fa-file text-6xl mb-4" 
+                        style={{ color: 'var(--theme-text-secondary)' }}
+                      ></i>
+                      <p 
+                        className="text-lg font-medium mb-2"
+                        style={{ color: 'var(--theme-text-primary)' }}
+                      >
+                        Vista previa no disponible
+                      </p>
+                      <p 
+                        className="text-sm"
+                        style={{ color: 'var(--theme-text-secondary)' }}
+                      >
+                        Tipo de archivo: {selectedPreview.file.type}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
+            
+            {/* Navegación inferior con thumbnails */}
+            {getPreviewableFiles.length > 1 && (
+              <div 
+                className="border-t p-4"
+                style={{ borderColor: 'var(--theme-border-primary)' }}
+              >
+                <div className="flex items-center justify-center space-x-2 overflow-x-auto">
+                  {getPreviewableFiles.map((file, index) => (
+                    <button
+                      key={file.name}
+                      onClick={() => {
+                        const type = file.type.startsWith('image/') ? 'image' : 'pdf';
+                        
+                        // Si es un PDF, regenerar el Object URL para asegurar que se cargue correctamente
+                        if (type === 'pdf') {
+                          // Limpiar el URL anterior si existe
+                          const oldPdfUrl = filePreviews[file.name];
+                          if (oldPdfUrl && typeof oldPdfUrl === 'string' && oldPdfUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(oldPdfUrl);
+                          }
+                          
+                          // Crear un nuevo Object URL
+                          const newPdfUrl = URL.createObjectURL(file);
+                          
+                          setFilePreviews(prev => ({
+                            ...prev,
+                            [file.name]: newPdfUrl,
+                            [`${file.name}_type`]: 'pdf'
+                          }));
+                        }
+                        
+                        setSelectedPreview({ file, type });
+                        setCurrentFileIndex(index);
+                      }}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg border-2 transition-all duration-300 hover:scale-105 ${
+                        currentFileIndex === index ? 'ring-2 ring-offset-2' : ''
+                      }`}
+                      style={{
+                        borderColor: currentFileIndex === index ? 'var(--primary)' : 'var(--theme-border-primary)',
+                        backgroundColor: 'var(--theme-bg-secondary)'
+                      } as React.CSSProperties}
+                      title={file.name}
+                    >
+                      {file.type.startsWith('image/') ? (
+                        <img 
+                          src={filePreviews[file.name] || ''} 
+                          alt={file.name}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <i className="fas fa-file-pdf text-red-500 text-lg"></i>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="text-center mt-2">
+                  <p 
+                    className="text-xs"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
+                    Usa ← → para navegar • Esc para cerrar
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
