@@ -662,6 +662,63 @@ textarea {
 .grid-generate { grid-area: generate; }
 .grid-ai-config { grid-area: ai-config; }
 
+/* ExamQuestions.tsx specific layout - matches "casi todo listo" commit */
+#upload-exam-section.exam-config-grid {
+    grid-template-areas:
+        "header header header header header header header header header header header header"
+        "personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization"
+        "questions questions questions questions questions questions timer timer timer timer timer timer"
+        "ai-config ai-config ai-config ai-config ai-config ai-config generate generate generate generate generate generate";
+}
+
+/* ExamQuestions.tsx mobile layout */
+@media (max-width: 640px) {
+    #upload-exam-section.exam-config-grid {
+        grid-template-areas:
+            "header"
+            "personalization"
+            "questions"
+            "timer"
+            "ai-config"
+            "generate";
+    }
+}
+
+/* ExamQuestions.tsx tablet layout */
+@media (min-width: 641px) and (max-width: 1024px) {
+    #upload-exam-section.exam-config-grid {
+        grid-template-areas:
+            "header header header header header header header header"
+            "personalization personalization personalization personalization personalization personalization personalization personalization"
+            "questions questions questions questions timer timer timer timer"
+            "ai-config ai-config ai-config ai-config generate generate generate generate";
+    }
+}
+
+/* ExamQuestions.tsx desktop layout */
+@media (min-width: 1025px) and (max-width: 1280px) {
+    #upload-exam-section.exam-config-grid {
+        grid-template-areas:
+            "header header header header header header header header header header header header"
+            "personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization"
+            "questions questions questions questions questions questions timer timer timer timer timer timer"
+            "ai-config ai-config ai-config ai-config ai-config ai-config generate generate generate generate generate generate";
+    }
+}
+
+/* ExamQuestions.tsx large desktop layout */
+@media (min-width: 1281px) {
+    #upload-exam-section.exam-config-grid {
+        grid-template-areas:
+            "header header header header header header header header header header header header"
+            "personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization personalization"
+            "questions questions questions questions questions questions timer timer timer timer timer timer"
+            "ai-config ai-config ai-config ai-config ai-config ai-config generate generate generate generate generate generate";
+    }
+}
+
+
+
 /* Header Card Styles */
 .exam-header-card {
     padding: 2rem;
@@ -1099,4 +1156,28 @@ button {
 
 .btn, .subject-chip, .exam-card, .tab-active, .stats-card {
   cursor: pointer;
+}
+
+/* React-PDF styles */
+.react-pdf__Document {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.react-pdf__Page {
+  max-width: calc(100% - 2em);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin: 1em;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.react-pdf__Page__canvas {
+  border-radius: 8px;
+}
+
+.react-pdf__message {
+  padding: 20px;
+  color: var(--theme-text-secondary);
 }
