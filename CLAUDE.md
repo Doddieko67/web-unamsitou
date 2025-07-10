@@ -1,5 +1,51 @@
 # 📋 REACTI - TESTING IMPLEMENTATION PLAN
 
+## 🌿 **ESTRATEGIA DE BRANCHING**
+
+### **🔴 `production` Branch - Deploy Ready**
+- **Propósito**: Código 100% limpio para producción
+- **Contenido**: 
+  - ✅ Frontend + Backend con tests incluidos (726 tests)
+  - ✅ Variables de entorno documentadas (.env.example)
+  - ✅ README profesional optimizado
+  - ❌ Sin informes de testing (informes_test/, informes_fallados/)
+  - ❌ Sin documentación de desarrollo
+  - ❌ Sin screenshots o archivos temporales
+
+### **🟡 `development` Branch - Trabajo Diario**
+- **Propósito**: Rama principal de desarrollo con documentación completa
+- **Contenido**:
+  - ✅ Todo el código funcional
+  - ✅ Informes detallados de testing (informes_test/)
+  - ✅ Documentación de fallos (informes_fallados/)
+  - ✅ CLAUDE.md con instrucciones completas
+  - ✅ Archivos de trabajo y experimentación
+  - ✅ Screenshots y documentación temporal
+
+### **🔄 Workflow Recomendado**
+1. **Desarrollo diario** → Trabajar en `development`
+2. **Testing y debugging** → Usar informes en `development`
+3. **Deploy a producción** → Merge `development` → `production`
+4. **Pull en nuevas computadoras** → `git checkout development`
+
+### **📋 Para Deploy a Production:**
+```bash
+# Verificar que tests pasen
+npm test -- --run
+
+# Build exitoso
+npm run build
+
+# Merge a production
+git checkout production
+git merge development
+git push origin production
+```
+
+---
+
+# 📋 REACTI - TESTING IMPLEMENTATION PLAN
+
 ## 🔍 REGLA DE DOCUMENTACIÓN DE TESTS
 
 ### 📝 Nueva Directiva para Documentación de Tests
