@@ -7,7 +7,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3000
     env_file:
       - ./backend/.env
@@ -22,24 +22,24 @@ services:
     networks:
       - backend-network
 
-  # Cloudflare tunnel
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: vikdev-tunnel
-    command: tunnel --config /etc/cloudflared/config.yml run vikdev-api
-    volumes:
-      - ~/.cloudflared:/etc/cloudflared:ro
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - backend-network
-    healthcheck:
-      test: ["CMD", "cloudflared", "tunnel", "info", "vikdev-api"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
+  # Cloudflare tunnel (deshabilitado en development)
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: vikdev-tunnel
+  #   command: tunnel --config /etc/cloudflared/config.yml run vikdev-api
+  #   volumes:
+  #     - ~/.cloudflared:/etc/cloudflared:ro
+  #   depends_on:
+  #     backend:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - backend-network
+  #   healthcheck:
+  #     test: ["CMD", "cloudflared", "tunnel", "info", "vikdev-api"]
+  #     interval: 60s
+  #     timeout: 10s
+  #     retries: 3
 
 networks:
   backend-network:

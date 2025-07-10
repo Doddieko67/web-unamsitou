@@ -12,6 +12,8 @@ import { url_backend } from "../url_backend";
 import { DEFAULT_EXAM_CONFIG } from "../constants/examConstants";
 import { AIConfiguration } from "./shared/AIConfiguration";
 import { DEFAULT_MODEL } from "../constants/geminiModels";
+import { useExamGeneration } from "../hooks/useCancellableRequest";
+import { HistoryBasedLoading } from "./shared/LoadingWithCancel";
 
 export const ExamBasedOnHistory = memo(function ExamBasedOnHistory() {
   const { session } = useAuthStore();
@@ -23,7 +25,8 @@ export const ExamBasedOnHistory = memo(function ExamBasedOnHistory() {
   const [, setselectedExams] = useState<string[]>([]);
   const [questionCount, setQuestionCount] = useState<number>(DEFAULT_EXAM_CONFIG.QUESTION_COUNT);
   const [fineTuning, setFineTuning] = useState<string>(DEFAULT_EXAM_CONFIG.FINE_TUNING);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  // Hook para manejo de cancelación
+  const { isLoading: isGenerating, cancelRequest, executeWithCancellation } = useExamGeneration();
   const [hour, setHour] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_HOUR);
   const [minute, setMinute] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_MINUTE);
   const [second, setSecond] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_SECOND);
@@ -77,27 +80,17 @@ export const ExamBasedOnHistory = memo(function ExamBasedOnHistory() {
       });
       return;
     }
-    setIsGenerating(true);
 
-    // --- CONSTRUIR EL PROMPT/LLAMADA AL BACKEND ---
-    // Aquí deberías decidir cómo usar los IDs de `selectedExams` para el backend.
-    // Podrías enviar la lista de IDs o la lista completa de objetos examen,
-    // dependiendo de cómo esté diseñado tu endpoint '/api/generate-content'.
-    // Si el backend necesita los datos de los exámenes seleccionados,
-    // tendrías que buscarlos en `recentExams` basándote en los `selectedExams` IDs.
-    // Para este ejemplo, asumiremos que el backend puede manejar una lista de IDs.
+    // Usar el hook para ejecutar la solicitud con cancelación
+    const result = await executeWithCancellation(async (signal) => {
+      let promptText = `Genera un examen de ${questionCount} preguntas.\n`;
+      if (fineTuning && fineTuning.trim() !== "") {
+        promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
+      }
 
-    let promptText = `Genera un examen de ${questionCount} preguntas.\n`;
-    if (fineTuning && fineTuning.trim() !== "") {
-      promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
-    }
-
-    // Prompt construido para generación basada en historia
-
-    try {
       // Llama al backend, enviando el prompt como texto y otros parámetros relevantes
       const response = await fetch(
-        `${url_backend}/api/generate-content-based-on-history`, // O la ruta adecuada para generación basada en historia
+        `${url_backend}/api/generate-content-based-on-history`,
         {
           method: "POST",
           headers: {
@@ -107,42 +100,35 @@ export const ExamBasedOnHistory = memo(function ExamBasedOnHistory() {
           body: JSON.stringify({
             prompt: promptText,
             model: selectedModel,
-            // También puedes enviar otros parámetros relevantes si tu backend los usa,
-            // como la lista de IDs de los exámenes base, la dificultad seleccionada, el tiempo, etc.
-            // Ejemplo:
             exams_id: Object.keys(pinnedExams), // Enviar los IDs seleccionados como array
             tiempo_limite_segundos: hour * 3600 + minute * 60 + second, // Tiempo para el NUEVO examen
           }),
+          signal, // Usar el signal del hook
         },
       );
 
       if (!response.ok) {
-        const errorDetail = await response.text(); // Intenta obtener el texto del error
+        const errorDetail = await response.text();
         throw new Error(
           `Error al generar el examen (${response.status}): ${errorDetail || response.statusText}`,
         );
       }
 
-      const result = await response.json(); // Espera { examId: '...' }
+      const responseData = await response.json();
 
-      if (!result.examId) {
+      if (!responseData.examId) {
         throw new Error(
           "La respuesta del servidor no contenía un ID de examen válido.",
         );
       }
 
-      // Nuevo examen generado exitosamente
+      return responseData;
+    });
 
-      navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del NUEVO examen
-    } catch (error) {
-      // Error en la generación del examen
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al generar examen',
-        text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-      });
-    } finally {
-      setIsGenerating(false);
+    // Si la solicitud fue cancelada, result será null
+    if (result) {
+      // Navega a la ruta con el ID del NUEVO examen
+      navigate(`/examen/${result.examId}`);
     }
   };
 
@@ -695,25 +681,7 @@ export const ExamBasedOnHistory = memo(function ExamBasedOnHistory() {
             }}
           >
             {isGenerating ? (
-              <div className="space-y-4 text-center">
-                <div 
-                  className="inline-flex items-center space-x-3 px-6 py-4 rounded-2xl border-2"
-                  style={{
-                    backgroundColor: 'var(--theme-info-light)',
-                    borderColor: 'var(--theme-info)',
-                    color: 'var(--theme-info-dark)'
-                  }}
-                >
-                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                  <span className="font-semibold">Generando examen...</span>
-                </div>
-                <p 
-                  className="text-sm"
-                  style={{ color: 'var(--theme-text-secondary)' }}
-                >
-                  Analizando exámenes base con IA
-                </p>
-              </div>
+              <HistoryBasedLoading onCancel={cancelRequest} />
             ) : (
               <div className="space-y-6 text-center">
                 {/* Statistics Summary */}

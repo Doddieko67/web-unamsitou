@@ -12,6 +12,8 @@ import { url_backend } from "../url_backend";
 import { DEFAULT_EXAM_CONFIG } from "../constants/examConstants";
 import { AIConfiguration } from "./shared/AIConfiguration";
 import { DEFAULT_MODEL } from "../constants/geminiModels";
+import { useExamGeneration } from "../hooks/useCancellableRequest";
+import { FileProcessingLoading } from "./shared/LoadingWithCancel";
 
 // PDF functionality using @react-pdf-viewer/core - Modern implementation
 
@@ -30,7 +32,8 @@ export const ExamQuestions = memo(function ExamQuestions() {
       defaultTabs[1], // Bookmarks
     ],
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Hook para manejo de cancelación
+  const { isLoading, cancelRequest, executeWithCancellation } = useExamGeneration();
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const [fineTuning, setFineTuning] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
@@ -49,6 +52,9 @@ export const ExamQuestions = memo(function ExamQuestions() {
   // Estado para progreso de carga
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'error'>('idle');
+  
+  // Estados adicionales para UI de cancelación
+  const [progressMessage, setProgressMessage] = useState<string>('');
   
   // Estados para modal de previsualización
   const [selectedPreview, setSelectedPreview] = useState<{file: File, type: 'image' | 'pdf'} | null>(null);
@@ -587,50 +593,53 @@ export const ExamQuestions = memo(function ExamQuestions() {
       return;
     }
 
-    setIsLoading(true);
+    // Resetear estado
     setUploadStatus('uploading');
     setUploadProgress(0);
+    setProgressMessage('Preparando archivos...');
 
-    let requestBody: FormData | null = null;
+    // Usar el hook para ejecutar la solicitud con cancelación
+    const result = await executeWithCancellation(async (signal) => {
+      let requestBody: FormData | null = null;
 
-    let promptText = ``;
-    if (pastedText && pastedText.trim() !== "") {
-      promptText += `Contenido: ${pastedText}.\n`;
-    }
-    if (fineTuning && fineTuning.trim() !== "") {
-      promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
-    }
-
-    if (files.length > 0) {
-      // Preparando FormData para archivos
-      const formData = new FormData();
-      
-      // Simular progreso de preparación
-      setUploadProgress(20);
-      
-      for (let i = 0; i < files.length; i++) {
-        formData.append("fuentes", files[i]);
-        // Simular progreso incremental
-        setUploadProgress(20 + (i + 1) * (30 / files.length));
+      let promptText = ``;
+      if (pastedText && pastedText.trim() !== "") {
+        promptText += `Contenido: ${pastedText}.\n`;
+      }
+      if (fineTuning && fineTuning.trim() !== "") {
+        promptText += `Instrucciones adicionales: ${fineTuning.trim()}.\n`;
       }
 
-      formData.append("prompt", promptText);
-      formData.append(
-        "tiempo_limite_segundos",
-        (hour * 3600 + minute * 60 + second).toString(),
-      );
-      formData.append("model", selectedModel);
-      requestBody = formData;
-      // FormData preparado
-      
-      setUploadProgress(50);
-      setUploadStatus('processing');
-    }
-    // Preparando JSON para texto
+      if (files.length > 0) {
+        // Preparando FormData para archivos
+        const formData = new FormData();
+        
+        // Simular progreso de preparación
+        setProgressMessage('Procesando archivos...');
+        setUploadProgress(20);
+        
+        for (let i = 0; i < files.length; i++) {
+          formData.append("fuentes", files[i]);
+          // Simular progreso incremental
+          setUploadProgress(20 + (i + 1) * (30 / files.length));
+        }
 
-    try {
+        formData.append("prompt", promptText);
+        formData.append(
+          "tiempo_limite_segundos",
+          (hour * 3600 + minute * 60 + second).toString(),
+        );
+        formData.append("model", selectedModel);
+        requestBody = formData;
+        
+        setUploadProgress(50);
+        setUploadStatus('processing');
+        setProgressMessage('Enviando al servidor...');
+      }
+
       // Simular progreso de envío
       setUploadProgress(60);
+      setProgressMessage('Generando con IA...');
       
       const response = await fetch(`${url_backend}/api/upload_files`, {
         method: "POST",
@@ -638,6 +647,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
           authorization: `Bearer ${session?.access_token}`,
         },
         body: requestBody,
+        signal, // Usar el signal del hook
       });
 
       // Simular progreso de procesamiento
@@ -650,50 +660,37 @@ export const ExamQuestions = memo(function ExamQuestions() {
           errorMsg = errorData.error || errorData.message || errorMsg;
         } catch (jsonError) {
           // Error procesando respuesta JSON
-          Swal.fire({
-            icon: "error",
-            title: "Error del servidor interno",
-          });
+          throw new Error("Error del servidor interno");
         }
         throw new Error(errorMsg);
       }
-      const result = await response.json();
-      // Respuesta de generación desde contenido procesada
+      
+      const responseData = await response.json();
 
       // Completar progreso
       setUploadProgress(100);
       setUploadStatus('completed');
+      setProgressMessage('¡Completado!');
 
-      if (!result.examId) {
+      if (!responseData.examId) {
         setUploadStatus('error');
-        Swal.fire({
-          icon: "error",
-          title: "La respuesta del servidor no contenia un ID de examen valido",
-        });
         throw new Error(
           "La respuesta del servidor no contenía un ID de examen válido.",
         );
       }
 
-      // Examen generado exitosamente
+      return responseData;
+    });
 
+    // Si la solicitud fue cancelada, result será null
+    if (result) {
       // --- NAVEGACIÓN CON ID ---
-      navigate(`/examen/${result.examId}`); // Navega a la ruta con el ID del examen
-    } catch (error) {
-      // Error al generar desde contenido
-      setUploadStatus('error');
+      navigate(`/examen/${result.examId}`);
+    } else {
+      // Resetear estado si fue cancelada
+      setUploadStatus('idle');
       setUploadProgress(0);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error al generar examen',
-        text: `Error: ${error}`,
-      });
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => {
-        setUploadStatus('idle');
-        setUploadProgress(0);
-      }, 2000);
+      setProgressMessage('');
     }
   };
 
@@ -1305,21 +1302,7 @@ export const ExamQuestions = memo(function ExamQuestions() {
           >
             {isLoading ? (
               <div className="space-y-4 text-center">
-                <div 
-                  className="inline-flex items-center space-x-3 px-6 py-4 rounded-2xl border-2"
-                  style={{
-                    backgroundColor: 'var(--theme-info-light)',
-                    borderColor: 'var(--theme-info)',
-                    color: 'var(--theme-info-dark)'
-                  }}
-                >
-                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                  <span className="font-semibold">
-                    {uploadStatus === 'uploading' && 'Subiendo archivos...'}
-                    {uploadStatus === 'processing' && 'Procesando contenido...'}
-                    {uploadStatus === 'completed' && 'Generando examen...'}
-                  </span>
-                </div>
+                <FileProcessingLoading onCancel={cancelRequest} />
                 
                 {/* Barra de progreso */}
                 <div className="w-full max-w-md mx-auto">
@@ -1343,12 +1326,14 @@ export const ExamQuestions = memo(function ExamQuestions() {
                   </p>
                 </div>
                 
-                <p 
-                  className="text-sm"
-                  style={{ color: 'var(--theme-text-secondary)' }}
-                >
-                  Analizando archivos con IA
-                </p>
+                {progressMessage && (
+                  <p 
+                    className="text-sm font-medium"
+                    style={{ color: 'var(--theme-text-secondary)' }}
+                  >
+                    {progressMessage}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-6 text-center">

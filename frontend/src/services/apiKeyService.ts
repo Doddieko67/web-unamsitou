@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.config';
+import CryptoJS from 'crypto-js';
 
 export interface ApiKeyData {
   id?: string;
@@ -278,31 +279,54 @@ class ApiKeyServiceClass {
   }
 
   /**
-   * Encripta la API key usando Base64 (básico)
+   * Obtiene la clave de encriptación
+   */
+  private getEncryptionKey(): string {
+    // Usar la misma lógica que el backend
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error('VITE_SUPABASE_URL requerido para encriptación');
+    }
+    // Usar hash SHA256 para crear una clave de 256 bits consistente
+    return CryptoJS.SHA256(supabaseUrl).toString();
+  }
+
+  /**
+   * Encripta la API key usando AES-256 (compatible con backend)
    */
   private encryptApiKey(apiKey: string): string {
     try {
-      return btoa(apiKey); // Base64 encoding
+      const key = this.getEncryptionKey();
+      const encrypted = CryptoJS.AES.encrypt(apiKey, key).toString();
+      return encrypted;
     } catch (error) {
       console.error('Error encriptando API key:', error);
-      return apiKey; // Fallback sin encriptación
+      throw new Error('Error al encriptar API key');
     }
   }
 
   /**
-   * Desencripta la API key desde Base64
+   * Desencripta la API key usando AES-256 (compatible con backend)
    */
   private decryptApiKey(encryptedKey: string): string {
     try {
-      return atob(encryptedKey); // Base64 decoding
+      const key = this.getEncryptionKey();
+      const decrypted = CryptoJS.AES.decrypt(encryptedKey, key);
+      const originalText = decrypted.toString(CryptoJS.enc.Utf8);
+      
+      if (!originalText) {
+        throw new Error('No se pudo desencriptar - posible clave incorrecta');
+      }
+      
+      return originalText;
     } catch (error) {
       console.error('Error desencriptando API key:', error);
-      return encryptedKey; // Fallback sin desencriptación
+      throw new Error('Error al desencriptar API key');
     }
   }
 
   /**
-   * Valida una API key usando el backend (solo validación)
+   * Valida una API key usando el backend y la guarda automáticamente si es válida
    */
   async validateApiKey(apiKey: string): Promise<{ success: boolean; isValid?: boolean; error?: string }> {
     try {
@@ -326,7 +350,7 @@ class ApiKeyServiceClass {
         };
       }
 
-      // Hacer validación con el backend (solo para validar, no para guardar)
+      // Hacer validación con el backend
       const { API_CONFIG, getApiUrl } = await import('../config/api.config');
       const response = await fetch(getApiUrl('/api/gemini/validate-api-key'), {
         method: 'POST',
@@ -346,10 +370,20 @@ class ApiKeyServiceClass {
       }
 
       const result = await response.json();
+      const isValid = result.data?.isValid || false;
+      
+      // Si la API key es válida, guardarla automáticamente
+      if (isValid) {
+        const saveResult = await this.saveApiKey(apiKey);
+        if (!saveResult.success) {
+          console.warn('API key válida pero no se pudo guardar:', saveResult.error);
+          // No fallar la validación por esto, solo advertir
+        }
+      }
       
       return {
         success: true,
-        isValid: result.data?.isValid || false
+        isValid
       };
 
     } catch (error) {

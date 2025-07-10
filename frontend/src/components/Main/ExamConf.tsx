@@ -10,6 +10,8 @@ import { url_backend } from "../../url_backend";
 import { DEFAULT_EXAM_CONFIG } from "../../constants/examConstants";
 import { DEFAULT_MODEL } from "../../constants/geminiModels";
 import { AIConfiguration } from "../shared/AIConfiguration";
+import { useExamGeneration } from "../../hooks/useCancellableRequest";
+import { ExamGenerationLoading } from "../shared/LoadingWithCancel";
 
 // Importar SweetAlert2
 import Swal from "sweetalert2";
@@ -27,7 +29,8 @@ export const ExamConf = memo(function ExamConf() {
   const [selectedDifficulty, setSelectedDifficulty] =
     useState<Difficulty | null>(null);
   const [fineTuning, setFineTuning] = useState<string>(DEFAULT_EXAM_CONFIG.FINE_TUNING);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  // Hook para manejo de cancelación
+  const { isLoading: isGenerating, cancelRequest, executeWithCancellation } = useExamGeneration();
   const [hour, setHour] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_HOUR);
   const [minute, setMinute] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_MINUTE);
   const [second, setSecond] = useState<number>(DEFAULT_EXAM_CONFIG.TIMER_SECOND);
@@ -57,6 +60,7 @@ export const ExamConf = memo(function ExamConf() {
   const handleApiValidChange = useCallback((isValid: boolean) => {
     setIsApiValid(isValid);
   }, []);
+
 
 
 
@@ -93,9 +97,8 @@ export const ExamConf = memo(function ExamConf() {
       return;
     }
 
-    setIsGenerating(true); // Habilita el indicador de carga
-
-    try {
+    // Usar el hook para ejecutar la solicitud con cancelación
+    const result = await executeWithCancellation(async (signal) => {
       // --- Construir el PROMPT para el backend ---
       let promptText = `Genera un examen de ${questionCount} preguntas sobre el siguiente tema:\n`;
       
@@ -105,10 +108,6 @@ export const ExamConf = memo(function ExamConf() {
 
       // Calcular el tiempo límite total en segundos
       const tiempoLimiteSegundos = hour * 3600 + minute * 60 + second;
-      // Opcionalmente, puedes añadir esto al prompt si el modelo necesita saberlo en texto
-      // if (tiempoLimiteSegundos > 0) {
-      //   promptText += `El examen tiene un tiempo límite de ${hour} horas, ${minute} minutos y ${second} segundos.\n`;
-      // }
 
       // Preparar el payload que coincida exactamente con el backend
       const requestPayload = {
@@ -120,26 +119,22 @@ export const ExamConf = memo(function ExamConf() {
 
       // --- Llama al backend para generar el examen ---
       const response = await fetch(
-        // Asegúrate de que la URL es correcta para tu API
         `${url_backend}/api/generate-content`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Incluye el token de autorización si es necesario
-            authorization: `Bearer ${session?.access_token}`, // Usa encadenamiento opcional por si session es null/undefined
+            authorization: `Bearer ${session?.access_token}`,
           },
-          // Envía los datos necesarios al backend
           body: JSON.stringify(requestPayload),
+          signal, // Usar el signal del hook
         },
       );
 
       // --- Manejo de la respuesta del backend ---
       if (!response.ok) {
-        // Intenta leer el mensaje de error del cuerpo de la respuesta si está disponible
-        const errorBody = await response.json().catch(() => null); // Intenta parsear JSON, ignora errores si no es JSON
+        const errorBody = await response.json().catch(() => null);
         
-        // Log para debug del error 400
         if (response.status === 400) {
           console.error('Error 400 - Datos enviados:', requestPayload);
           console.error('Error 400 - Respuesta del servidor:', errorBody);
@@ -148,37 +143,25 @@ export const ExamConf = memo(function ExamConf() {
         const errorMessage =
           errorBody?.error || errorBody?.message ||
           `Error del servidor: ${response.status} ${response.statusText}`;
-        throw new Error(errorMessage); // Lanza un error con un mensaje más específico
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      const responseData = await response.json();
 
       // Verifica si la respuesta contiene el ID del examen
-      if (!result || !result.examId) {
+      if (!responseData || !responseData.examId) {
         throw new Error(
           "La respuesta del servidor no contenía un ID de examen válido.",
         );
       }
 
-      // Examen generado exitosamente
+      return responseData;
+    });
 
+    // Si la solicitud fue cancelada, result será null
+    if (result) {
       // --- NAVEGACIÓN A LA PÁGINA DEL EXAMEN ---
-      // Navega a la ruta con el ID del examen generado.
-      // No se muestra un Swal de éxito aquí porque la navegación es la indicación visual de éxito.
       navigate(`/examen/${result.examId}`);
-    } catch (error) {
-      // Especifica 'any' o un tipo de error más específico si lo conoces
-      // --- Manejo de Errores con Swal ---
-      // Error en la generación del examen
-      Swal.fire({
-        icon: "error",
-        title: "Error al Generar Examen",
-        text: `Hubo un problema al intentar generar tu examen. Por favor, inténtalo de nuevo.`,
-        confirmButtonColor: "#d33", // Color rojo estándar de Swal
-      });
-    } finally {
-      // Este bloque siempre se ejecuta, ya sea que haya éxito o error
-      setIsGenerating(false); // Deshabilita el indicador de carga
     }
   };
 
@@ -517,25 +500,7 @@ export const ExamConf = memo(function ExamConf() {
             }}
           >
             {isGenerating ? (
-              <div className="space-y-4 text-center">
-                <div 
-                  className="inline-flex items-center space-x-3 px-6 py-4 rounded-2xl border-2"
-                  style={{
-                    backgroundColor: 'var(--theme-info-light)',
-                    borderColor: 'var(--theme-info)',
-                    color: 'var(--theme-info-dark)'
-                  }}
-                >
-                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                  <span className="font-semibold">Generando examen con IA...</span>
-                </div>
-                <p 
-                  className="text-sm"
-                  style={{ color: 'var(--theme-text-secondary)' }}
-                >
-                  Esto puede tardar unos momentos
-                </p>
-              </div>
+              <ExamGenerationLoading onCancel={cancelRequest} />
             ) : (
               <div className="space-y-6 text-center">
                 {/* Configuration Summary */}

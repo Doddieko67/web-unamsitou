@@ -142,65 +142,6 @@ export const AIConfiguration = memo(function AIConfiguration({
     debouncedValidation(key);
   }, [debouncedValidation, onApiValidChange]);
 
-  // Función para guardar API key
-  const handleSaveApiKey = useCallback(async () => {
-    if (!apiKey || !isApiValid) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'API Key Requerida',
-        text: 'Por favor ingresa y valida una API key antes de guardar',
-        confirmButtonColor: '#3085d6'
-      });
-      return;
-    }
-    
-    // Verificar si el usuario está autenticado
-    if (!session?.access_token) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'No autenticado',
-        text: 'Por favor, inicia sesión para guardar la API key',
-        confirmButtonColor: '#3085d6'
-      });
-      return;
-    }
-    
-    try {
-      // Usar ApiKeyService en lugar de GeminiService
-      const response = await ApiKeyService.saveApiKey(apiKey);
-      
-      if (response.success) {
-        Swal.fire({
-          icon: 'success',
-          title: 'API Key Guardada',
-          text: 'Tu API key se ha guardado de forma segura',
-          timer: 2000,
-          showConfirmButton: false
-        });
-        
-        // Limpiar el campo de API key y mostrar preview
-        setApiKey('');
-        setApiKeyPreview(`***${apiKey.slice(-8)}`);
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error al Guardar',
-          text: response.error || 'Error al guardar la API key',
-          confirmButtonColor: '#d33'
-        });
-      }
-    } catch (error) {
-      console.error('Error guardando API key:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al guardar la API key';
-      
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: errorMessage,
-        confirmButtonColor: '#d33'
-      });
-    }
-  }, [apiKey, isApiValid, session]);
 
   // Cargar estado de API key al montar el componente (solo una vez)
   useEffect(() => {
@@ -379,15 +320,6 @@ export const AIConfiguration = memo(function AIConfiguration({
               Obtén tu API key en Google AI Studio
             </p>
             <div className="flex items-center space-x-2">
-              {apiKey && isApiValid && (
-                <button
-                  onClick={handleSaveApiKey}
-                  className="api-key-button save"
-                >
-                  <i className="fas fa-save"></i>
-                  <span>Guardar</span>
-                </button>
-              )}
               <a
                 href="https://youtu.be/RVGbLSVFtIk?si=svQg0FVLtHrFYcap&t=21"
                 target="_blank"
