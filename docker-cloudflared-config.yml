@@ -1,0 +1,7 @@
+tunnel: vikdev-api
+credentials-file: /etc/cloudflared/2558a4f2-2a36-4d77-97ac-fed235a38b21.json
+
+ingress:
+  - hostname: api.vikdev.dev
+    service: http://vikdev-backend:3000
+  - service: http_status:404

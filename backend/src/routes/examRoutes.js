@@ -28,7 +28,6 @@ router.post('/upload_files',
 
 // Ruta para generar contenido basado en prompt
 router.post('/generate-content',
-  aiLimiter,
   getUserFromRequest,
   validateRequest(schemas.generateContent),
   ExamController.generateContent

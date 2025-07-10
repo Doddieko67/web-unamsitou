@@ -15,6 +15,9 @@ dotenv.config();
 
 const app = express();
 
+// Configurar trust proxy según documentación express-rate-limit
+app.set('trust proxy', 1);
+
 // Middleware de seguridad
 app.use(securityHeaders);
 app.use(generalLimiter);
@@ -25,31 +28,35 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Configurar CORS
-const allowedOrigins = [
+export const allowedOrigins = [
   "http://localhost:5173", // Desarrollo frontend
   "http://localhost:5174", // Desarrollo frontend (puerto alternativo)
   "http://localhost:5175", // Desarrollo frontend (puerto alternativo 2)
-  "http://localhost:3000", // Fallback
+  "http://localhost:3000", // Frontend fallback
   "http://192.168.100.222:5173", // Desarrollo en red local
+  "https://vikdev.dev", // Frontend en producción
+  "https://www.vikdev.dev", // Frontend en producción con www
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permitir requests sin origin (como apps móviles o Postman)
-    if (!origin) return callback(null, true);
+    // Permitir requests sin origin (como Postman, curl, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
+    // Verificar si el origin está en la lista de permitidos
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     } else {
-      logger.warn(`CORS: Origen no permitido: ${origin}`);
-      callback(new Error('No permitido por CORS'));
+      return callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'content-type', 'authorization']
 };
 
 app.use(cors(corsOptions));
@@ -78,10 +85,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Middleware de manejo de errores (debe ir al final)
-app.use(errorHandler);
+// Debug endpoints disabled for production security
+// app.get('/debug-ip', ...);
+// app.post('/debug-auth', ...);
+// app.post('/test-cors', ...);
 
-// Manejo de rutas no encontradas (Express 5 compatible)
+// Manejo de rutas no encontradas (debe ir antes del error handler)
 app.use('/*catchAll', (req, res) => {
   logger.warn(`Ruta no encontrada: ${req.method} ${req.originalUrl}`, {
     ip: req.ip,
@@ -94,5 +103,8 @@ app.use('/*catchAll', (req, res) => {
     method: req.method
   });
 });
+
+// Middleware de manejo de errores (debe ir al final)
+app.use(errorHandler);
 
 export default app;

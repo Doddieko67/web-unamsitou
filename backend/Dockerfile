@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Instalar curl para health checks
+RUN apk add --no-cache curl
+
 # Directorio de trabajo
 WORKDIR /app
 

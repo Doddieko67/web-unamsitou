@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { supabase } from '../../supabase.config.js';
 import logger from '../utils/logger.js';
+import { encryptApiKey, decryptApiKey } from '../utils/encryption.js';
 
 export class GeminiService {
   /**
@@ -60,8 +61,8 @@ export class GeminiService {
    */
   static async saveUserApiKey(userId, apiKey) {
     try {
-      // Encriptar la API key antes de guardarla (básico)
-      const encryptedApiKey = Buffer.from(apiKey).toString('base64');
+      // Encriptar la API key de forma segura con AES-256
+      const encryptedApiKey = encryptApiKey(apiKey);
 
       const { data, error } = await supabase
         .from('user_api_keys')
@@ -126,7 +127,7 @@ export class GeminiService {
       }
 
       // Desencriptar la API key
-      const apiKey = Buffer.from(data.api_key, 'base64').toString();
+      const apiKey = decryptApiKey(data.api_key);
 
       return {
         success: true,
