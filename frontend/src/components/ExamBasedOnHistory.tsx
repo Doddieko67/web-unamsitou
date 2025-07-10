@@ -110,7 +110,7 @@ export const ExamBasedOnHistory = memo(function ExamBasedOnHistory() {
             // También puedes enviar otros parámetros relevantes si tu backend los usa,
             // como la lista de IDs de los exámenes base, la dificultad seleccionada, el tiempo, etc.
             // Ejemplo:
-            exams_id: pinnedExams, // Enviar los IDs seleccionados
+            exams_id: Object.keys(pinnedExams), // Enviar los IDs seleccionados como array
             tiempo_limite_segundos: hour * 3600 + minute * 60 + second, // Tiempo para el NUEVO examen
           }),
         },

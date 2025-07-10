@@ -43,7 +43,7 @@ export function UpdatePassword() {
             className="text-3xl font-bold transition-colors duration-300"
             style={{ color: 'var(--theme-text-primary)' }}
           >
-            ExamGen AI
+            VikDev
           </h1>
           <p 
             className="mt-2 transition-colors duration-300"

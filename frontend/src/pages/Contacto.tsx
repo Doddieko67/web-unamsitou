@@ -117,25 +117,68 @@ export function Contacto() {
 
         <div className="mt-8 pt-8 border-t border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">
-            Otras formas de contacto
+            Nuestro Equipo
           </h3>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                <i className="fas fa-phone text-indigo-600"></i>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Teléfono</p>
-                <p className="text-sm text-gray-900">+1 (555) 123-4567</p>
-              </div>
+          
+          {/* Victor Gabriel Rivero Flores */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="text-lg font-semibold text-gray-900">Victor Gabriel Rivero Flores</h4>
+            <p className="text-sm text-gray-600 mb-3">Desarrollador Frontend</p>
+            <div className="flex items-center space-x-4">
+              <a
+                href="https://github.com/Vikktorrf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-gray-700 hover:text-indigo-600 transition-colors"
+              >
+                <i className="fab fa-github mr-2"></i>
+                <span className="text-sm">Vikktorrf</span>
+              </a>
             </div>
+          </div>
+          
+          {/* Hector Fidel Hernandez Tellez */}
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h4 className="text-lg font-semibold text-gray-900">Hector Fidel Hernandez Tellez</h4>
+            <p className="text-sm text-gray-600 mb-3">Desarrollador Fullstack</p>
+            <div className="flex items-center space-x-4">
+              <a
+                href="https://github.com/Doddieko67"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-gray-700 hover:text-indigo-600 transition-colors"
+              >
+                <i className="fab fa-github mr-2"></i>
+                <span className="text-sm">Doddieko67</span>
+              </a>
+              <a
+                href="mailto:hern04045@gmail.com"
+                className="flex items-center text-gray-700 hover:text-indigo-600 transition-colors"
+              >
+                <i className="fas fa-envelope mr-2"></i>
+                <span className="text-sm">hern04045@gmail.com</span>
+              </a>
+              <a
+                href="https://www.linkedin.com/in/hernandez-tellez-hector-fidel-a710b72a8/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-gray-700 hover:text-indigo-600 transition-colors"
+              >
+                <i className="fab fa-linkedin mr-2"></i>
+                <span className="text-sm">LinkedIn</span>
+              </a>
+            </div>
+          </div>
+          
+          {/* Información adicional */}
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-1">
             <div className="flex items-start">
               <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
                 <i className="fas fa-envelope text-indigo-600"></i>
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-500">Email</p>
-                <p className="text-sm text-gray-900">contacto@examgen.com</p>
+                <p className="text-sm text-gray-900">contacto@vikdev.com</p>
               </div>
             </div>
           </div>
