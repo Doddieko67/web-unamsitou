@@ -30,6 +30,7 @@ const allowedOrigins = [
   "http://localhost:5174", // Desarrollo frontend (puerto alternativo)
   "http://localhost:5175", // Desarrollo frontend (puerto alternativo 2)
   "http://localhost:3000", // Fallback
+  "http://192.168.100.222:5173", // Desarrollo en red local
   process.env.FRONTEND_URL
 ].filter(Boolean);
 

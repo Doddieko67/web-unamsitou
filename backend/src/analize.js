@@ -4,7 +4,7 @@ export const processExamsSelected = async (user_id, exams_id) => {
   // Inicializar como un array
   const processedExamsData = [];
 
-  for (const examen_id in exams_id) {
+  for (const examen_id of exams_id) {
     const { data: examenCompleto, error: fetchFullError } = await supabase
       .from("examenes")
       .select("datos, respuestas_usuario")
