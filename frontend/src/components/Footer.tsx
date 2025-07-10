@@ -7,7 +7,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-row justify-evenly gap-8">
           <div>
-            <h3 className="text-lg font-semibold mb-4">ExamGen AI</h3>
+            <h3 className="text-lg font-semibold mb-4">VikDev</h3>
             <p className="text-sm" style={{ color: 'var(--theme-text-muted)' }}>
               La plataforma inteligente para crear exámenes personalizados con
               ayuda de IA.
@@ -47,7 +47,7 @@ export function Footer() {
           borderTop: '1px solid var(--theme-border-primary)',
           color: 'var(--theme-text-muted)'
         }}>
-          <p>© 2025 ExamGen AI.</p>
+          <p>© 2025 VikDev.</p>
         </div>
       </div>
     </footer>

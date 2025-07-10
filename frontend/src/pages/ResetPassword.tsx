@@ -30,118 +30,92 @@ export function ResetPassword() {
   };
 
   return (
-    <>
-      <div className="relative w-full max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <div 
-            className="mx-auto h-16 w-16 flex items-center justify-center rounded-full shadow-md mb-4 transition-colors duration-300"
-            style={{
-              backgroundColor: 'var(--theme-bg-primary)',
-              boxShadow: 'var(--theme-shadow-md)'
-            }}
-          >
-            <i className="fas fa-brain text-3xl text-indigo-600 dark:text-indigo-400"></i>
+    <div className="auth-background">
+
+      {/* Screenshots Collage Background */}
+      <div className="auth-screenshots-collage">
+        <div className="screenshot-item screenshot-1">
+          <img src="/screenshots/captura_1.jpg" alt="Dashboard VikDev" />
+          <div className="screenshot-overlay">
+            <h4>Dashboard Intuitivo</h4>
+            <p>Accede a todos tus exámenes y estadísticas en un solo lugar</p>
           </div>
-          <h1 
-            className="text-3xl font-bold transition-colors duration-300"
-            style={{ color: 'var(--theme-text-primary)' }}
-          >
-            ExamGen AI
-          </h1>
-          <p 
-            className="mt-2 transition-colors duration-300"
-            style={{ color: 'var(--theme-text-secondary)' }}
-          >
-            Correo de recuperacion
-          </p>
+        </div>
+        <div className="screenshot-item screenshot-2">
+          <img src="/screenshots/captura_2.jpg" alt="Configuración de examen" />
+          <div className="screenshot-overlay">
+            <h4>Configuración Avanzada</h4>
+            <p>Personaliza cada detalle de tu examen con IA</p>
+          </div>
+        </div>
+        <div className="screenshot-item screenshot-3">
+          <img src="/screenshots/captura_3.jpg" alt="Simulación de examen" />
+          <div className="screenshot-overlay">
+            <h4>Simulación Realista</h4>
+            <p>Experiencia de examen completa con cronómetro y navegación</p>
+          </div>
+        </div>
+        <div className="screenshot-item screenshot-4">
+          <img src="/screenshots/captura_4.jpg" alt="Resultados detallados" />
+          <div className="screenshot-overlay">
+            <h4>Análisis Detallado</h4>
+            <p>Obtén resultados precisos y retroalimentación inteligente</p>
+          </div>
+        </div>
+      </div>
+
+
+      <div className="auth-container">
+        <div className="auth-header">
+          <div className="auth-brand-icon">
+            <i className="fas fa-brain text-3xl text-white"></i>
+          </div>
+          <h1 className="auth-title">VikDev</h1>
+          <p className="auth-subtitle">Recupera tu contraseña</p>
         </div>
 
-        <div 
-          className="rounded-2xl login-container p-8 transition-colors duration-300"
-          style={{
-            backgroundColor: 'var(--theme-bg-primary)',
-            boxShadow: 'var(--theme-shadow-lg)'
-          }}
-        >
-          <form onSubmit={handleResetPasswordForEmail} className="space-y-6">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium mb-1 transition-colors duration-300"
-                style={{ color: 'var(--theme-text-secondary)' }}
-              >
+        <div className="auth-form-container">
+          <form onSubmit={handleResetPasswordForEmail}>
+            <div className="auth-input-group">
+              <label htmlFor="email" className="auth-label">
                 Correo electrónico
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i 
-                    className="fas fa-envelope transition-colors duration-300"
-                    style={{ color: 'var(--theme-text-muted)' }}
-                  ></i>
-                </div>
+              <div className="auth-input-container">
                 <input
                   type="email"
                   id="email"
                   name="email"
                   required
-                  className="input-field w-full pl-10 pr-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-all duration-300"
-                  style={{
-                    backgroundColor: 'var(--theme-bg-primary)',
-                    borderColor: 'var(--theme-border-primary)',
-                    color: 'var(--theme-text-primary)'
-                  }}
-                  placeholder="tucorreo@ejemplo.com"
+                  className="auth-input"
+                  placeholder="Ingresa tu correo electrónico"
                   onChange={(e) => setEmail(e.target.value)}
                 />
+                <i className="fas fa-envelope auth-input-icon"></i>
               </div>
+              <p style={{ 
+                color: 'rgba(255, 255, 255, 0.7)', 
+                fontSize: '0.75rem', 
+                marginTop: '0.5rem',
+                textAlign: 'center'
+              }}>
+                Te enviaremos un enlace para restablecer tu contraseña
+              </p>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-colors duration-300"
-              >
-                <span id="btnText">Enviar correo de recuperacion</span>
-                <svg
-                  id="loadingSpinner"
-                  className="hidden ml-2 h-5 w-5 text-white loading-spinner"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
+            <div className="auth-input-group">
+              <button type="submit" className="auth-button">
+                <i className="fas fa-paper-plane mr-2"></i>
+                <span>Enviar correo de recuperación</span>
               </button>
             </div>
           </form>
-          <div className="mt-6 text-center">
-            <p 
-              className="text-sm transition-colors duration-300"
-              style={{ color: 'var(--theme-text-secondary)' }}
-            >
-              Regresar{" "}
-              <Link
-                to="/login"
-                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors duration-300"
-              >
-                Iniciar sesión
-              </Link>
-            </p>
+          <div className="auth-link">
+            <i className="fas fa-arrow-left mr-2"></i>
+            Regresar a{" "}
+            <Link to="/login">Iniciar sesión</Link>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

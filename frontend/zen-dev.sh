@@ -3,8 +3,8 @@
 # Zen Browser Dev Script - Flujo correcto: dev → fix → clean
 echo "🚀 Iniciando servidor de desarrollo..."
 
-# 1. Primero iniciar el servidor
-npm run dev &
+# 1. Primero iniciar el servidor en red local
+vite --host 0.0.0.0 --open &
 DEV_PID=$!
 
 # 2. Esperar un poco y luego aplicar el fix

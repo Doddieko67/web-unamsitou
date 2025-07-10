@@ -1,7 +1,6 @@
 import "./App.css";
-import { NavBar } from "./components/Navbar";
+import { FloatingNavbar } from "./components/FloatingNavbar";
 import { MyRoutes } from "./routers/routes";
-import { Footer } from "./components/Footer";
 import { QueryProvider } from "./providers/QueryProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { useAuthInit } from "./hooks/useAuthInit";
@@ -43,11 +42,10 @@ function AppContent() {
 
   return (
     <>
-      <NavBar />
-      <div className="my-5">
+      <div className="min-h-screen">
         <MyRoutes />
       </div>
-      <Footer />
+      <FloatingNavbar />
     </>
   );
 }

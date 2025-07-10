@@ -110,7 +110,7 @@ export function NavBar() {
               >
                 {" "}
                 {/* Close both menus on logo click */}
-                <span className="text-xl font-bold">ExamGen AI</span>
+                <span className="text-xl font-bold">VikDev</span>
               </Link>
             </div>
           </div>
