@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import logger from '../utils/logger.js';
 
-// Rate limiting configuration con keyGenerator para proxies
+// Rate limiting configuration optimizada para Cloudflare Tunnel 2025
 export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
   return rateLimit({
     windowMs,
@@ -13,19 +13,27 @@ export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
     },
     standardHeaders: true,
     legacyHeaders: false,
-    // KeyGenerator que maneja puertos según documentación
+    // Cloudflare Tunnel: CF-Connecting-IP es la IP real del cliente
     keyGenerator: (req) => {
-      if (!req.ip) {
-        return req.socket.remoteAddress;
-      }
-      // Remover puerto si está presente (para Azure/Cloudflare)
-      return req.ip.replace(/:\d+[^:]*$/, '');
+      // Prioridad: CF-Connecting-IP > X-Forwarded-For > req.ip
+      const cfIP = req.headers['cf-connecting-ip'];
+      if (cfIP) return cfIP;
+      
+      const forwardedFor = req.headers['x-forwarded-for'];
+      if (forwardedFor) return forwardedFor.split(',')[0].trim();
+      
+      return req.ip || req.socket.remoteAddress;
     },
     handler: (req, res) => {
-      const cleanIP = req.ip ? req.ip.replace(/:\d+[^:]*$/, '') : req.socket.remoteAddress;
-      logger.warn(`Rate limit exceeded for IP: ${cleanIP}`, {
-        ip: cleanIP,
-        originalIP: req.ip,
+      const realIP = req.headers['cf-connecting-ip'] || 
+                    req.headers['x-forwarded-for']?.split(',')[0] || 
+                    req.ip;
+      
+      logger.warn(`Rate limit exceeded for IP: ${realIP}`, {
+        realIP,
+        cfConnectingIP: req.headers['cf-connecting-ip'],
+        xForwardedFor: req.headers['x-forwarded-for'],
+        reqIP: req.ip,
         userAgent: req.get('User-Agent'),
         endpoint: req.originalUrl
       });
