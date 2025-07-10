@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import logger from '../utils/logger.js';
 
-// Rate limiting configuration
+// Rate limiting configuration con keyGenerator para proxies
 export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
   return rateLimit({
     windowMs,
@@ -13,9 +13,19 @@ export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // KeyGenerator que maneja puertos según documentación
+    keyGenerator: (req) => {
+      if (!req.ip) {
+        return req.socket.remoteAddress;
+      }
+      // Remover puerto si está presente (para Azure/Cloudflare)
+      return req.ip.replace(/:\d+[^:]*$/, '');
+    },
     handler: (req, res) => {
-      logger.warn(`Rate limit exceeded for IP: ${req.ip}`, {
-        ip: req.ip,
+      const cleanIP = req.ip ? req.ip.replace(/:\d+[^:]*$/, '') : req.socket.remoteAddress;
+      logger.warn(`Rate limit exceeded for IP: ${cleanIP}`, {
+        ip: cleanIP,
+        originalIP: req.ip,
         userAgent: req.get('User-Agent'),
         endpoint: req.originalUrl
       });
