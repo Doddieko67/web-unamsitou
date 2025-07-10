@@ -83,17 +83,22 @@ npm test
 ## 📁 Estructura del Proyecto
 
 ```
-frontend/
-├── src/
-│   ├── components/     # Componentes React
-│   ├── hooks/         # Custom hooks
-│   ├── services/      # APIs y servicios
-│   ├── stores/        # Estado global (Zustand)
-│   ├── utils/         # Utilidades
-│   ├── pages/         # Páginas principales
-│   └── __tests__/     # Tests
-├── public/            # Assets estáticos
-└── dist/             # Build de producción
+reacti/
+├── frontend/          # Aplicación principal React
+│   ├── src/
+│   │   ├── components/    # Componentes React
+│   │   ├── hooks/         # Custom hooks
+│   │   ├── services/      # APIs y servicios
+│   │   ├── stores/        # Estado global (Zustand)
+│   │   ├── utils/         # Utilidades
+│   │   ├── pages/         # Páginas principales
+│   │   └── __tests__/     # Tests
+│   ├── public/            # Assets estáticos
+│   └── dist/             # Build de producción
+├── informes_test/         # Reportes de testing
+├── informes_fallados/     # Tests que fallaron
+├── .env.example          # Variables de entorno ejemplo
+└── README.md             # Este archivo
 ```
 
 ## 🚀 Deployment
