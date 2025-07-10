@@ -75,18 +75,18 @@ Thumbs.db
 *.temp
 .temp/
 
-# Screenshots y archivos temporales
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.svg
-!public/**/*.png
-!public/**/*.jpg
-!public/**/*.jpeg
-!public/**/*.gif
-!public/**/*.svg
-!src/assets/**/*
+# Screenshots temporales y archivos de desarrollo
+# (Solo archivos temporales, NO los assets de public/)
+frontend/250*_*screenshot*.png
+frontend/*screenshot*.png
+*.tmp.png
+*.temp.jpg
+temp_*
+screenshot_*
+
+# Mantener todos los assets de public/ y src/assets/
+# public/ contiene UI/UX assets necesarios
+# src/assets/ contiene recursos del código
 
 # Database
 *.db
