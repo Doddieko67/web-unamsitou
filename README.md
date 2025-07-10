@@ -95,8 +95,6 @@ reacti/
 │   │   └── __tests__/     # Tests
 │   ├── public/            # Assets estáticos
 │   └── dist/             # Build de producción
-├── informes_test/         # Reportes de testing
-├── informes_fallados/     # Tests que fallaron
 ├── .env.example          # Variables de entorno ejemplo
 └── README.md             # Este archivo
 ```

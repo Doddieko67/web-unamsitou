@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: reacti-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    volumes:
+      - ./backend/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Cloudflare tunnel (se configura después)
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: reacti-tunnel
+  #   command: tunnel --config /etc/cloudflared/config.yml run
+  #   volumes:
+  #     - ~/.cloudflared:/etc/cloudflared
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
