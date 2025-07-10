@@ -81,6 +81,22 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Ruta de prueba para debugging de IPs
+app.get('/debug-ip', (req, res) => {
+  res.json({
+    message: 'IP Debug Info',
+    clientIP: {
+      'req.ip': req.ip,
+      'CF-Connecting-IP': req.headers['cf-connecting-ip'],
+      'X-Forwarded-For': req.headers['x-forwarded-for'],
+      'X-Real-IP': req.headers['x-real-ip'],
+      'remoteAddress': req.socket.remoteAddress
+    },
+    allHeaders: req.headers,
+    expectedClientIP: '187.190.144.195'
+  });
+});
+
 // Middleware de manejo de errores (debe ir al final)
 app.use(errorHandler);
 
