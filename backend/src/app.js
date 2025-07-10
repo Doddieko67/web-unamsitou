@@ -97,10 +97,7 @@ app.get('/debug-ip', (req, res) => {
   });
 });
 
-// Middleware de manejo de errores (debe ir al final)
-app.use(errorHandler);
-
-// Manejo de rutas no encontradas (Express 5 compatible)
+// Manejo de rutas no encontradas (debe ir antes del error handler)
 app.use('/*catchAll', (req, res) => {
   logger.warn(`Ruta no encontrada: ${req.method} ${req.originalUrl}`, {
     ip: req.ip,
@@ -113,5 +110,8 @@ app.use('/*catchAll', (req, res) => {
     method: req.method
   });
 });
+
+// Middleware de manejo de errores (debe ir al final)
+app.use(errorHandler);
 
 export default app;
