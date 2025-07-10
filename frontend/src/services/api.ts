@@ -1,7 +1,8 @@
 import { useAuthStore } from '../stores/authStore';
+import { API_CONFIG, getApiUrl } from '../config/api.config';
 
 // URL base del backend
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BASE_URL = API_CONFIG.BASE_URL;
 
 // Tipos para las APIs
 export interface ApiResponse<T = any> {

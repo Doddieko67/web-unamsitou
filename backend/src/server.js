@@ -1,4 +1,4 @@
-import app from './app.js';
+import app, { allowedOrigins } from './app.js';
 import logger from './utils/logger.js';
 import fs from 'fs';
 import path from 'path';
@@ -31,6 +31,8 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Iniciar servidor
 const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Servidor iniciado en ${HOST}:${PORT} - Environment: ${process.env.NODE_ENV || 'development'}`);
+  
   logger.info(`Servidor iniciado en ${HOST}:${PORT}`, {
     host: HOST,
     port: PORT,

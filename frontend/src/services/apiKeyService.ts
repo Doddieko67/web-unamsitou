@@ -327,8 +327,8 @@ class ApiKeyServiceClass {
       }
 
       // Hacer validación con el backend (solo para validar, no para guardar)
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
-      const response = await fetch(`${backendUrl}/api/gemini/validate-api-key`, {
+      const { API_CONFIG, getApiUrl } = await import('../config/api.config');
+      const response = await fetch(getApiUrl('/api/gemini/validate-api-key'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

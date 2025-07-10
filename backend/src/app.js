@@ -28,31 +28,35 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Configurar CORS
-const allowedOrigins = [
+export const allowedOrigins = [
   "http://localhost:5173", // Desarrollo frontend
   "http://localhost:5174", // Desarrollo frontend (puerto alternativo)
   "http://localhost:5175", // Desarrollo frontend (puerto alternativo 2)
-  "http://localhost:3000", // Fallback
+  "http://localhost:3000", // Frontend fallback
   "http://192.168.100.222:5173", // Desarrollo en red local
+  "https://vikdev.dev", // Frontend en producción
+  "https://www.vikdev.dev", // Frontend en producción con www
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permitir requests sin origin (como apps móviles o Postman)
-    if (!origin) return callback(null, true);
+    // Permitir requests sin origin (como Postman, curl, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
+    // Verificar si el origin está en la lista de permitidos
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     } else {
-      logger.warn(`CORS: Origen no permitido: ${origin}`);
-      callback(new Error('No permitido por CORS'));
+      return callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'content-type', 'authorization']
 };
 
 app.use(cors(corsOptions));
@@ -81,21 +85,10 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Ruta de prueba para debugging de IPs
-app.get('/debug-ip', (req, res) => {
-  res.json({
-    message: 'IP Debug Info',
-    clientIP: {
-      'req.ip': req.ip,
-      'CF-Connecting-IP': req.headers['cf-connecting-ip'],
-      'X-Forwarded-For': req.headers['x-forwarded-for'],
-      'X-Real-IP': req.headers['x-real-ip'],
-      'remoteAddress': req.socket.remoteAddress
-    },
-    allHeaders: req.headers,
-    expectedClientIP: '187.190.144.195'
-  });
-});
+// Debug endpoints disabled for production security
+// app.get('/debug-ip', ...);
+// app.post('/debug-auth', ...);
+// app.post('/test-cors', ...);
 
 // Manejo de rutas no encontradas (debe ir antes del error handler)
 app.use('/*catchAll', (req, res) => {
