@@ -5,6 +5,8 @@ import { resolve } from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Base path para producción - ajustar según tu deployment
+  base: '/', // Usar '/' para dominio raíz o '/vikdev/' si está en subdirectorio
   plugins: [react(), tailwindcss()],
   test: {
     globals: true,

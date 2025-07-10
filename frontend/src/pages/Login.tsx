@@ -3,6 +3,12 @@ import { useAuthStore } from "../stores/authStore";
 import { useState } from "react";
 import Swal from "sweetalert2";
 
+// Importar imágenes desde src/assets (más robusta para Hostinger)
+import captura1 from "../assets/images/captura_1.jpg";
+import captura2 from "../assets/images/captura_2.jpg";
+import captura3 from "../assets/images/captura_3.jpg";
+import captura4 from "../assets/images/captura_4.jpg";
+
 export function Login() {
   const { signIn, signInWithGoogle } = useAuthStore();
   const [email, setEmail] = useState("");
@@ -43,28 +49,28 @@ export function Login() {
       {/* Screenshots Collage Background */}
       <div className="auth-screenshots-collage">
         <div className="screenshot-item screenshot-1">
-          <img src="/screenshots/captura_1.jpg" alt="Dashboard VikDev" />
+          <img src={captura1} alt="Dashboard VikDev" />
           <div className="screenshot-overlay">
             <h4>Dashboard Intuitivo</h4>
             <p>Accede a todos tus exámenes y estadísticas en un solo lugar</p>
           </div>
         </div>
         <div className="screenshot-item screenshot-2">
-          <img src="/screenshots/captura_2.jpg" alt="Configuración de examen" />
+          <img src={captura2} alt="Configuración de examen" />
           <div className="screenshot-overlay">
             <h4>Configuración Avanzada</h4>
             <p>Personaliza cada detalle de tu examen con IA</p>
           </div>
         </div>
         <div className="screenshot-item screenshot-3">
-          <img src="/screenshots/captura_3.jpg" alt="Simulación de examen" />
+          <img src={captura3} alt="Simulación de examen" />
           <div className="screenshot-overlay">
             <h4>Simulación Realista</h4>
             <p>Experiencia de examen completa con cronómetro y navegación</p>
           </div>
         </div>
         <div className="screenshot-item screenshot-4">
-          <img src="/screenshots/captura_4.jpg" alt="Resultados detallados" />
+          <img src={captura4} alt="Resultados detallados" />
           <div className="screenshot-overlay">
             <h4>Análisis Detallado</h4>
             <p>Obtén resultados precisos y retroalimentación inteligente</p>
