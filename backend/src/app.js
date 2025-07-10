@@ -15,6 +15,9 @@ dotenv.config();
 
 const app = express();
 
+// Configurar trust proxy para Cloudflare
+app.set('trust proxy', true);
+
 // Middleware de seguridad
 app.use(securityHeaders);
 app.use(generalLimiter);
