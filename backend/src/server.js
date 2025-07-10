@@ -10,6 +10,7 @@ if (!fs.existsSync(logDir)) {
 }
 
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Manejo de errores no capturados
 process.on('uncaughtException', (error) => {
@@ -29,8 +30,9 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Iniciar servidor
-const server = app.listen(PORT, () => {
-  logger.info(`Servidor iniciado en puerto ${PORT}`, {
+const server = app.listen(PORT, HOST, () => {
+  logger.info(`Servidor iniciado en ${HOST}:${PORT}`, {
+    host: HOST,
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
