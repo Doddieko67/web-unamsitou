@@ -282,13 +282,13 @@ class ApiKeyServiceClass {
    * Obtiene la clave de encriptación
    */
   private getEncryptionKey(): string {
-    // Usar la misma lógica que el backend
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      throw new Error('VITE_SUPABASE_URL requerido para encriptación');
+    // Usar la misma lógica que el backend para consistencia
+    const key = import.meta.env.VITE_ENCRYPTION_KEY || import.meta.env.VITE_SUPABASE_URL;
+    if (!key) {
+      throw new Error('VITE_ENCRYPTION_KEY o VITE_SUPABASE_URL requerido para encriptación');
     }
     // Usar hash SHA256 para crear una clave de 256 bits consistente
-    return CryptoJS.SHA256(supabaseUrl).toString();
+    return CryptoJS.SHA256(key).toString();
   }
 
   /**
