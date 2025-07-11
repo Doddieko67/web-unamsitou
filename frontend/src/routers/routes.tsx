@@ -15,6 +15,7 @@ const ResetPassword = lazy(() => import("../pages/ResetPassword").then(module =>
 const UpdatePassword = lazy(() => import("../pages/updatePassword").then(module => ({ default: module.UpdatePassword })));
 const Perfil = lazy(() => import("../pages/Perfil").then(module => ({ default: module.Perfil })));
 const ExamContainer = lazy(() => import("../components/exam/ExamContainer").then(module => ({ default: module.ExamContainer })));
+// const FeedbackHub = lazy(() => import("../pages/FeedbackHub").then(module => ({ default: module.FeedbackHub })));
 
 // Componente de loading
 const PageLoader = () => (
@@ -44,6 +45,7 @@ export function MyRoutes() {
         <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
         <Route path="/update-password" element={<UpdatePassword />} />
         <Route path="/contact" element={<Contacto />} />
+        {/* <Route path="/feedback" element={<FeedbackHub />} /> */}
         
         {/* Rutas protegidas - requieren autenticación */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
