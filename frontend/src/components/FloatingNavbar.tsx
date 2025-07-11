@@ -96,6 +96,7 @@ export function FloatingNavbar() {
     setIsContactDropdownOpen(false);
   };
 
+
   // Calculate dropdown position based on navbar position
   const getDropdownPosition = () => {
     const windowHeight = window.innerHeight;
@@ -231,37 +232,49 @@ export function FloatingNavbar() {
           <span>VikDev</span>
         </Link>
 
-        {user && (
-          <>
-            {/* Divider */}
-            <div className="floating-navbar-divider"></div>
+        {/* Divider */}
+        <div className="floating-navbar-divider"></div>
 
-            {/* Navigation Links */}
-            <div className="floating-navbar-links">
-              {Data.map(({ title, path, icon }) => (
-                <NavLink
-                  key={path}
-                  to={path}
-                  className={({ isActive }) => 
-                    `floating-navbar-link ${isActive ? 'active' : ''}`
-                  }
-                  title={title}
-                  onClick={() => setIsDropdownOpen(false)}
-                >
-                  <i className={icon}></i>
-                </NavLink>
-              ))}
-            </div>
+        {/* Navigation Links */}
+        <div className="floating-navbar-links">
+          {Data.map(({ title, path, icon }) => {
+            // Solo mostrar para usuarios autenticados
+            if (!user) return null;
+            
+            return (
+              <NavLink
+                key={path}
+                to={path}
+                className={({ isActive }) => 
+                  `floating-navbar-link ${isActive ? 'active' : ''}`
+                }
+                title={title}
+                onClick={() => setIsDropdownOpen(false)}
+              >
+                <i className={icon}></i>
+              </NavLink>
+            );
+          })}
+        </div>
 
-            {/* Divider */}
-            <div className="floating-navbar-divider"></div>
-          </>
-        )}
+        {/* Divider */}
+        <div className="floating-navbar-divider"></div>
 
         {/* Theme Toggle */}
         <div className="floating-navbar-theme-toggle">
           <ThemeToggle variant="icon" size="sm" />
         </div>
+
+        {/* Discord Community */}
+        <a
+          href="https://discord.gg/Q8G493Kv"
+          className="floating-navbar-link"
+          title="Comunidad VikDev"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i className="fab fa-discord"></i>
+        </a>
 
         {/* Contact */}
         <div className="floating-navbar-contact" ref={contactDropdownRef}>
@@ -412,7 +425,7 @@ export function FloatingNavbar() {
           </button>
 
           {/* Mobile Dropdown - Compact */}
-          <div ref={mobileDropdownRef} className={`floating-navbar-mobile-dropdown ${isMobileMenuOpen ? 'open' : ''} ${getDropdownPosition().showBelow ? 'show-below' : 'show-above'}`}>
+          <div ref={mobileDropdownRef} className={`floating-navbar-mobile-dropdown ${isMobileMenuOpen ? 'open' : ''} show-above`}>
             
             {/* Contact Icon - CSS-only toggle (moved to top for CSS selector) */}
             <input 
@@ -428,9 +441,12 @@ export function FloatingNavbar() {
             </div>
 
             {/* Navigation Icons - Same Row */}
-            {user && (
-              <div className="floating-navbar-mobile-nav-row">
-                {Data.map(({ title, path, icon }) => (
+            <div className="floating-navbar-mobile-nav-row">
+              {Data.map(({ title, path, icon }) => {
+                // Solo mostrar para usuarios autenticados
+                if (!user) return null;
+                
+                return (
                   <NavLink
                     key={path}
                     to={path}
@@ -442,9 +458,9 @@ export function FloatingNavbar() {
                   >
                     <i className={icon}></i>
                   </NavLink>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
 
             {/* Action Icons Row */}
             <div className="floating-navbar-mobile-actions">
@@ -452,6 +468,17 @@ export function FloatingNavbar() {
               <div className="floating-navbar-mobile-icon">
                 <ThemeToggle variant="icon" size="sm" />
               </div>
+
+              {/* Discord Community Icon */}
+              <a
+                href="https://discord.gg/Q8G493Kv"
+                className="floating-navbar-mobile-icon"
+                title="Comunidad VikDev"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i className="fab fa-discord"></i>
+              </a>
 
               {/* Contact Icon Label */}
               <label 
@@ -533,6 +560,7 @@ export function FloatingNavbar() {
           </div>
         </div>
       </nav>
+
     </>
   );
 }
