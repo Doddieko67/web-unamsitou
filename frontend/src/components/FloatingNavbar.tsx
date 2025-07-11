@@ -20,10 +20,13 @@ export function FloatingNavbar() {
   const { user, signOut } = useAuthStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isContactDropdownOpen, setIsContactDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ left: 80, bottom: 80 }); // left as %, bottom as px - más arriba y bien a la derecha
   const dropdownRef = useRef<HTMLDivElement>(null);
   const contactDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileHamburgerRef = useRef<HTMLButtonElement>(null);
   const navbarRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -37,24 +40,31 @@ export function FloatingNavbar() {
       if (contactDropdownRef.current && !contactDropdownRef.current.contains(event.target as Node)) {
         setIsContactDropdownOpen(false);
       }
+      // Handle mobile main dropdown - include hamburger button in safe area
+      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node) &&
+          mobileHamburgerRef.current && !mobileHamburgerRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
     };
 
-    if (isDropdownOpen || isContactDropdownOpen) {
+    if (isDropdownOpen || isContactDropdownOpen || isMobileMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isDropdownOpen, isContactDropdownOpen]);
+  }, [isDropdownOpen, isContactDropdownOpen, isMobileMenuOpen]);
 
   const handleSignOut = async () => {
     try {
       await signOut();
       setIsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
     } catch (error) {
       console.error("Error during sign out:", error);
       setIsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
     }
   };
 
@@ -62,18 +72,28 @@ export function FloatingNavbar() {
     try {
       signOut();
       setIsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
     } catch (error) {
       console.error("Error during sign out:", error);
       setIsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
     }
   };
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
+    setIsMobileMenuOpen(false);
   };
 
   const toggleContactDropdown = () => {
     setIsContactDropdownOpen(!isContactDropdownOpen);
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setIsDropdownOpen(false);
+    setIsContactDropdownOpen(false);
   };
 
   // Calculate dropdown position based on navbar position
@@ -179,16 +199,18 @@ export function FloatingNavbar() {
   }, []);
 
   return (
-    <nav 
-      ref={navbarRef}
-      className={`floating-navbar visible ${isDragging ? 'dragging' : ''}`}
-      style={{
-        left: `${position.left}%`,
-        bottom: `${position.bottom}px`,
-        transform: `translateX(-50%)`,
-      }}
-    >
-      <div className="floating-navbar-container">
+    <>
+      {/* Desktop: Floating Navbar */}
+      <nav 
+        ref={navbarRef}
+        className={`floating-navbar floating-navbar-desktop visible ${isDragging ? 'dragging' : ''}`}
+        style={{
+          left: `${position.left}%`,
+          bottom: `${position.bottom}px`,
+          transform: `translateX(-50%)`,
+        }}
+      >
+        <div className="floating-navbar-container">
         {/* Drag Handle */}
         <div 
           className="floating-navbar-drag-handle"
@@ -373,7 +395,144 @@ export function FloatingNavbar() {
             <i className="fas fa-grip-vertical"></i>
           </div>
         )}
-      </div>
-    </nav>
+        </div>
+      </nav>
+
+      {/* Mobile: Vertical Navbar */}
+      <nav className="floating-navbar-mobile">
+        <div className="floating-navbar-mobile-container">
+          {/* Hamburger Button */}
+          <button
+            ref={mobileHamburgerRef}
+            className="floating-navbar-mobile-hamburger"
+            onClick={toggleMobileMenu}
+            title="Menú"
+          >
+            <i className={`fas ${isMobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
+          </button>
+
+          {/* Mobile Dropdown - Compact */}
+          <div ref={mobileDropdownRef} className={`floating-navbar-mobile-dropdown ${isMobileMenuOpen ? 'open' : ''} ${getDropdownPosition().showBelow ? 'show-below' : 'show-above'}`}>
+            
+            {/* Contact Icon - CSS-only toggle (moved to top for CSS selector) */}
+            <input 
+              type="checkbox" 
+              id="mobile-contact-toggle" 
+              className="floating-navbar-mobile-contact-toggle"
+            />
+            
+            {/* Compact Header with Logo */}
+            <div className="floating-navbar-mobile-header">
+              <i className="fas fa-brain"></i>
+              <span>VikDev</span>
+            </div>
+
+            {/* Navigation Icons - Same Row */}
+            {user && (
+              <div className="floating-navbar-mobile-nav-row">
+                {Data.map(({ title, path, icon }) => (
+                  <NavLink
+                    key={path}
+                    to={path}
+                    className={({ isActive }) => 
+                      `floating-navbar-mobile-icon ${isActive ? 'active' : ''}`
+                    }
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    title={title}
+                  >
+                    <i className={icon}></i>
+                  </NavLink>
+                ))}
+              </div>
+            )}
+
+            {/* Action Icons Row */}
+            <div className="floating-navbar-mobile-actions">
+              {/* Theme Toggle Icon */}
+              <div className="floating-navbar-mobile-icon">
+                <ThemeToggle variant="icon" size="sm" />
+              </div>
+
+              {/* Contact Icon Label */}
+              <label 
+                htmlFor="mobile-contact-toggle"
+                className="floating-navbar-mobile-icon"
+                title="Contacto"
+              >
+                <i className="fas fa-address-book"></i>
+              </label>
+
+              {/* User Profile Icon */}
+              {user && (
+                <button
+                  onClick={toggleDropdown}
+                  className="floating-navbar-mobile-icon"
+                  title="Perfil"
+                >
+                  <img
+                    src={user?.user_metadata?.picture || '/default-avatar.svg'}
+                    alt="User profile"
+                    className="floating-navbar-mobile-avatar"
+                  />
+                </button>
+              )}
+            </div>
+
+            {/* Contact Expandable - CSS-only collapsible */}
+            <div className="floating-navbar-mobile-contact-wrapper">
+              <div className="floating-navbar-mobile-contact-content">
+                <p className="floating-navbar-mobile-contact-description">
+                  La plataforma inteligente para crear exámenes personalizados con ayuda de IA.
+                </p>
+                
+                <div className="floating-navbar-mobile-developers">
+                  <div className="floating-navbar-mobile-developer-card">
+                    <h4>Victor Gabriel Rivero Flores</h4>
+                    <a href="https://github.com/Vikktorrf" target="_blank" rel="noopener noreferrer">
+                      <i className="fab fa-github"></i>
+                      <span>Vikktorrf</span>
+                    </a>
+                  </div>
+                  
+                  <div className="floating-navbar-mobile-developer-card">
+                    <h4>Hector Fidel Hernandez Tellez</h4>
+                    <div className="floating-navbar-mobile-links">
+                      <a href="https://github.com/Doddieko67" target="_blank" rel="noopener noreferrer">
+                        <i className="fab fa-github"></i>
+                        <span>Doddieko67</span>
+                      </a>
+                      <a href="mailto:hern04045@gmail.com">
+                        <i className="fas fa-envelope"></i>
+                        <span>hern04045@gmail.com</span>
+                      </a>
+                      <a href="https://www.linkedin.com/in/hernandez-tellez-hector-fidel-a710b72a8/" target="_blank" rel="noopener noreferrer">
+                        <i className="fab fa-linkedin"></i>
+                        <span>LinkedIn</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="floating-navbar-mobile-footer">
+                  © 2025 VikDev
+                </div>
+              </div>
+            </div>
+
+            {/* User Actions - Compact */}
+            {isDropdownOpen && user && (
+              <div className="floating-navbar-mobile-user-actions">
+                <button onClick={handleChangeSession} className="floating-navbar-mobile-icon" title="Cambiar sesión">
+                  <i className="fas fa-sync-alt"></i>
+                </button>
+                <button onClick={handleSignOut} className="floating-navbar-mobile-icon danger" title="Cerrar sesión">
+                  <i className="fas fa-sign-out-alt"></i>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+    </>
   );
 }
