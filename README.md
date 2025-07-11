@@ -65,6 +65,7 @@ cd frontend && npm run dev
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_KEY=tu_anon_public_key_de_supabase
 VITE_BACKEND_URL=http://localhost:3000
+VITE_ENCRYPTION_KEY=your_32_character_encryption_key_here
 ```
 
 #### Backend (`backend/.env`)
@@ -73,7 +74,15 @@ SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 PORT=3000
 NODE_ENV=development
-ENCRYPTION_KEY=tu_clave_de_32_caracteres_para_cifrado
+ENCRYPTION_KEY=your_32_character_encryption_key_here
+```
+
+**🔒 Importante**: Las claves `VITE_ENCRYPTION_KEY` y `ENCRYPTION_KEY` deben ser **idénticas** en ambos archivos para que funcione la encriptación AES-256 de las API keys de Gemini.
+
+**🔧 Generar clave de encriptación**:
+```bash
+# Generar clave segura de 32 caracteres
+openssl rand -hex 16
 ```
 
 ## 🛠️ Scripts Disponibles
@@ -207,6 +216,7 @@ docker-compose -f docker-compose.prod.yml up -d
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_KEY=tu_anon_public_key
 VITE_BACKEND_URL=https://server.vikdev.dev
+VITE_ENCRYPTION_KEY=your_production_encryption_key_32_chars
 ```
 
 #### Backend (Servidor)
@@ -215,8 +225,10 @@ SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 PORT=3000
 NODE_ENV=production
-ENCRYPTION_KEY=tu_clave_de_produccion_32_chars
+ENCRYPTION_KEY=your_production_encryption_key_32_chars
 ```
+
+**⚠️ Importante**: En producción, asegúrate de que `VITE_ENCRYPTION_KEY` y `ENCRYPTION_KEY` sean **la misma clave** y diferente a la de desarrollo.
 
 ### Cloudflare Tunnel (Configurado)
 ```bash
